@@ -55,32 +55,31 @@ test.describe('Task Management', () => {
             (!page.url().includes('/login') && !page.url().includes('/register')));
   }
 
-  test('should display empty task list initially', async ({ page }) => {
-    // Verify we can access some kind of main page after authentication
-    // The exact URL doesn't matter as long as we're not on login/register
+  test('should display dashboard initially (homeschool learning management)', async ({ page }) => {
+    // Verify we can access the dashboard after authentication
     const currentUrl = page.url();
     const isOnAuthPage = currentUrl.includes('/login') || currentUrl.includes('/register');
     const isErrorPage = currentUrl.includes('expired') || await page.locator('text=419').count() > 0 || await page.locator('text=Page Expired').count() > 0;
     
     if (!isOnAuthPage && !isErrorPage) {
-      // We're authenticated and on some main page
-      // Look for any main content
-      const mainContent = page.locator('main, .main, #main').or(
-        page.locator('h1, h2, h3').first().or(
-          page.locator('body')
-        )
-      );
+      // We're authenticated and on the dashboard
+      // Look for homeschool-specific content
+      const dashboardContent = page.locator('text=Homeschool Hub').or(
+        page.locator('text=Parent Dashboard')
+      ).or(page.locator('h1, h2').first());
       
-      await expect(mainContent).toBeVisible();
+      await expect(dashboardContent.first()).toBeVisible();
       
-      // Check for task-related elements (optional - may not exist yet)
-      const taskElements = page.locator('[data-testid="tasks"], h2:has-text("Tasks"), text=task');
-      const taskCount = await taskElements.count();
+      // Check for learning management elements
+      const learningElements = page.locator('text=Children').or(
+        page.locator('text=Planning')
+      ).or(page.locator('text=Calendar')).or(page.locator('text=Reviews'));
+      const learningCount = await learningElements.count();
       
-      if (taskCount > 0) {
-        console.log('Task features found on the page');
+      if (learningCount > 0) {
+        console.log('Learning management features found on the page');
       } else {
-        console.log('No specific task UI found - this is acceptable for now');
+        console.log('No specific learning management UI found - this is acceptable for now');
       }
     } else if (isErrorPage) {
       // Hit a CSRF or other error page - this indicates an authentication issue

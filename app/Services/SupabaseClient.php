@@ -22,6 +22,7 @@ class SupabaseClient
         $this->anonKey = $anonKey;
         $this->serviceKey = $serviceKey;
 
+        // Start with anon key, can be updated with setUserToken()
         $this->httpClient = new Client([
             'base_uri' => $this->baseUrl,
             'headers' => [
@@ -31,6 +32,31 @@ class SupabaseClient
                 'Prefer' => 'return=representation',
             ],
         ]);
+    }
+
+    /**
+     * Set user access token for authenticated requests
+     */
+    public function setUserToken(string $accessToken): void
+    {
+        $this->httpClient = new Client([
+            'base_uri' => $this->baseUrl,
+            'headers' => [
+                'apikey' => $this->anonKey,
+                'Authorization' => 'Bearer '.$accessToken,  // Use user's access token
+                'Content-Type' => 'application/json',
+                'Prefer' => 'return=representation',
+            ],
+        ]);
+
+        // Log token setting for debugging
+        if (function_exists('app') && app() && app()->has('log')) {
+            app('log')->debug('SupabaseClient: User token set', [
+                'token_length' => strlen($accessToken),
+                'token_prefix' => substr($accessToken, 0, 20).'...',
+                'is_jwt' => str_starts_with($accessToken, 'eyJ'),
+            ]);
+        }
     }
 
     /**
@@ -83,16 +109,75 @@ class SupabaseClient
                 ],
             ]);
 
-            return json_decode($response->getBody()->getContents(), true);
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            // Log successful signup for debugging
+            \Log::info('Supabase signup successful', [
+                'email' => $email,
+                'has_user' => isset($result['user']),
+                'has_token' => isset($result['access_token']),
+                'has_session' => isset($result['session']),
+            ]);
+
+            return $result;
         } catch (GuzzleException $e) {
             // Return error details for debugging
             if ($e->hasResponse()) {
-                $error = json_decode($e->getResponse()->getBody()->getContents(), true);
+                $errorBody = $e->getResponse()->getBody()->getContents();
+                $error = json_decode($errorBody, true);
 
-                return ['error' => $error['msg'] ?? $error['error'] ?? 'Registration failed'];
+                // Log the full error for debugging
+                \Log::error('Supabase signup failed', [
+                    'email' => $email,
+                    'status_code' => $e->getResponse()->getStatusCode(),
+                    'error_body' => $errorBody,
+                    'parsed_error' => $error,
+                ]);
+
+                // Provide more specific error messages based on common Supabase errors
+                $errorMessage = 'Registration failed';
+
+                if (isset($error['msg'])) {
+                    $errorMessage = $error['msg'];
+                } elseif (isset($error['error'])) {
+                    $errorMessage = $error['error'];
+                } elseif (isset($error['message'])) {
+                    $errorMessage = $error['message'];
+                } elseif (isset($error['error_description'])) {
+                    $errorMessage = $error['error_description'];
+                }
+
+                // Handle specific error cases with clearer messages
+                if (str_contains(strtolower($errorMessage), 'user already registered')) {
+                    $errorMessage = __('An account with this email already exists. Please log in instead.');
+                } elseif (str_contains(strtolower($errorMessage), 'password')) {
+                    $errorMessage = __('Password must be at least 8 characters long.');
+                } elseif (str_contains(strtolower($errorMessage), 'email')) {
+                    $errorMessage = __('Please provide a valid email address.');
+                } elseif (str_contains(strtolower($errorMessage), 'database')) {
+                    // Check if it's a database lookup error that's not critical
+                    if (str_contains(strtolower($errorMessage), 'finding user')) {
+                        // This might be a lookup after successful registration
+                        \Log::warning('Post-registration user lookup failed, but user might be created', [
+                            'email' => $email,
+                            'error' => $errorMessage,
+                        ]);
+
+                        // Don't return error here, let the registration flow continue
+                        return ['warning' => $errorMessage];
+                    }
+                    $errorMessage = __('A database error occurred. Please try again later.');
+                }
+
+                return ['error' => $errorMessage];
             }
 
-            return ['error' => 'Connection failed'];
+            \Log::error('Supabase signup connection failed', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['error' => __('Unable to connect to the authentication service. Please try again.')];
         }
     }
 
@@ -198,6 +283,20 @@ class SupabaseQueryBuilder
         return $this;
     }
 
+    public function gte(string $column, mixed $value): self
+    {
+        $this->query[$column] = "gte.{$value}";
+
+        return $this;
+    }
+
+    public function lte(string $column, mixed $value): self
+    {
+        $this->query[$column] = "lte.{$value}";
+
+        return $this;
+    }
+
     public function like(string $column, string $pattern): self
     {
         $this->query[$column] = "like.{$pattern}";
@@ -230,7 +329,7 @@ class SupabaseQueryBuilder
     public function single(): ?array
     {
         $this->headers['Accept'] = 'application/vnd.pgrst.object+json';
-        $result = $this->execute();
+        $result = $this->executeSingle();
 
         return $result ?: null;
     }
@@ -256,8 +355,33 @@ class SupabaseQueryBuilder
 
             $result = json_decode($response->getBody()->getContents(), true);
 
+            // Log insert results for debugging
+            if (function_exists('app') && app() && app()->has('log')) {
+                app('log')->debug('SupabaseClient insert executed', [
+                    'table' => $this->table,
+                    'data' => $data,
+                    'result' => $result,
+                    'status_code' => $response->getStatusCode(),
+                ]);
+            }
+
             return is_array($result) ? $result : [$result];
         } catch (GuzzleException $e) {
+            // Log the error for debugging
+            if (function_exists('app') && app() && app()->has('log')) {
+                $errorBody = '';
+                if ($e->hasResponse()) {
+                    $errorBody = $e->getResponse()->getBody()->getContents();
+                }
+
+                app('log')->error('SupabaseClient insert failed', [
+                    'table' => $this->table,
+                    'data' => $data,
+                    'error' => $e->getMessage(),
+                    'response_body' => $errorBody,
+                    'status_code' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                ]);
+            }
             throw new \Exception('Insert failed: '.$e->getMessage());
         }
     }
@@ -265,13 +389,52 @@ class SupabaseQueryBuilder
     public function update(array $data): array
     {
         try {
+            // Log update attempt for debugging
+            if (function_exists('app') && app() && app()->has('log')) {
+                app('log')->debug('SupabaseClient update attempt', [
+                    'table' => $this->table,
+                    'query' => $this->query,
+                    'data' => $data,
+                ]);
+            }
+
             $response = $this->client->patch("/rest/v1/{$this->table}", [
                 'json' => $data,
                 'query' => $this->query,
             ]);
 
-            return json_decode($response->getBody()->getContents(), true);
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            // Log successful update
+            if (function_exists('app') && app() && app()->has('log')) {
+                app('log')->debug('SupabaseClient update executed', [
+                    'table' => $this->table,
+                    'query' => $this->query,
+                    'data' => $data,
+                    'result' => $result,
+                    'status_code' => $response->getStatusCode(),
+                ]);
+            }
+
+            return $result;
         } catch (GuzzleException $e) {
+            // Log the error for debugging
+            if (function_exists('app') && app() && app()->has('log')) {
+                $errorBody = '';
+                if ($e->hasResponse()) {
+                    $errorBody = $e->getResponse()->getBody()->getContents();
+                }
+
+                app('log')->error('SupabaseClient update failed', [
+                    'table' => $this->table,
+                    'query' => $this->query,
+                    'data' => $data,
+                    'error' => $e->getMessage(),
+                    'response_body' => $errorBody,
+                    'status_code' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                ]);
+            }
+
             throw new \Exception('Update failed: '.$e->getMessage());
         }
     }
@@ -289,6 +452,66 @@ class SupabaseQueryBuilder
         }
     }
 
+    private function executeSingle(): mixed
+    {
+        try {
+            $response = $this->client->get("/rest/v1/{$this->table}", [
+                'query' => $this->query,
+                'headers' => $this->headers,
+            ]);
+
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            // Log query results for debugging
+            if (function_exists('app') && app() && app()->has('log')) {
+                app('log')->debug('SupabaseClient single query executed', [
+                    'table' => $this->table,
+                    'query' => $this->query,
+                    'has_result' => ! empty($result),
+                    'status_code' => $response->getStatusCode(),
+                ]);
+            }
+
+            return $result;
+        } catch (GuzzleException $e) {
+            // Handle 406 Not Acceptable gracefully for single() - this means 0 rows
+            if ($e->hasResponse() && $e->getResponse()->getStatusCode() === 406) {
+                $errorBody = $e->getResponse()->getBody()->getContents();
+                $errorData = json_decode($errorBody, true);
+
+                // This is expected when no rows match - not an error
+                if (isset($errorData['code']) && $errorData['code'] === 'PGRST116') {
+                    if (function_exists('app') && app() && app()->has('log')) {
+                        app('log')->debug('SupabaseClient single query - no rows found', [
+                            'table' => $this->table,
+                            'query' => $this->query,
+                        ]);
+                    }
+
+                    return null;
+                }
+            }
+
+            // Log actual errors for debugging
+            if (function_exists('app') && app() && app()->has('log')) {
+                $errorBody = '';
+                if ($e->hasResponse()) {
+                    $errorBody = $e->getResponse()->getBody()->getContents();
+                }
+
+                app('log')->error('SupabaseClient single query failed', [
+                    'table' => $this->table,
+                    'query' => $this->query,
+                    'error' => $e->getMessage(),
+                    'response_body' => $errorBody,
+                    'status_code' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                ]);
+            }
+
+            return null;
+        }
+    }
+
     private function execute(): mixed
     {
         try {
@@ -297,8 +520,36 @@ class SupabaseQueryBuilder
                 'headers' => $this->headers,
             ]);
 
-            return json_decode($response->getBody()->getContents(), true);
+            $result = json_decode($response->getBody()->getContents(), true);
+
+            // Log query results for debugging
+            if (function_exists('app') && app() && app()->has('log')) {
+                app('log')->debug('SupabaseClient query executed', [
+                    'table' => $this->table,
+                    'query' => $this->query,
+                    'result_count' => is_array($result) ? count($result) : 0,
+                    'status_code' => $response->getStatusCode(),
+                ]);
+            }
+
+            return $result;
         } catch (GuzzleException $e) {
+            // Log the error for debugging
+            if (function_exists('app') && app() && app()->has('log')) {
+                $errorBody = '';
+                if ($e->hasResponse()) {
+                    $errorBody = $e->getResponse()->getBody()->getContents();
+                }
+
+                app('log')->error('SupabaseClient query failed', [
+                    'table' => $this->table,
+                    'query' => $this->query,
+                    'error' => $e->getMessage(),
+                    'response_body' => $errorBody,
+                    'status_code' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                ]);
+            }
+
             return null;
         }
     }

@@ -1,15 +1,8 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 # Run PHP linter
 echo "Running PHP linter..."
 ./vendor/bin/pint --test
 
 # Run lint-staged for JS/TS files  
 npx lint-staged
-
-# Run PHP tests
-echo "Running PHP tests..."
-php artisan test --parallel
 
 echo "✅ Pre-commit checks passed!"

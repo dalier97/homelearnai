@@ -9,3 +9,27 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Global select dropdown height fix */
+@layer components {
+    select {
+        @apply min-h-[42px] py-2 px-3;
+    }
+    
+    /* Ensure consistent height for all form inputs */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    textarea,
+    select {
+        @apply min-h-[42px];
+    }
+    
+    /* Fix for multiline textareas */
+    textarea {
+        @apply min-h-[80px];
+    }
+}

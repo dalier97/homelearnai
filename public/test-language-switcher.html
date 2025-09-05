@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Switcher Test</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Language Switcher Test</h1>
+    
+    <div class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Language Switcher Component</h2>
+        
+        <!-- Language Switcher Component (Standalone Version) -->
+        <div class="relative" x-data="languageSwitcherTest()" x-init="init()">
+            <!-- Current Language Button -->
+            <button @click="open = !open" 
+                    class="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors w-full justify-between"
+                    :class="{ 'text-blue-600 bg-blue-50': open }"
+                    :disabled="loading">
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg" x-text="currentLocaleData.flag"></span>
+                    <span class="font-medium" x-text="currentLocaleData.native"></span>
+                </div>
+                
+                <!-- Loading spinner -->
+                <svg x-show="loading" class="animate-spin h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                
+                <!-- Dropdown arrow -->
+                <svg x-show="!loading" class="w-4 h-4 transition-transform duration-200" 
+                     :class="open ? 'rotate-180' : ''" 
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div x-show="open" 
+                 @click.away="open = false" 
+                 x-transition:enter="transition ease-out duration-100"
+                 x-transition:enter-start="transform opacity-0 scale-95"
+                 x-transition:enter-end="transform opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-75"
+                 x-transition:leave-start="transform opacity-100 scale-100"
+                 x-transition:leave-end="transform opacity-0 scale-95"
+                 class="absolute top-full right-0 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                
+                <template x-for="[localeCode, localeData] in Object.entries(locales)" :key="localeCode">
+                    <button @click="switchLanguage(localeCode)"
+                            class="w-full flex items-center px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                            :class="currentLocale === localeCode ? 'text-blue-600 bg-blue-50' : 'text-gray-700'"
+                            :disabled="loading || currentLocale === localeCode">
+                        <span class="text-lg mr-3" x-text="localeData.flag"></span>
+                        <span class="flex-1 text-left font-medium" x-text="localeData.native"></span>
+                        <!-- Current indicator -->
+                        <svg x-show="currentLocale === localeCode" 
+                             class="w-4 h-4 text-blue-600" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </button>
+                </template>
+            </div>
+        </div>
+        
+        <!-- Test Results -->
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h3 class="font-medium text-gray-800 mb-2">Test Results</h3>
+            <div x-data="{ messages: [] }" id="test-results">
+                <template x-for="message in messages" :key="message.id">
+                    <div class="flex items-center space-x-2 text-sm mb-1" 
+                         :class="message.type === 'success' ? 'text-green-600' : 'text-red-600'">
+                        <span x-text="message.type === 'success' ? '✅' : '❌'"></span>
+                        <span x-text="message.text"></span>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function languageSwitcherTest() {
+            return {
+                open: false,
+                loading: false,
+                currentLocale: 'en',
+                locales: {
+                    'en': {
+                        name: 'English',
+                        native: 'English',
+                        flag: '🇬🇧'
+                    },
+                    'ru': {
+                        name: 'Russian',
+                        native: 'Русский',
+                        flag: '🇷🇺'
+                    }
+                },
+                
+                get currentLocaleData() {
+                    return this.locales[this.currentLocale] || this.locales['en'];
+                },
+                
+                init() {
+                    // Close dropdown on escape key
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape') {
+                            this.open = false;
+                        }
+                    });
+                    
+                    this.addTestMessage('Language switcher initialized', 'success');
+                },
+                
+                async switchLanguage(locale) {
+                    if (this.loading || this.currentLocale === locale) {
+                        return;
+                    }
+                    
+                    this.loading = true;
+                    this.addTestMessage(`Switching to ${this.locales[locale].native}...`, 'info');
+                    
+                    try {
+                        // Simulate API call
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        
+                        // Simulate success
+                        this.currentLocale = locale;
+                        this.addTestMessage(`Successfully switched to ${this.locales[locale].native}`, 'success');
+                        
+                        // Show toast notification
+                        this.showToast(`Language changed to ${this.locales[locale].native}`, 'success');
+                        
+                    } catch (error) {
+                        this.addTestMessage(`Failed to switch language: ${error.message}`, 'error');
+                        this.showToast('Failed to change language', 'error');
+                        
+                    } finally {
+                        this.loading = false;
+                        this.open = false;
+                    }
+                },
+                
+                addTestMessage(message, type = 'info') {
+                    const testResults = document.querySelector('#test-results').__x.$data;
+                    testResults.messages.push({
+                        id: Date.now(),
+                        text: message,
+                        type: type
+                    });
+                },
+                
+                showToast(message, type = 'info') {
+                    // Simple toast implementation
+                    const toast = document.createElement('div');
+                    const colors = {
+                        success: 'bg-green-500',
+                        error: 'bg-red-500',
+                        info: 'bg-blue-500',
+                        warning: 'bg-yellow-500',
+                    };
+                    
+                    toast.className = `fixed bottom-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full z-50`;
+                    toast.textContent = message;
+                    
+                    document.body.appendChild(toast);
+                    
+                    setTimeout(() => toast.classList.remove('translate-x-full'), 10);
+                    setTimeout(() => {
+                        toast.classList.add('translate-x-full');
+                        setTimeout(() => toast.remove(), 300);
+                    }, 3000);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

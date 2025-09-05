@@ -86,6 +86,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Available Locales
+    |--------------------------------------------------------------------------
+    |
+    | This array contains the list of available locales for the application.
+    | These locales should match the User::AVAILABLE_LOCALES constant.
+    |
+    */
+
+    'available_locales' => [
+        'en' => 'English',
+        'ru' => 'Русский',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Encryption Key
     |--------------------------------------------------------------------------
     |

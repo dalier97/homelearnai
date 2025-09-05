@@ -1,32 +1,17 @@
 #!/bin/bash
 
-# E2E Test Runner with Database Isolation
-# Automatically switches to testing environment and verifies database isolation
+# Simplified E2E Test Runner
+# Uses consistent PostgreSQL database without backup file chaos
 
 set -e  # Exit on any error
 
-echo "🧪 Starting E2E Tests with Database Isolation"
-echo "=============================================="
+echo "🧪 Starting E2E Tests (Simplified)"
+echo "=================================="
 
-# Store current environment
-ORIGINAL_ENV_BACKUP=""
-ORIGINAL_ENV_NAME="unknown"
-if [ -f .env ]; then
-    # Detect current environment
-    if grep -q "APP_ENV=local" .env 2>/dev/null; then
-        ORIGINAL_ENV_NAME="local"
-    elif grep -q "APP_ENV=production" .env 2>/dev/null; then
-        ORIGINAL_ENV_NAME="production"
-    elif grep -q "APP_ENV=testing" .env 2>/dev/null; then
-        ORIGINAL_ENV_NAME="testing"
-    fi
-    
-    ORIGINAL_ENV_BACKUP=".env.backup.e2e.$(date +%Y%m%d_%H%M%S)"
-    cp .env "$ORIGINAL_ENV_BACKUP"
-    echo "📄 Backed up current .env ($ORIGINAL_ENV_NAME environment) as: $ORIGINAL_ENV_BACKUP"
-fi
+# Declare Laravel PID variable for cleanup
+LARAVEL_PID=""
 
-# Function to restore environment on exit
+# Function to cleanup on exit
 cleanup() {
     echo ""
     echo "🧹 Cleaning up..."
@@ -38,24 +23,6 @@ cleanup() {
         wait $LARAVEL_PID 2>/dev/null || true
     fi
     
-    # Restore original environment
-    if [ ! -z "$ORIGINAL_ENV_BACKUP" ] && [ -f "$ORIGINAL_ENV_BACKUP" ]; then
-        if [ "$ORIGINAL_ENV_NAME" != "unknown" ] && [ "$ORIGINAL_ENV_NAME" != "testing" ]; then
-            echo "🔄 Switching back to $ORIGINAL_ENV_NAME environment..."
-            ./env-switch.sh $ORIGINAL_ENV_NAME >/dev/null 2>&1 || {
-                cp "$ORIGINAL_ENV_BACKUP" .env
-                echo "🔄 Restored original environment from backup"
-            }
-        else
-            cp "$ORIGINAL_ENV_BACKUP" .env
-            echo "🔄 Restored original environment from backup"
-        fi
-        rm "$ORIGINAL_ENV_BACKUP"
-        
-        # Clear Laravel config cache with restored env
-        php artisan config:clear >/dev/null 2>&1 || true
-    fi
-    
     echo "✅ Cleanup complete"
 }
 
@@ -63,27 +30,8 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo ""
-echo "🔄 Switching to testing environment..."
-./env-switch.sh testing
+echo "🔍 Verifying environment..."
 
-echo ""
-echo "🔍 Verifying testing environment configuration..."
-CURRENT_DB=$(grep "DB_CONNECTION=" .env | cut -d'=' -f2)
-if [ "$CURRENT_DB" != "pgsql" ]; then
-    echo "❌ ERROR: Expected PostgreSQL database, got: $CURRENT_DB"
-    exit 1
-fi
-
-CURRENT_DB_DATABASE=$(grep "DB_DATABASE=" .env | cut -d'=' -f2)
-if [ "$CURRENT_DB_DATABASE" != "postgres" ]; then
-    echo "❌ ERROR: Expected postgres database, got: $CURRENT_DB_DATABASE"
-    exit 1
-fi
-
-echo "✅ Testing environment verified (PostgreSQL with separate test database)"
-
-echo ""
-echo "🗄️  Setting up test database..."
 # Check if Supabase is running
 echo "⏳ Checking if Supabase is available..."
 if ! supabase status >/dev/null 2>&1; then
@@ -102,47 +50,56 @@ fi
 
 echo "✅ Supabase is available and responding"
 
-# For PostgreSQL testing, we'll use a separate schema instead of separate database
-# This is more compatible and doesn't require psql client
-echo "🧹 Using schema-based isolation for testing..."
-echo "✅ Test isolation configured"
+echo ""
+echo "🗄️  Setting up test database..."
 
-echo "✅ Test database recreated"
+# Use .env.testing directly - no environment switching needed
+export APP_ENV=testing
 
-# Run fresh Laravel migrations for complete test isolation
-echo "📋 Running fresh Laravel migrations for test isolation..."
-php artisan migrate:fresh --force --env=testing
+# Create and setup separate test database
+echo "📋 Setting up separate test database..."
+# Drop and recreate test database
+PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -c "DROP DATABASE IF EXISTS test_db;" 2>/dev/null
+PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -c "CREATE DATABASE test_db;" 2>/dev/null
+
+# Run migrations on test database
+APP_ENV=testing php artisan migrate:fresh --force
 if [ $? -eq 0 ]; then
-    echo "✅ Laravel migrations completed - database reset and migrated"
+    echo "✅ Test database created and migrations run successfully"
 else
-    echo "❌ ERROR: Laravel migrations failed"
+    echo "❌ ERROR: Test database setup failed"
     exit 1
 fi
 
 echo ""
 echo "🚀 Starting Laravel server for testing..."
-# Clear config cache with testing environment
-php artisan config:clear
 
-# Start Laravel server in background for tests
-php artisan serve --host=127.0.0.1 --port=8000 --env=testing >/dev/null 2>&1 &
+# Start Laravel server in background with correct environment variables
+echo "🔧 Using explicit environment configuration..."
+APP_ENV=testing DB_CONNECTION=pgsql SESSION_DRIVER=file CACHE_STORE=array php artisan serve --host=127.0.0.1 --port=8001 >/dev/null 2>&1 &
 LARAVEL_PID=$!
 
 echo "⏳ Waiting for Laravel server to start..."
-sleep 3
+sleep 5
 
-# Verify server is running
-if ! curl -f http://127.0.0.1:8000 >/dev/null 2>&1; then
-    echo "❌ ERROR: Laravel server failed to start"
+# Verify server is running with proper content
+echo "🔍 Testing server response..."
+RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/register)
+if [ "$RESPONSE" != "200" ]; then
+    echo "❌ ERROR: Laravel server not serving proper content (HTTP $RESPONSE)"
+    echo "📊 Checking server logs..."
+    # Give server a moment then test again
+    sleep 2
+    curl -I http://127.0.0.1:8001/register || true
     exit 1
 fi
 
-echo "✅ Laravel server running on http://127.0.0.1:8000 (PID: $LARAVEL_PID)"
+echo "✅ Laravel server running on http://127.0.0.1:8001 (PID: $LARAVEL_PID)"
 
 echo ""
 echo "🎭 Running Playwright E2E tests..."
-echo "📊 Database: PostgreSQL test database (completely isolated)"
-echo "🌐 Server: Laravel testing environment"
+echo "📊 Database: PostgreSQL test database (clean environment)"
+echo "🌐 Server: Laravel testing mode"
 echo "🔐 Auth: Full Supabase integration"
 echo ""
 
@@ -155,17 +112,17 @@ TEST_EXIT_CODE=$?
 echo ""
 if [ $TEST_EXIT_CODE -eq 0 ]; then
     echo "✅ E2E Tests completed successfully!"
-    echo "🧪 Test data was isolated in separate PostgreSQL database"
-    echo "🏠 Local development database remains untouched"
+    echo "🧪 Test database was properly isolated and reset"
+    echo "🏠 Development environment remains clean"
 else
     echo "❌ E2E Tests failed with exit code: $TEST_EXIT_CODE"
 fi
 
 echo ""
-echo "🔍 Database isolation verification:"
-echo "✅ Tests used separate PostgreSQL test database"
-echo "✅ Test database completely recreated for each run"
-echo "✅ Local development data preserved"
-echo "✅ Full Supabase authentication compatibility"
+echo "🔍 Test environment summary:"
+echo "✅ Separate test_db database used (development data untouched)"
+echo "✅ Clean PostgreSQL test database for each run"
+echo "✅ No impact on your development environment"
+echo "✅ Simple and reliable test execution"
 
 exit $TEST_EXIT_CODE

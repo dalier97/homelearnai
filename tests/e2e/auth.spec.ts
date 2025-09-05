@@ -1,28 +1,58 @@
 import { test, expect } from '@playwright/test';
+import { ModalHelper, ElementHelper } from './helpers/modal-helpers';
 
 test.describe('Authentication Flow', () => {
+  let modalHelper: ModalHelper;
+  let elementHelper: ElementHelper;
+
   test.beforeEach(async ({ page }) => {
-    // Start fresh for each test
+    modalHelper = new ModalHelper(page);
+    elementHelper = new ElementHelper(page);
+    
+    // Start fresh for each test and wait for page to be ready
     await page.goto('/');
+    await elementHelper.waitForPageReady();
   });
 
   test('should display registration form', async ({ page }) => {
     await page.goto('/register');
+    await elementHelper.waitForPageReady();
     
-    await expect(page.locator('h2')).toContainText('Create your account');
+    // Verify page title and form elements
+    await expect(page.locator('h2')).toContainText('Create your account', { timeout: 10000 });
+    
+    // Check all form fields are present and interactable
+    await elementHelper.waitForInteraction('input[name="name"]');
     await expect(page.locator('input[name="name"]')).toBeVisible();
+    
+    await elementHelper.waitForInteraction('input[name="email"]');  
     await expect(page.locator('input[name="email"]')).toBeVisible();
+    
+    await elementHelper.waitForInteraction('input[name="password"]');
     await expect(page.locator('input[name="password"]')).toBeVisible();
+    
+    await elementHelper.waitForInteraction('input[name="password_confirmation"]');
     await expect(page.locator('input[name="password_confirmation"]')).toBeVisible();
+    
+    await elementHelper.waitForInteraction('button[type="submit"]');
     await expect(page.locator('button[type="submit"]')).toContainText('Create account');
   });
 
   test('should display login form', async ({ page }) => {
     await page.goto('/login');
+    await elementHelper.waitForPageReady();
     
-    await expect(page.locator('h2')).toContainText('Sign in to TaskMaster');
+    // Verify page title and form elements
+    await expect(page.locator('h2')).toContainText('Sign in to Homeschool Hub', { timeout: 10000 });
+    
+    // Check form fields are present and interactable
+    await elementHelper.waitForInteraction('input[name="email"]');
     await expect(page.locator('input[name="email"]')).toBeVisible();
+    
+    await elementHelper.waitForInteraction('input[name="password"]');
     await expect(page.locator('input[name="password"]')).toBeVisible();
+    
+    await elementHelper.waitForInteraction('button[type="submit"]');
     await expect(page.locator('button[type="submit"]')).toContainText('Sign in');
   });
 
@@ -34,43 +64,43 @@ test.describe('Authentication Flow', () => {
     };
 
     await page.goto('/register');
+    await elementHelper.waitForPageReady();
     
-    // Fill registration form
-    await page.fill('input[name="name"]', testUser.name);
-    await page.fill('input[name="email"]', testUser.email);
-    await page.fill('input[name="password"]', testUser.password);
-    await page.fill('input[name="password_confirmation"]', testUser.password);
+    // Fill registration form using helper methods
+    await elementHelper.safeFill('input[name="name"]', testUser.name);
+    await elementHelper.safeFill('input[name="email"]', testUser.email);
+    await elementHelper.safeFill('input[name="password"]', testUser.password);
+    await elementHelper.safeFill('input[name="password_confirmation"]', testUser.password);
     
-    // Submit registration
-    await page.click('button[type="submit"]');
+    // Submit registration with safe click
+    await elementHelper.safeClick('button[type="submit"]');
     
     // Wait for navigation and check result
-    await page.waitForLoadState('networkidle');
+    await elementHelper.waitForPageReady();
     
-    // Check if we redirected to dashboard OR stayed on register with success message
     const currentUrl = page.url();
     if (currentUrl.includes('/dashboard')) {
       // Direct redirect to dashboard (email confirmation disabled)
-      await expect(page.locator('h1')).toContainText('Dashboard');
-      await expect(page.locator('body')).toContainText(testUser.name);
+      await expect(page.locator('h1')).toContainText('Homeschool Hub', { timeout: 15000 });
+      await expect(page.locator('body')).toContainText('Parent Dashboard');
     } else if (currentUrl.includes('/register')) {
-      // Stayed on register page - check for success message or validation
-      // This might happen with email confirmation enabled or validation errors
+      // Check for success/error messages
       const hasSuccessMessage = await page.locator('text=success').count() > 0;
       const hasErrorMessage = await page.locator('text=error').count() > 0 || 
                               await page.locator('.text-red-500').count() > 0;
       
       if (!hasSuccessMessage && !hasErrorMessage) {
-        // No clear indication, let's check if we can login with these credentials
+        // Try to login with the credentials to verify registration worked
         await page.goto('/login');
-        await page.fill('input[name="email"]', testUser.email);
-        await page.fill('input[name="password"]', testUser.password);
-        await page.click('button[type="submit"]');
+        await elementHelper.waitForPageReady();
         
-        // If login succeeds, registration worked
-        await page.waitForLoadState('networkidle');
+        await elementHelper.safeFill('input[name="email"]', testUser.email);
+        await elementHelper.safeFill('input[name="password"]', testUser.password);
+        await elementHelper.safeClick('button[type="submit"]');
+        
+        await elementHelper.waitForPageReady();
         if (page.url().includes('/dashboard')) {
-          await expect(page.locator('h1')).toContainText('Dashboard');
+          await expect(page.locator('h1')).toContainText('Homeschool Hub', { timeout: 15000 });
         }
       }
     }
@@ -78,26 +108,30 @@ test.describe('Authentication Flow', () => {
 
   test('should handle registration validation errors', async ({ page }) => {
     await page.goto('/register');
+    await elementHelper.waitForPageReady();
     
-    // Try to submit with empty fields
-    await page.click('button[type="submit"]');
+    // Try to submit with empty fields using safe click
+    await elementHelper.safeClick('button[type="submit"]');
     
-    // Should stay on registration page and show errors
+    // Should stay on registration page (Laravel validation should prevent submission)
     await expect(page).toHaveURL('/register');
-    // Laravel validation should prevent empty submission
   });
 
   test('should navigate between auth pages', async ({ page }) => {
     // Start at registration
     await page.goto('/register');
-    await expect(page.locator('h2')).toContainText('Create your account');
+    await elementHelper.waitForPageReady();
     
-    // Check if there's a login link
+    await expect(page.locator('h2')).toContainText('Create your account', { timeout: 10000 });
+    
+    // Check if there's a login link and navigate
     const loginLink = page.locator('a[href*="/login"]');
     if (await loginLink.count() > 0) {
-      await loginLink.click();
+      await elementHelper.safeClick('a[href*="/login"]');
+      await elementHelper.waitForPageReady();
       await expect(page).toHaveURL('/login');
-      await expect(page.locator('h2')).toContainText('Sign in to TaskMaster');
+      
+      await expect(page.locator('h2')).toContainText('Sign in to Homeschool Hub', { timeout: 10000 });
     }
   });
 });

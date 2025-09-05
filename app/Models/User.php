@@ -13,6 +13,38 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * Available locales
+     */
+    public const AVAILABLE_LOCALES = [
+        'en' => 'English',
+        'ru' => 'Русский',
+    ];
+
+    /**
+     * Available timezones (common ones)
+     */
+    public const COMMON_TIMEZONES = [
+        'UTC' => 'UTC',
+        'America/New_York' => 'Eastern Time',
+        'America/Chicago' => 'Central Time',
+        'America/Denver' => 'Mountain Time',
+        'America/Los_Angeles' => 'Pacific Time',
+        'Europe/London' => 'London',
+        'Europe/Moscow' => 'Moscow',
+        'Asia/Tokyo' => 'Tokyo',
+    ];
+
+    /**
+     * Available date formats
+     */
+    public const DATE_FORMATS = [
+        'Y-m-d' => 'YYYY-MM-DD',
+        'd/m/Y' => 'DD/MM/YYYY',
+        'm/d/Y' => 'MM/DD/YYYY',
+        'd.m.Y' => 'DD.MM.YYYY',
+    ];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -21,6 +53,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'locale',
+        'timezone',
+        'date_format',
     ];
 
     /**

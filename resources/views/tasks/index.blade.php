@@ -19,7 +19,7 @@
       <!-- Search -->
       <input
         type="text"
-        placeholder="Search tasks..."
+        placeholder="{{ __('search_tasks_placeholder') }}"
         name="search"
         hx-get="{{ route('tasks.index') }}"
         hx-target="#task-list"

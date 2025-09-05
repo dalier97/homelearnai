@@ -32,7 +32,7 @@
                     <!-- Due Date -->
                     @if($task->due_date)
                         <span class="text-gray-500 {{ $task->isOverdue() ? 'text-red-600 font-semibold' : '' }}">
-                            Due: {{ $task->due_date->format('M d, Y') }}
+                            Due: {{ $task->due_date->translatedFormat('M d, Y') }}
                         </span>
                     @endif
                     

@@ -11,10 +11,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Disable CSRF protection in testing environment for E2E tests
-        if ($_ENV['APP_ENV'] === 'testing') {
-            $middleware->remove(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
-        }
+        // Replace default CSRF middleware with our custom one that excludes locale routes
+        $middleware->replace(
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+            \App\Http\Middleware\VerifyCsrfToken::class
+        );
+
+        // Register SetLocale middleware globally
+        // It must run AFTER session middleware to access session data
+        $middleware->web(
+            append: [
+                \App\Http\Middleware\SetLocale::class,
+            ]
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
