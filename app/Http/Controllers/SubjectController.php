@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Child;
 use App\Models\Subject;
 use App\Services\SupabaseClient;
 use Illuminate\Http\Request;
@@ -27,14 +28,35 @@ class SubjectController extends Controller
                 return redirect()->route('login')->with('error', 'Please log in to continue.');
             }
 
-            $subjects = Subject::forUser($userId, $this->supabase);
-            $showQuickStart = $subjects->isEmpty(); // Add this flag
+            // Get all children for this user
+            $children = Child::forUser($userId, $this->supabase);
 
-            if ($request->expectsJson() || $request->header('HX-Request')) {
-                return view('subjects.partials.subjects-list', compact('subjects', 'showQuickStart'));
+            // Determine selected child
+            $selectedChildId = $request->get('child_id');
+            $selectedChild = null;
+
+            if ($selectedChildId) {
+                $selectedChild = $children->firstWhere('id', (int) $selectedChildId);
+            } elseif ($children->count() === 1) {
+                // Auto-select if only one child
+                $selectedChild = $children->first();
+                $selectedChildId = $selectedChild->id;
             }
 
-            return view('subjects.index', compact('subjects', 'showQuickStart'));
+            // Get subjects for the selected child or show empty state
+            if ($selectedChild) {
+                $subjects = Subject::forChild($selectedChild->id, $this->supabase);
+            } else {
+                $subjects = collect([]);
+            }
+
+            $showQuickStart = $selectedChild && $subjects->isEmpty();
+
+            if ($request->expectsJson() || $request->header('HX-Request')) {
+                return view('subjects.partials.subjects-list', compact('subjects', 'showQuickStart', 'selectedChild'));
+            }
+
+            return view('subjects.index', compact('subjects', 'showQuickStart', 'children', 'selectedChild'));
         } catch (\Exception $e) {
             Log::error('Error fetching subjects: '.$e->getMessage());
 
@@ -52,12 +74,13 @@ class SubjectController extends Controller
     public function create(Request $request)
     {
         $colors = Subject::getColorOptions();
+        $childId = $request->get('child_id');
 
         if ($request->header('HX-Request')) {
-            return view('subjects.partials.create-form', compact('colors'));
+            return view('subjects.partials.create-form', compact('colors', 'childId'));
         }
 
-        return view('subjects.create', compact('colors'));
+        return view('subjects.create', compact('colors', 'childId'));
     }
 
     /**
@@ -74,6 +97,7 @@ class SubjectController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'color' => 'required|string',
+                'child_id' => 'required|integer|exists:children,id',
             ]);
 
             // Validate color is in allowed options
@@ -82,18 +106,27 @@ class SubjectController extends Controller
                 return back()->withErrors(['color' => 'Invalid color selected.']);
             }
 
+            // Verify child belongs to the current user
+            $child = Child::find($validated['child_id'], $this->supabase);
+            if (! $child || $child->user_id !== $userId) {
+                return response('Child not found or access denied', 403);
+            }
+
             $subject = new Subject([
                 'name' => $validated['name'],
                 'color' => $validated['color'],
                 'user_id' => $userId,
+                'child_id' => $validated['child_id'],
             ]);
 
             if ($subject->save($this->supabase)) {
                 if ($request->header('HX-Request')) {
-                    // Return updated subjects list
-                    $subjects = Subject::forUser($userId, $this->supabase);
+                    // Return updated subjects list for the specific child
+                    $subjects = Subject::forChild($validated['child_id'], $this->supabase);
+                    $showQuickStart = false;
+                    $selectedChild = $child;
 
-                    return view('subjects.partials.subjects-list', compact('subjects'));
+                    return view('subjects.partials.subjects-list', compact('subjects', 'showQuickStart', 'selectedChild'));
                 }
 
                 return redirect()->route('subjects.index')->with('success', 'Subject created successfully.');
@@ -287,11 +320,23 @@ class SubjectController extends Controller
             return response('Unauthorized', 401);
         }
 
+        // Get child_id from request
+        $childId = $request->get('child_id');
+        if (! $childId) {
+            return response('Child ID is required', 400);
+        }
+
+        // Verify child belongs to the current user
+        $child = Child::find($childId, $this->supabase);
+        if (! $child || $child->user_id !== $userId) {
+            return response('Child not found or access denied', 403);
+        }
+
         // Get subject templates for all grade levels
         $templates = $this->getSubjectTemplates();
 
         if ($request->header('HX-Request')) {
-            return view('subjects.partials.quick-start-modal', compact('templates'));
+            return view('subjects.partials.quick-start-modal', compact('templates', 'child'));
         }
 
         return response('This endpoint only supports HTMX requests', 400);
@@ -314,7 +359,14 @@ class SubjectController extends Controller
                 'subjects.*' => 'string|max:255',
                 'custom_subjects' => 'nullable|array',
                 'custom_subjects.*' => 'nullable|string|max:255',
+                'child_id' => 'required|integer|exists:children,id',
             ]);
+
+            // Verify child belongs to the current user
+            $child = Child::find($validated['child_id'], $this->supabase);
+            if (! $child || $child->user_id !== $userId) {
+                return response('Child not found or access denied', 403);
+            }
 
             $createdCount = 0;
             $colorOptions = array_keys(Subject::getColorOptions());
@@ -326,6 +378,7 @@ class SubjectController extends Controller
                     'name' => $subjectName,
                     'color' => $this->getSubjectColor($subjectName, $colorOptions, $colorIndex),
                     'user_id' => $userId,
+                    'child_id' => $validated['child_id'],
                 ]);
 
                 if ($subject->save($this->supabase)) {
@@ -342,6 +395,7 @@ class SubjectController extends Controller
                             'name' => trim($customName),
                             'color' => $colorOptions[$colorIndex % count($colorOptions)],
                             'user_id' => $userId,
+                            'child_id' => $validated['child_id'],
                         ]);
 
                         if ($subject->save($this->supabase)) {
@@ -353,11 +407,12 @@ class SubjectController extends Controller
             }
 
             if ($request->header('HX-Request')) {
-                // Return updated subjects list
-                $subjects = Subject::forUser($userId, $this->supabase);
+                // Return updated subjects list for the specific child
+                $subjects = Subject::forChild($validated['child_id'], $this->supabase);
                 $showQuickStart = false;
+                $selectedChild = $child;
 
-                return view('subjects.partials.subjects-list', compact('subjects', 'showQuickStart'))
+                return view('subjects.partials.subjects-list', compact('subjects', 'showQuickStart', 'selectedChild'))
                     ->with('success', __(':count subjects created successfully', ['count' => $createdCount]));
             }
 

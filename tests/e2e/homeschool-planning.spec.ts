@@ -1,15 +1,21 @@
 import { test, expect } from '@playwright/test';
 import { ModalHelper, ElementHelper } from './helpers/modal-helpers';
+import { KidsModeHelper } from './helpers/kids-mode-helpers';
 
 test.describe('Homeschool Planning Workflow', () => {
   let testUser: { name: string; email: string; password: string };
   let modalHelper: ModalHelper;
   let elementHelper: ElementHelper;
+  let kidsModeHelper: KidsModeHelper;
   
   test.beforeEach(async ({ page }) => {
     // Initialize helpers
     modalHelper = new ModalHelper(page);
     elementHelper = new ElementHelper(page);
+    kidsModeHelper = new KidsModeHelper(page);
+    
+    // Ensure we're not in kids mode at start of each test
+    await kidsModeHelper.resetKidsMode();
     
     // Create a unique test user for this session
     testUser = {
@@ -693,5 +699,60 @@ test.describe('Homeschool Planning Workflow', () => {
     }
     
     console.log('Session management and data persistence test completed successfully');
+  });
+
+  test('planning workflow with kids mode restrictions', async ({ page }) => {
+    // Initialize helpers for this test
+    const modalHelper = new ModalHelper(page);
+    const elementHelper = new ElementHelper(page);
+    
+    // Create a child first
+    await page.goto('/children');
+    await elementHelper.safeClick('button:has-text("Add Child")');
+    await modalHelper.waitForModal('child-form-modal');
+    await modalHelper.fillModalField('child-form-modal', 'name', 'Planning Kid');
+    await page.selectOption('#child-form-modal select[name="age"]', '9');
+    await modalHelper.submitModalForm('child-form-modal');
+    
+    // Set up PIN for kids mode
+    await kidsModeHelper.setupPin('1234');
+    
+    // 1. Verify planning board is accessible in parent mode
+    await page.goto('/planning');
+    await expect(page.locator('main h1')).toContainText('Topic Planning Board');
+    
+    // 2. Enter kids mode and verify planning board is blocked
+    await kidsModeHelper.forceKidsMode('1', 'Planning Kid');
+    
+    // Try to access planning board - should be blocked
+    await page.goto('/planning');
+    
+    // Should be redirected to child today view
+    const url = page.url();
+    expect(url).toMatch(/(dashboard\/child|child-today)/);
+    
+    // 3. Verify other planning-related routes are also blocked
+    const blockedPlanningRoutes = [
+      '/subjects/create',
+      '/subjects/1/edit',
+      '/calendar/import',
+    ];
+    
+    for (const route of blockedPlanningRoutes) {
+      await page.goto(route);
+      const redirectedUrl = page.url();
+      expect(redirectedUrl).not.toContain(route);
+      expect(redirectedUrl).toMatch(/(dashboard\/child|child-today)/);
+    }
+    
+    // 4. Exit kids mode and verify planning is accessible again
+    await page.goto('/kids-mode/exit');
+    await kidsModeHelper.enterPinViaKeypad('1234');
+    
+    // Should be able to access planning board again
+    await page.goto('/planning');
+    await expect(page.locator('main h1')).toContainText('Topic Planning Board');
+    
+    console.log('Kids mode planning restrictions test completed successfully');
   });
 });

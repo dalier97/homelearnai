@@ -31,6 +31,9 @@
                     class="space-y-4"
                 >
                     @csrf
+                    @if(isset($childId) && $childId)
+                        <input type="hidden" name="child_id" value="{{ $childId }}">
+                    @endif
                     
                     <!-- Subject Name -->
                     <div>

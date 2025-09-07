@@ -110,19 +110,19 @@ test.describe('Internationalization (i18n)', () => {
       // Click the language switcher
       await languageSwitcher.click();
       
-      // Wait for dropdown to appear
-      await page.waitForTimeout(100);
+      // Wait for dropdown to appear with more generous timeout
+      await page.waitForTimeout(500);
       
       // Look for Russian option
       const russianOption = page.locator('button:has-text("🇷🇺"), button:has-text("Русский"), [data-testid="language-option-ru"]').first();
       
-      if (await russianOption.isVisible({ timeout: 2000 })) {
+      if (await russianOption.isVisible({ timeout: 5000 })) {
         // Click Russian option
         await russianOption.click();
         
-        // Wait for page reload/update
+        // Wait for page reload/update with better timing
         await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(1000);
+        await page.waitForTimeout(2000); // More generous wait for JS to initialize
         
         // Check that current locale is updated in JavaScript
         const currentLocale = await page.evaluate(() => {

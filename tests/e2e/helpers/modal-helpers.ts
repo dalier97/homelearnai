@@ -14,12 +14,12 @@ export class ModalHelper {
   async waitForModal(testId: string, timeout: number = 10000) {
     const modal = this.page.getByTestId(testId);
     
-    // Wait for modal to be visible
-    await modal.waitFor({ state: 'visible', timeout });
+    // For HTMX-loaded modals, wait for content to be loaded first
+    await this.page.waitForTimeout(1000);
     
-    // Wait for modal content to be ready
+    // Wait for modal content to be ready (the actual visible modal)
     const modalContent = modal.getByTestId('modal-content');
-    await modalContent.waitFor({ state: 'visible', timeout: 5000 });
+    await modalContent.waitFor({ state: 'visible', timeout });
     
     // Small delay to ensure all animations and transitions complete
     await this.page.waitForTimeout(300);
@@ -64,13 +64,57 @@ export class ModalHelper {
     await field.waitFor({ state: 'visible', timeout });
     await field.waitFor({ state: 'attached' });
     
-    // Clear and fill
-    await field.clear();
-    await field.fill(value);
+    // Check if this is a select element
+    const tagName = await field.evaluate(el => el.tagName.toLowerCase());
     
-    // Verify the value was set
-    if (value) {
-      await expect(field).toHaveValue(value);
+    if (tagName === 'select') {
+      // Handle select dropdown - don't clear, just select the option
+      await field.selectOption(value);
+    } else {
+      // Handle input/textarea - clear and fill
+      await field.clear();
+      await field.fill(value);
+      
+      // Verify the value was set
+      if (value) {
+        await expect(field).toHaveValue(value);
+      }
+    }
+  }
+
+  /**
+   * Fill multiple form fields in a modal
+   */
+  async fillModalForm(formData: Record<string, string>, testId?: string, timeout: number = 5000) {
+    let modal = this.page;
+    
+    if (testId) {
+      modal = this.page.getByTestId(testId);
+    }
+    
+    for (const [fieldName, value] of Object.entries(formData)) {
+      const field = modal.locator(`input[name="${fieldName}"], select[name="${fieldName}"], textarea[name="${fieldName}"]`);
+      
+      // Wait for field to be ready
+      await field.waitFor({ state: 'visible', timeout });
+      await field.waitFor({ state: 'attached' });
+      
+      // Check if this is a select element
+      const tagName = await field.evaluate(el => el.tagName.toLowerCase());
+      
+      if (tagName === 'select') {
+        // Handle select dropdown - don't clear, just select the option
+        await field.selectOption(value);
+      } else {
+        // Handle input/textarea - clear and fill
+        await field.clear();
+        await field.fill(value);
+        
+        // Verify the value was set
+        if (value) {
+          await expect(field).toHaveValue(value);
+        }
+      }
     }
   }
 
@@ -103,8 +147,15 @@ export class ModalHelper {
       }
     }
     
-    // Wait for modal to be fully removed from DOM
-    await modal.waitFor({ state: 'detached', timeout });
+    // For HTMX modals, the container stays but content gets removed
+    // Wait for modal content to be hidden/removed
+    const modalContent = modal.getByTestId('modal-content');
+    try {
+      await modalContent.waitFor({ state: 'detached', timeout: 5000 });
+    } catch {
+      // If modal content is not detached, check if it's hidden
+      await modalContent.waitFor({ state: 'hidden', timeout: 5000 });
+    }
   }
 
   /**

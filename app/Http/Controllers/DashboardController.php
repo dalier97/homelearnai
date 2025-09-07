@@ -32,6 +32,9 @@ class DashboardController extends Controller
             $this->supabase->setUserToken($accessToken);
         }
 
+        // Check if PIN is set up for kids mode
+        $pinIsSet = $this->checkKidsModePinStatus($userId);
+
         // Try to get cached dashboard data
         $cacheKey = "parent_dashboard_{$userId}";
         $cachedData = $this->cache->cacheExpensiveQuery($cacheKey, function () use ($userId) {
@@ -72,6 +75,9 @@ class DashboardController extends Controller
                 'week_start' => Carbon::now()->startOfWeek(),
             ];
         }, 300); // 5-minute cache
+
+        // Add PIN status to the cached data
+        $cachedData['pin_is_set'] = $pinIsSet;
 
         return view('dashboard.parent', $cachedData);
     }
@@ -442,5 +448,27 @@ class DashboardController extends Controller
             'message' => 'Independence level updated',
             'child' => $child->toArray(),
         ]);
+    }
+
+    /**
+     * Check if kids mode PIN is set up for the user
+     */
+    private function checkKidsModePinStatus(string $userId): bool
+    {
+        try {
+            $preferences = $this->supabase->from('user_preferences')
+                ->select('kids_mode_pin')
+                ->eq('user_id', $userId)
+                ->single();
+
+            return ! empty($preferences['kids_mode_pin']);
+        } catch (\Exception $e) {
+            \Log::error('Failed to check kids mode PIN status', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 }

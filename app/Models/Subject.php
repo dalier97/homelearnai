@@ -16,6 +16,8 @@ class Subject
 
     public string $user_id;
 
+    public ?int $child_id = null;
+
     public ?Carbon $created_at = null;
 
     public ?Carbon $updated_at = null;
@@ -56,12 +58,18 @@ class Subject
         return self::where('user_id', $userId, $supabase);
     }
 
+    public static function forChild(int $childId, SupabaseClient $supabase): Collection
+    {
+        return self::where('child_id', $childId, $supabase);
+    }
+
     public function save(SupabaseClient $supabase): bool
     {
         $data = [
             'name' => $this->name,
             'color' => $this->color,
             'user_id' => $this->user_id,
+            'child_id' => $this->child_id,
         ];
 
         if ($this->id) {
@@ -150,6 +158,7 @@ class Subject
             'name' => $this->name,
             'color' => $this->color,
             'user_id' => $this->user_id,
+            'child_id' => $this->child_id,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

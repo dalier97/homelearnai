@@ -24,6 +24,11 @@
             <!-- Modal Body -->
             <div class="px-6 py-4">
                 <p class="mb-6 text-sm text-gray-600">{{ __('quick_start_description') }}</p>
+                <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p class="text-sm text-blue-700">
+                        {{ __('creating_subjects_for') }} <strong>{{ $child->name }}</strong> ({{ __('age') }} {{ $child->age }})
+                    </p>
+                </div>
 
                 <form 
                     hx-post="{{ route('subjects.quick-start.store') }}"
@@ -33,6 +38,7 @@
                     class="space-y-6"
                 >
                     @csrf
+                    <input type="hidden" name="child_id" value="{{ $child->id }}">
 
                     <!-- Grade Level Selection -->
                     <div>

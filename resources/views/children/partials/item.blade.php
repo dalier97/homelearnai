@@ -28,13 +28,14 @@
 
         <!-- Action Buttons -->
         <div class="flex items-center space-x-2">
-            <!-- View Calendar -->
+            <!-- View Schedule -->
             <a href="{{ route('children.show', $child->id) }}" 
-               class="bg-green-100 text-green-700 p-2 rounded-lg hover:bg-green-200 transition"
+               class="bg-green-100 text-green-700 px-3 py-2 rounded-lg hover:bg-green-200 transition flex items-center space-x-1"
                title="{{ __('view_schedule') }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
+                <span class="text-sm">View Schedule</span>
             </a>
 
             <!-- Edit -->

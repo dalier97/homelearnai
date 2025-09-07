@@ -45,8 +45,8 @@ class AuthController extends Controller
             // Store user info in session
             Session::put('user_id', $result['user']['id']);
 
-            // Migrate pre-auth locale cookie to database
-            $this->migratePreAuthLocale($request, $result['user']['id']);
+            // Migrate pre-auth and post-logout locale cookies to database
+            $this->migrateLocaleToDatabase($request, $result['user']['id']);
 
             // Ensure user has locale preference in database
             $this->ensureUserLocalePreference($request, $result['user']['id'], $result['access_token']);
@@ -140,8 +140,8 @@ class AuthController extends Controller
             Session::put('user', $result['user']);
             Session::put('user_id', $result['user']['id']);
 
-            // Migrate pre-auth locale cookie to database
-            $this->migratePreAuthLocale($request, $result['user']['id']);
+            // Migrate pre-auth and post-logout locale cookies to database
+            $this->migrateLocaleToDatabase($request, $result['user']['id']);
 
             // Ensure user has locale preference in database
             $this->ensureUserLocalePreference($request, $result['user']['id'], $result['access_token']);
@@ -195,11 +195,22 @@ class AuthController extends Controller
 
     public function logout()
     {
+        // Preserve user's locale preference before clearing session
+        $currentLocale = session('locale', config('app.locale', 'en'));
+
         Session::forget('supabase_token');
         Session::forget('user');
+        Session::forget('user_id');
         Auth::logout();
 
-        return redirect()->route('login');
+        // Restore locale in session for seamless experience
+        Session::put('locale', $currentLocale);
+
+        // Also set a cookie backup for extra reliability
+        $response = redirect()->route('login');
+        $response->cookie('post_logout_locale', $currentLocale, 60 * 24 * 7); // 7 days
+
+        return $response;
     }
 
     public function confirmEmail(Request $request)
@@ -212,17 +223,24 @@ class AuthController extends Controller
     }
 
     /**
-     * Migrate pre-authentication locale cookie to user database preference
+     * Migrate pre-authentication and post-logout locale cookies to user database preference
      */
-    private function migratePreAuthLocale(Request $request, string $userId): void
+    private function migrateLocaleToDatabase(Request $request, string $userId): void
     {
         try {
-            // Check if user has pre-auth locale cookie
-            if (! $request->hasCookie('pre_auth_locale')) {
-                return;
+            $cookieLocale = null;
+
+            // Check for post-logout locale cookie first (most recent preference)
+            if ($request->hasCookie('post_logout_locale')) {
+                $cookieLocale = $request->cookie('post_logout_locale');
             }
 
-            $cookieLocale = $request->cookie('pre_auth_locale');
+            // Fallback to pre-auth locale cookie if no post-logout cookie
+            if (empty($cookieLocale) && $request->hasCookie('pre_auth_locale')) {
+                $cookieLocale = $request->cookie('pre_auth_locale');
+            }
+
+            // No relevant cookie found
             if (empty($cookieLocale) || ! in_array($cookieLocale, ['en', 'ru'])) {
                 return;
             }
@@ -270,14 +288,16 @@ class AuthController extends Controller
                 // Update session locale
                 Session::put('locale', $cookieLocale);
 
-                \Log::info('Successfully migrated pre-auth locale to database', [
+                \Log::info('Successfully migrated locale cookie to database', [
                     'user_id' => $userId,
                     'locale' => $cookieLocale,
                     'action' => $existing ? 'updated' : 'created',
+                    'source' => $request->hasCookie('post_logout_locale') ? 'post_logout_cookie' : 'pre_auth_cookie',
                 ]);
 
-                // Clear the pre-auth cookie by setting it to expire
+                // Clear the cookies by setting them to expire
                 \Cookie::queue(\Cookie::forget('pre_auth_locale'));
+                \Cookie::queue(\Cookie::forget('post_logout_locale'));
 
             } catch (\Exception $dbError) {
                 \Log::error('Failed to save migrated locale to database', [

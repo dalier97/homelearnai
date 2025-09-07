@@ -70,18 +70,24 @@
             <div class="mt-6 space-y-3">
                 <!-- Quick Start Button (Primary) -->
                 <div>
-                    <button 
-                        type="button"
-                        hx-get="{{ route('subjects.quick-start.form') }}"
-                        hx-target="#quick-start-modal"
-                        hx-swap="innerHTML"
-                        class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                        {{ __('quick_start_subjects') }}
-                    </button>
-                    <p class="mt-2 text-xs text-gray-500">{{ __('quick_start_description') }}</p>
+                    @if(isset($selectedChild) && $selectedChild)
+                        <button 
+                            type="button"
+                            hx-get="{{ route('subjects.quick-start.form') }}?child_id={{ $selectedChild->id }}"
+                            hx-target="#quick-start-modal"
+                            hx-swap="innerHTML"
+                            class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            {{ __('quick_start_subjects') }}
+                        </button>
+                        <p class="mt-2 text-xs text-gray-500">{{ __('quick_start_description') }}</p>
+                    @else
+                        <div class="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p class="text-sm text-yellow-700">{{ __('please_select_child_to_continue') }}</p>
+                        </div>
+                    @endif
                 </div>
                 
                 <!-- OR Divider -->
@@ -96,16 +102,18 @@
                 
                 <!-- Manual Create Button (Secondary) -->
                 <div>
-                    <button 
-                        type="button"
-                        hx-get="{{ route('subjects.create') }}"
-                        hx-target="#subject-modal"
-                        class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                        </svg>
-                        {{ __('skip_quick_start') }}
-                    </button>
+                    @if(isset($selectedChild) && $selectedChild)
+                        <button 
+                            type="button"
+                            hx-get="{{ route('subjects.create') }}?child_id={{ $selectedChild->id }}"
+                            hx-target="#subject-modal"
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                            {{ __('skip_quick_start') }}
+                        </button>
+                    @endif
                 </div>
             </div>
         @else

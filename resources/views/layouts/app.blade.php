@@ -61,6 +61,8 @@
 
             <!-- Navigation Menu -->
             @if(session('user_id'))
+            @if(!session('kids_mode_active'))
+            {{-- Parent Navigation - Hidden in Kids Mode --}}
             <nav class="hidden md:flex space-x-6">
               <!-- Parent Dashboard -->
               <a href="{{ route('dashboard.parent') }}" 
@@ -168,6 +170,32 @@
                 <span>{{ __('Calendar') }}</span>
               </a>
             </nav>
+            @else
+            {{-- Child Navigation - Simplified navigation for kids mode --}}
+            <nav class="hidden md:flex space-x-6">
+              @php $childId = session('kids_mode_child_id'); @endphp
+              @if($childId)
+                <!-- Child Today View -->
+                <a href="{{ route('dashboard.child-today', $childId) }}" 
+                   class="flex items-center space-x-1 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md {{ request()->routeIs('dashboard.child-today') ? 'text-blue-600 bg-blue-50' : '' }}">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                  <span>{{ __('My Today') }}</span>
+                </a>
+
+                <!-- Reviews (Read-only for child) -->
+                <a href="{{ route('reviews.session', $childId) }}" 
+                   class="flex items-center space-x-1 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md {{ request()->routeIs('reviews.*') ? 'text-blue-600 bg-blue-50' : '' }}">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                  </svg>
+                  <span>{{ __('My Reviews') }}</span>
+                </a>
+              @endif
+            </nav>
+            @endif
             @endif
           </div>
 
@@ -176,11 +204,63 @@
             @include('components.language-switcher')
             
             @if(session('user_id'))
-            <span class="text-gray-700">{{ __('Welcome, :email', ['email' => session('user')['email'] ?? __('User')]) }}</span>
-            <form method="POST" action="{{ route('logout') }}" class="inline">
-              @csrf
-              <button type="submit" class="text-sm text-red-600 hover:text-red-800">{{ __('Logout') }}</button>
-            </form>
+            <!-- User Dropdown -->
+            <div class="relative" x-data="{ open: false }">
+              <button @click="open = !open" 
+                      class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                </svg>
+                <span class="text-sm">{{ session('user')['email'] ?? __('User') }}</span>
+                <svg class="w-4 h-4 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                </svg>
+              </button>
+
+              <div x-show="open" 
+                   @click.outside="open = false"
+                   x-transition:enter="transition ease-out duration-100"
+                   x-transition:enter-start="transform opacity-0 scale-95"
+                   x-transition:enter-end="transform opacity-100 scale-100"
+                   x-transition:leave="transition ease-in duration-75"
+                   x-transition:leave-start="transform opacity-100 scale-100"
+                   x-transition:leave-end="transform opacity-0 scale-95"
+                   class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                <div class="py-1">
+                  <!-- User Info -->
+                  <div class="px-4 py-2 border-b border-gray-100">
+                    <p class="text-sm text-gray-500">{{ __('Signed in as') }}</p>
+                    <p class="text-sm font-medium text-gray-900 truncate">{{ session('user')['email'] ?? __('User') }}</p>
+                  </div>
+
+                  <!-- Kids Mode Settings - Only show when NOT in kids mode -->
+                  @if(!session('kids_mode_active'))
+                  <a href="{{ route('kids-mode.settings') }}" 
+                     class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-1a1 1 0 00-1-1H7a1 1 0 00-1 1v1a2 2 0 002 2zM9 12l2 2 4-4m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ __('kids_mode_settings') }}
+                  </a>
+                  @endif
+
+                  <!-- Divider -->
+                  <div class="border-t border-gray-100"></div>
+
+                  <!-- Logout -->
+                  <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" 
+                            class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700">
+                      <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                      </svg>
+                      {{ __('logout') }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
             @endif
           </div>
         </div>
@@ -208,6 +288,9 @@
         {{ __('Loading...') }}
       </div>
     </div>
+
+    <!-- Kids Mode Indicator -->
+    <x-kids-mode-indicator />
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">@yield('content')</main>

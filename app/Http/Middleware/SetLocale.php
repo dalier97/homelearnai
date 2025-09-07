@@ -242,6 +242,19 @@ class SetLocale
             }
         }
 
+        // 4.5. Check post-logout cookie for preserving language after logout
+        if ($request->hasCookie('post_logout_locale')) {
+            $cookieLocale = $request->cookie('post_logout_locale');
+            if (! empty($cookieLocale)) {
+                \Log::debug('SetLocale: Using post-logout cookie locale', [
+                    'locale' => $cookieLocale,
+                    'route' => $request->route() ? $request->route()->getName() : 'unknown',
+                ]);
+
+                return $cookieLocale;
+            }
+        }
+
         // 5. Check backup cookie (for testing environment when sessions fail)
         if (config('app.env') === 'testing' && $request->hasCookie('locale_backup')) {
             $cookieLocale = $this->decryptCookie($request, 'locale_backup');

@@ -398,10 +398,14 @@ class SupabaseQueryBuilder
                 ]);
             }
 
-            $response = $this->client->patch("/rest/v1/{$this->table}", [
-                'json' => $data,
-                'query' => $this->query,
-            ]);
+            $options = ['json' => $data];
+
+            // Add query parameters if any exist (for WHERE conditions)
+            if (! empty($this->query)) {
+                $options['query'] = $this->query;
+            }
+
+            $response = $this->client->patch("/rest/v1/{$this->table}", $options);
 
             $result = json_decode($response->getBody()->getContents(), true);
 
@@ -413,10 +417,11 @@ class SupabaseQueryBuilder
                     'data' => $data,
                     'result' => $result,
                     'status_code' => $response->getStatusCode(),
+                    'result_count' => is_array($result) ? count($result) : 0,
                 ]);
             }
 
-            return $result;
+            return is_array($result) ? $result : [$result];
         } catch (GuzzleException $e) {
             // Log the error for debugging
             if (function_exists('app') && app() && app()->has('log')) {

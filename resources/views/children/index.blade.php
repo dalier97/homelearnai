@@ -81,7 +81,7 @@
 </div>
 
 <!-- Modal for Child Form -->
-<div id="child-form-modal"></div>
+<div id="child-form-modal" data-testid="child-form-modal"></div>
 
 <!-- Toast Notification Area -->
 <div id="toast-area" class="fixed top-4 right-4 z-50"></div>

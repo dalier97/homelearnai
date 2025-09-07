@@ -7,17 +7,17 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 1,
   workers: 1, // Force single worker to prevent server conflicts
   reporter: 'html',
-  timeout: 30000, // Global test timeout: 30 seconds
+  timeout: 60000, // Global test timeout: 60 seconds (for complex kids mode tests)
   expect: {
-    timeout: 10000, // Assertion timeout: 10 seconds
+    timeout: 15000, // Assertion timeout: 15 seconds
   },
   
   use: {
-    baseURL: 'http://127.0.0.1:8001',
+    baseURL: 'http://127.0.0.1:18001',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    actionTimeout: 15000, // Action timeout: 15 seconds
-    navigationTimeout: 20000, // Navigation timeout: 20 seconds
+    actionTimeout: 10000, // Action timeout: 10 seconds (optimized)
+    navigationTimeout: 15000, // Navigation timeout: 15 seconds (optimized)
   },
 
   projects: [

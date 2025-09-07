@@ -99,7 +99,7 @@
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-3 mb-3">
                     <!-- Quick Complete Today -->
                     <button hx-post="{{ route('dashboard.bulk-complete-today') }}" 
                             hx-vals='{"child_id": {{ $child->id }}}' 
@@ -120,6 +120,32 @@
                         <span>{{ trans_choice(':count Review|:count Reviews', $data['review_queue_count'], ['count' => $data['review_queue_count']]) }}</span>
                     </a>
                 </div>
+
+                <!-- Kids Mode Button -->
+                @if($pin_is_set)
+                    <button hx-post="{{ route('kids-mode.enter', $child->id) }}" 
+                            hx-confirm="{{ __('kids_mode_for', ['name' => $child->name]) }}?" 
+                            class="w-full flex items-center justify-center space-x-2 bg-purple-100 text-purple-700 px-3 py-2 rounded hover:bg-purple-200 text-sm kids-mode-enter-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-1a1 1 0 00-1-1H7a1 1 0 00-1 1v1a2 2 0 002 2zM9 12l2 2 4-4m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>{{ __('enter_kids_mode') }}</span>
+                        <div class="htmx-indicator">
+                            <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                    </button>
+                @else
+                    <a href="{{ route('kids-mode.settings') }}" 
+                       class="w-full flex items-center justify-center space-x-2 bg-gray-100 text-gray-600 px-3 py-2 rounded hover:bg-gray-200 text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-1a1 1 0 00-1-1H7a1 1 0 00-1 1v1a2 2 0 002 2zM9 12l2 2 4-4m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>{{ __('set_pin_first') }}</span>
+                    </a>
+                @endif
 
                 <!-- Independence Level -->
                 <div class="mt-4 pt-4 border-t border-gray-200">
@@ -198,6 +224,86 @@
 
 @push('scripts')
 <script>
+// Kids Mode UI JavaScript - Inline version to avoid asset compilation issues
+class KidsModeUI {
+    constructor() {
+        this.initEnterButtonHandlers();
+        this.initBackButtonPrevention();
+    }
+
+    initEnterButtonHandlers() {
+        document.addEventListener('click', (event) => {
+            if (event.target.closest('.kids-mode-enter-btn')) {
+                const button = event.target.closest('.kids-mode-enter-btn');
+                this.handleEnterKidsMode(button);
+            }
+        });
+
+        document.body.addEventListener('htmx:beforeRequest', (event) => {
+            if (event.detail.elt.classList.contains('kids-mode-enter-btn')) {
+                this.showEnterLoading(event.detail.elt);
+            }
+        });
+
+        document.body.addEventListener('htmx:afterRequest', (event) => {
+            if (event.detail.elt.classList.contains('kids-mode-enter-btn')) {
+                this.handleEnterResponse(event);
+            }
+        });
+    }
+
+    handleEnterKidsMode(button) {
+        button.disabled = true;
+        button.classList.add('opacity-75', 'cursor-not-allowed');
+        const indicator = button.querySelector('.htmx-indicator');
+        if (indicator) {
+            indicator.style.display = 'inline-block';
+        }
+    }
+
+    showEnterLoading(button) {
+        const text = button.querySelector('span:not(.htmx-indicator span)');
+        if (text) {
+            text.textContent = '{{ __("Entering Kids Mode...") }}';
+        }
+        button.style.transform = 'scale(0.98)';
+        setTimeout(() => button.style.transform = 'scale(1)', 150);
+    }
+
+    handleEnterResponse(event) {
+        const button = event.detail.elt;
+        const indicator = button.querySelector('.htmx-indicator');
+        if (indicator) {
+            indicator.style.display = 'none';
+        }
+        button.disabled = false;
+        button.classList.remove('opacity-75', 'cursor-not-allowed');
+        
+        if (event.detail.xhr.status === 200) {
+            const response = JSON.parse(event.detail.xhr.responseText);
+            if (response.message) {
+                showToast(response.message, 'success');
+            }
+        }
+    }
+
+    initBackButtonPrevention() {
+        if (document.querySelector('[data-testid="kids-mode-indicator"]')) {
+            history.pushState(null, null, location.href);
+            window.addEventListener('popstate', () => {
+                history.pushState(null, null, location.href);
+                showToast('{{ __("Ask a parent to help exit Kids Mode") }}', 'info', 5000);
+            });
+        }
+    }
+}
+
+// Initialize on DOM loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.kidsModeUI = new KidsModeUI();
+});
+</script>
+<script>
     // Handle bulk complete success
     document.body.addEventListener('htmx:afterRequest', function(event) {
         if (event.detail.xhr.status === 200) {
@@ -216,5 +322,11 @@
             showToast('{{ __('Independence level updated!') }}', 'success');
         }
     });
+
+    // Add missing translations for kids mode
+    if (window.translations) {
+        window.translations.entering_kids_mode = '{{ __('entering_kids_mode', [], 'Entering Kids Mode...') }}';
+        window.translations.ask_parent_for_help = '{{ __('Ask a parent to help exit Kids Mode') }}';
+    }
 </script>
 @endpush
