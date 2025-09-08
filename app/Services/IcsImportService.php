@@ -19,8 +19,8 @@ class IcsImportService
     public function importIcsFile(UploadedFile $file, int $childId, int $userId): array
     {
         // Validate child belongs to user
-        $child = Child::find($childId, $this->supabase);
-        if (! $child || $child->user_id !== $userId) {
+        $child = Child::find((string) $childId, $this->supabase);
+        if (! $child || (int) $child->user_id !== $userId) {
             throw new \InvalidArgumentException('Child not found or access denied');
         }
 
@@ -59,8 +59,8 @@ class IcsImportService
     public function importIcsFromUrl(string $url, int $childId, int $userId): array
     {
         // Validate child belongs to user
-        $child = Child::find($childId, $this->supabase);
-        if (! $child || $child->user_id !== $userId) {
+        $child = Child::find((string) $childId, $this->supabase);
+        if (! $child || (int) $child->user_id !== $userId) {
             throw new \InvalidArgumentException('Child not found or access denied');
         }
 
@@ -332,62 +332,6 @@ class IcsImportService
     }
 
     /**
-     * Create time block from ICS event
-     */
-    private function createTimeBlockFromEvent(array $event, int $childId): ?TimeBlock
-    {
-        if (! isset($event['start']) || ! $event['start'] instanceof Carbon) {
-            return null;
-        }
-
-        // Skip past events
-        if ($event['start']->lt(Carbon::now())) {
-            return null;
-        }
-
-        $startTime = $event['start'];
-        $endTime = isset($event['end']) ? $event['end'] : $startTime->copy()->addHour();
-
-        // Create label from summary and location
-        $label = $event['summary'] ?? 'Imported Event';
-        if (isset($event['location']) && $event['location']) {
-            $label .= ' @ '.$event['location'];
-        }
-
-        // Check for conflicts with existing time blocks
-        $dayOfWeek = $startTime->dayOfWeekIso;
-        $existingBlocks = TimeBlock::forChildAndDay($childId, $dayOfWeek, $this->supabase);
-
-        $newBlock = new TimeBlock([
-            'start_time' => $startTime->format('H:i:s'),
-            'end_time' => $endTime->format('H:i:s'),
-            'day_of_week' => $dayOfWeek,
-        ]);
-
-        foreach ($existingBlocks as $existingBlock) {
-            if ($newBlock->overlapsWith($existingBlock)) {
-                throw new \Exception("Time conflict with existing block: {$existingBlock->label}");
-            }
-        }
-
-        // Create the time block as "fixed" commitment type
-        $timeBlock = new TimeBlock([
-            'child_id' => $childId,
-            'day_of_week' => $dayOfWeek,
-            'start_time' => $startTime->format('H:i:s'),
-            'end_time' => $endTime->format('H:i:s'),
-            'label' => $label,
-            'is_imported' => true,
-            'commitment_type' => 'fixed', // External events are fixed
-            'source_uid' => $event['uid'] ?? null,
-        ]);
-
-        $timeBlock->save($this->supabase);
-
-        return $timeBlock;
-    }
-
-    /**
      * Get supported ICS file extensions
      */
     public static function getSupportedExtensions(): array
@@ -469,5 +413,31 @@ class IcsImportService
             'preview_events' => $preview,
             'preview_limited' => count($events) > 50,
         ];
+    }
+
+    /**
+     * Create a TimeBlock from an ICS event
+     */
+    private function createTimeBlockFromEvent(array $event, int $childId): ?TimeBlock
+    {
+        if (! isset($event['start']) || ! $event['start'] instanceof Carbon) {
+            return null;
+        }
+
+        $startTime = $event['start']->format('H:i');
+        $endTime = isset($event['end']) && $event['end'] instanceof Carbon
+            ? $event['end']->format('H:i')
+            : $event['start']->addHour()->format('H:i'); // Default to 1 hour if no end time
+
+        return new TimeBlock([
+            'child_id' => $childId,
+            'day_of_week' => $event['start']->dayOfWeekIso,
+            'start_time' => $startTime,
+            'end_time' => $endTime,
+            'label' => $event['summary'] ?? 'Imported Event',
+            'is_imported' => true,
+            'commitment_type' => 'fixed', // Imported events are usually fixed commitments
+            'source_uid' => $event['uid'] ?? null,
+        ]);
     }
 }

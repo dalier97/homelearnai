@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Child;
 use App\Services\IcsImportService;
 use App\Services\SupabaseClient;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
@@ -42,7 +43,7 @@ class IcsImportController extends Controller
     /**
      * Preview ICS file before importing
      */
-    public function preview(Request $request): View
+    public function preview(Request $request): View|RedirectResponse
     {
         $validated = $request->validate([
             'ics_file' => 'required|file|max:5120', // 5MB max
@@ -58,7 +59,7 @@ class IcsImportController extends Controller
         }
 
         // Verify child belongs to user
-        $child = Child::find($validated['child_id'], $this->supabase);
+        $child = Child::find((string) $validated['child_id'], $this->supabase);
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
@@ -85,7 +86,7 @@ class IcsImportController extends Controller
     /**
      * Import ICS file
      */
-    public function import(Request $request): View
+    public function import(Request $request): View|RedirectResponse
     {
         $validated = $request->validate([
             'ics_file' => 'required|file|max:5120',
@@ -106,7 +107,7 @@ class IcsImportController extends Controller
         }
 
         // Verify child belongs to user
-        $child = Child::find($validated['child_id'], $this->supabase);
+        $child = Child::find((string) $validated['child_id'], $this->supabase);
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
@@ -146,7 +147,7 @@ class IcsImportController extends Controller
     /**
      * Import from URL
      */
-    public function importUrl(Request $request): View
+    public function importUrl(Request $request): View|RedirectResponse
     {
         $validated = $request->validate([
             'ics_url' => 'required|url',
@@ -167,7 +168,7 @@ class IcsImportController extends Controller
         }
 
         // Verify child belongs to user
-        $child = Child::find($validated['child_id'], $this->supabase);
+        $child = Child::find((string) $validated['child_id'], $this->supabase);
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }

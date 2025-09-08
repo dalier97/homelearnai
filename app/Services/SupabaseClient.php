@@ -4,6 +4,7 @@ namespace App\Services;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Collection;
 
 class SupabaseClient
@@ -14,13 +15,15 @@ class SupabaseClient
 
     private string $anonKey;
 
-    private string $serviceKey;
-
+    /**
+     * @param  string  $serviceKey  Reserved for future administrative operations
+     *
+     * @phpstan-ignore-next-line constructor.unusedParameter
+     */
     public function __construct(string $url, string $anonKey, string $serviceKey)
     {
         $this->baseUrl = rtrim($url, '/');
         $this->anonKey = $anonKey;
-        $this->serviceKey = $serviceKey;
 
         // Start with anon key, can be updated with setUserToken()
         $this->httpClient = new Client([
@@ -75,7 +78,7 @@ class SupabaseClient
             return json_decode($response->getBody()->getContents(), true);
         } catch (GuzzleException $e) {
             // Return error details for better debugging
-            if ($e->hasResponse()) {
+            if ($e instanceof RequestException && $e->hasResponse()) {
                 $errorBody = $e->getResponse()->getBody()->getContents();
                 $error = json_decode($errorBody, true);
 
@@ -122,7 +125,7 @@ class SupabaseClient
             return $result;
         } catch (GuzzleException $e) {
             // Return error details for debugging
-            if ($e->hasResponse()) {
+            if ($e instanceof RequestException && $e->hasResponse()) {
                 $errorBody = $e->getResponse()->getBody()->getContents();
                 $error = json_decode($errorBody, true);
 
@@ -319,6 +322,11 @@ class SupabaseQueryBuilder
         return $this;
     }
 
+    public function order(string $column, string $direction = 'asc'): self
+    {
+        return $this->orderBy($column, $direction);
+    }
+
     public function limit(int $limit): self
     {
         $this->query['limit'] = $limit;
@@ -370,7 +378,7 @@ class SupabaseQueryBuilder
             // Log the error for debugging
             if (function_exists('app') && app() && app()->has('log')) {
                 $errorBody = '';
-                if ($e->hasResponse()) {
+                if ($e instanceof RequestException && $e->hasResponse()) {
                     $errorBody = $e->getResponse()->getBody()->getContents();
                 }
 
@@ -379,7 +387,7 @@ class SupabaseQueryBuilder
                     'data' => $data,
                     'error' => $e->getMessage(),
                     'response_body' => $errorBody,
-                    'status_code' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                    'status_code' => ($e instanceof RequestException && $e->hasResponse()) ? $e->getResponse()->getStatusCode() : null,
                 ]);
             }
             throw new \Exception('Insert failed: '.$e->getMessage());
@@ -426,7 +434,7 @@ class SupabaseQueryBuilder
             // Log the error for debugging
             if (function_exists('app') && app() && app()->has('log')) {
                 $errorBody = '';
-                if ($e->hasResponse()) {
+                if ($e instanceof RequestException && $e->hasResponse()) {
                     $errorBody = $e->getResponse()->getBody()->getContents();
                 }
 
@@ -436,7 +444,7 @@ class SupabaseQueryBuilder
                     'data' => $data,
                     'error' => $e->getMessage(),
                     'response_body' => $errorBody,
-                    'status_code' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                    'status_code' => ($e instanceof RequestException && $e->hasResponse()) ? $e->getResponse()->getStatusCode() : null,
                 ]);
             }
 
@@ -480,7 +488,7 @@ class SupabaseQueryBuilder
             return $result;
         } catch (GuzzleException $e) {
             // Handle 406 Not Acceptable gracefully for single() - this means 0 rows
-            if ($e->hasResponse() && $e->getResponse()->getStatusCode() === 406) {
+            if ($e instanceof RequestException && $e->hasResponse() && $e->getResponse()->getStatusCode() === 406) {
                 $errorBody = $e->getResponse()->getBody()->getContents();
                 $errorData = json_decode($errorBody, true);
 
@@ -500,7 +508,7 @@ class SupabaseQueryBuilder
             // Log actual errors for debugging
             if (function_exists('app') && app() && app()->has('log')) {
                 $errorBody = '';
-                if ($e->hasResponse()) {
+                if ($e instanceof RequestException && $e->hasResponse()) {
                     $errorBody = $e->getResponse()->getBody()->getContents();
                 }
 
@@ -509,7 +517,7 @@ class SupabaseQueryBuilder
                     'query' => $this->query,
                     'error' => $e->getMessage(),
                     'response_body' => $errorBody,
-                    'status_code' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                    'status_code' => ($e instanceof RequestException && $e->hasResponse()) ? $e->getResponse()->getStatusCode() : null,
                 ]);
             }
 
@@ -542,7 +550,7 @@ class SupabaseQueryBuilder
             // Log the error for debugging
             if (function_exists('app') && app() && app()->has('log')) {
                 $errorBody = '';
-                if ($e->hasResponse()) {
+                if ($e instanceof RequestException && $e->hasResponse()) {
                     $errorBody = $e->getResponse()->getBody()->getContents();
                 }
 
@@ -551,7 +559,7 @@ class SupabaseQueryBuilder
                     'query' => $this->query,
                     'error' => $e->getMessage(),
                     'response_body' => $errorBody,
-                    'status_code' => $e->hasResponse() ? $e->getResponse()->getStatusCode() : null,
+                    'status_code' => ($e instanceof RequestException && $e->hasResponse()) ? $e->getResponse()->getStatusCode() : null,
                 ]);
             }
 

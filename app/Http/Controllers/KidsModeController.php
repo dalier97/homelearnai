@@ -37,7 +37,7 @@ class KidsModeController extends Controller
         $this->supabase->setUserToken($accessToken);
 
         // Verify the child exists and belongs to the user
-        $child = Child::find($childId, $this->supabase);
+        $child = Child::find((string) $childId, $this->supabase);
         if (! $child || $child->user_id !== $userId) {
             return response()->json(['error' => __('Child not found')], 404);
         }
@@ -105,7 +105,7 @@ class KidsModeController extends Controller
         }
 
         $this->supabase->setUserToken($accessToken);
-        $child = Child::find($childId, $this->supabase);
+        $child = Child::find((string) $childId, $this->supabase);
 
         // Check if PIN is set up
         $userPrefs = $this->getUserPreferences($userId);
@@ -262,7 +262,7 @@ class KidsModeController extends Controller
                 [
                     'attempts' => $attempts,
                     'locked' => $attempts >= 5,
-                    'lockout_minutes' => $lockoutMinutes ?? 0,
+                    'lockout_minutes' => $lockoutMinutes,
                     'user_failed_attempts_1h' => $userFailedAttempts + 1,
                     'ip_failed_attempts_1h' => $ipFailedAttempts + 1,
                 ]
@@ -274,7 +274,7 @@ class KidsModeController extends Controller
                 'attempts' => $attempts,
                 'ip_address' => $ipAddress,
                 'locked' => $attempts >= 5,
-                'lockout_minutes' => $lockoutMinutes ?? 0,
+                'lockout_minutes' => $lockoutMinutes,
             ]);
 
             return response()->json([
@@ -283,7 +283,7 @@ class KidsModeController extends Controller
                 ]),
                 'attempts_remaining' => max(0, 5 - $attempts),
                 'locked' => $attempts >= 5,
-                'lockout_minutes' => $lockoutMinutes ?? 0,
+                'lockout_minutes' => $lockoutMinutes,
             ], 400);
         }
 
@@ -624,11 +624,11 @@ class KidsModeController extends Controller
                 'user_id' => $userId,
                 'operation' => $existing ? 'update' : 'insert',
                 'result' => $result,
-                'result_count' => is_array($result) ? count($result) : 0,
+                'result_count' => count($result),
             ]);
 
             // Verify the operation was successful
-            if (is_array($result) && count($result) > 0) {
+            if (count($result) > 0) {
                 \Log::info('User preferences updated successfully', [
                     'user_id' => $userId,
                 ]);

@@ -29,13 +29,13 @@ class SupabaseMigrate extends Command
     {
         $this->info('Running Supabase Migrations...');
 
-        // Get Supabase connection details from environment
-        $supabaseUrl = env('SUPABASE_URL');
+        // Get Supabase connection details from config
+        $supabaseUrl = config('services.supabase.url');
         $projectId = $this->extractProjectId($supabaseUrl);
 
         // Construct PostgreSQL connection string
         // Note: You'll need to add SUPABASE_DB_PASSWORD to your .env file
-        $dbPassword = env('SUPABASE_DB_PASSWORD', env('SUPABASE_SERVICE_KEY'));
+        $dbPassword = config('services.supabase.db_password', config('services.supabase.service_key'));
 
         if (! $dbPassword) {
             $this->error('SUPABASE_DB_PASSWORD not set in .env file');

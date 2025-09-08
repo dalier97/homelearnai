@@ -69,7 +69,7 @@ class TaskController extends Controller
 
     public function edit(int $id): View
     {
-        $task = Task::find($id, $this->supabase);
+        $task = Task::find((string) $id, $this->supabase);
 
         if (! $task || $task->user_id !== Session::get('user_id')) {
             abort(404);
@@ -80,7 +80,7 @@ class TaskController extends Controller
 
     public function update(Request $request, int $id): View
     {
-        $task = Task::find($id, $this->supabase);
+        $task = Task::find((string) $id, $this->supabase);
 
         if (! $task || $task->user_id !== Session::get('user_id')) {
             abort(404);
@@ -105,7 +105,7 @@ class TaskController extends Controller
 
     public function toggle(int $id): View
     {
-        $task = Task::find($id, $this->supabase);
+        $task = Task::find((string) $id, $this->supabase);
 
         if (! $task || $task->user_id !== Session::get('user_id')) {
             abort(404);
@@ -120,7 +120,7 @@ class TaskController extends Controller
 
     public function destroy(int $id): string
     {
-        $task = Task::find($id, $this->supabase);
+        $task = Task::find((string) $id, $this->supabase);
 
         if (! $task || $task->user_id !== Session::get('user_id')) {
             abort(404);

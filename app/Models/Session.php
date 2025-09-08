@@ -63,7 +63,7 @@ class Session
         }
     }
 
-    public static function find(int $id, SupabaseClient $supabase): ?self
+    public static function find(string $id, SupabaseClient $supabase): ?self
     {
         $data = $supabase->from('sessions')
             ->eq('id', $id)
@@ -167,7 +167,7 @@ class Session
      */
     public function topic(SupabaseClient $supabase): ?Topic
     {
-        return Topic::find($this->topic_id, $supabase);
+        return Topic::find((string) $this->topic_id, $supabase);
     }
 
     /**
@@ -175,7 +175,7 @@ class Session
      */
     public function child(SupabaseClient $supabase): ?Child
     {
-        return Child::find($this->child_id, $supabase);
+        return Child::find((string) $this->child_id, $supabase);
     }
 
     /**
@@ -586,7 +586,7 @@ class Session
         $success = $this->save($supabase);
 
         // Automatically create review when session is completed
-        if ($success && $this->status === 'done' && $this->completed_at) {
+        if ($success) {
             $existingReview = Review::forSession($this->id, $supabase);
             if (! $existingReview) {
                 Review::createFromSession($this, $supabase);

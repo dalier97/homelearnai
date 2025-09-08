@@ -43,7 +43,7 @@ class Unit
         }
     }
 
-    public static function find(int $id, SupabaseClient $supabase): ?self
+    public static function find(string $id, SupabaseClient $supabase): ?self
     {
         $data = $supabase->from('units')
             ->eq('id', $id)
@@ -109,7 +109,7 @@ class Unit
      */
     public function subject(SupabaseClient $supabase): ?Subject
     {
-        return Subject::find($this->subject_id, $supabase);
+        return Subject::find((string) $this->subject_id, $supabase);
     }
 
     /**
@@ -295,7 +295,7 @@ class Unit
             return null;
         }
 
-        return now()->diffInDays($this->target_completion_date, false);
+        return (int) now()->diffInDays($this->target_completion_date, false);
     }
 
     public function toArray(): array

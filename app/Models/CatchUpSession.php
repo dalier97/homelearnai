@@ -45,7 +45,7 @@ class CatchUpSession
         }
     }
 
-    public static function find(int $id, SupabaseClient $supabase): ?self
+    public static function find(string $id, SupabaseClient $supabase): ?self
     {
         $data = $supabase->from('catch_up_sessions')
             ->eq('id', $id)
@@ -142,7 +142,7 @@ class CatchUpSession
      */
     public function originalSession(SupabaseClient $supabase): ?Session
     {
-        return Session::find($this->original_session_id, $supabase);
+        return Session::find((string) $this->original_session_id, $supabase);
     }
 
     /**
@@ -154,7 +154,7 @@ class CatchUpSession
             return null;
         }
 
-        return Session::find($this->reassigned_to_session_id, $supabase);
+        return Session::find((string) $this->reassigned_to_session_id, $supabase);
     }
 
     /**
@@ -162,7 +162,7 @@ class CatchUpSession
      */
     public function topic(SupabaseClient $supabase): ?Topic
     {
-        return Topic::find($this->topic_id, $supabase);
+        return Topic::find((string) $this->topic_id, $supabase);
     }
 
     /**
@@ -170,7 +170,7 @@ class CatchUpSession
      */
     public function child(SupabaseClient $supabase): ?Child
     {
-        return Child::find($this->child_id, $supabase);
+        return Child::find((string) $this->child_id, $supabase);
     }
 
     /**
@@ -271,7 +271,7 @@ class CatchUpSession
      */
     public function getDaysSinceMissed(): int
     {
-        return $this->missed_date->diffInDays(Carbon::now());
+        return (int) $this->missed_date->diffInDays(Carbon::now());
     }
 
     /**

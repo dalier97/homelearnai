@@ -6,6 +6,7 @@ use App\Models\Child;
 use App\Models\ReviewSlot;
 use App\Models\TimeBlock;
 use App\Services\SupabaseClient;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
@@ -30,7 +31,7 @@ class CalendarController extends Controller
 
         // Default to first child or selected child
         $selectedChildId = $request->get('child_id', $children->first()?->id);
-        $selectedChild = $selectedChildId ? Child::find($selectedChildId, $this->supabase) : null;
+        $selectedChild = $selectedChildId ? Child::find((string) $selectedChildId, $this->supabase) : null;
 
         // Get time blocks for the selected child
         $timeBlocks = $selectedChild ? $selectedChild->timeBlocks($this->supabase) : collect([]);
@@ -67,7 +68,7 @@ class CalendarController extends Controller
         ]);
     }
 
-    public function store(Request $request): View
+    public function store(Request $request): View|RedirectResponse
     {
         $validated = $request->validate([
             'child_id' => 'required|integer|exists:children,id',
@@ -78,7 +79,7 @@ class CalendarController extends Controller
         ]);
 
         // Verify child belongs to the current user
-        $child = Child::find($validated['child_id'], $this->supabase);
+        $child = Child::find((string) $validated['child_id'], $this->supabase);
         if (! $child || $child->user_id !== Session::get('user_id')) {
             abort(403);
         }
@@ -120,7 +121,7 @@ class CalendarController extends Controller
 
     public function edit(int $id): View
     {
-        $timeBlock = TimeBlock::find($id, $this->supabase);
+        $timeBlock = TimeBlock::find((string) $id, $this->supabase);
 
         if (! $timeBlock) {
             abort(404);
@@ -141,9 +142,9 @@ class CalendarController extends Controller
         ]);
     }
 
-    public function update(Request $request, int $id): View
+    public function update(Request $request, int $id): View|RedirectResponse
     {
-        $timeBlock = TimeBlock::find($id, $this->supabase);
+        $timeBlock = TimeBlock::find((string) $id, $this->supabase);
 
         if (! $timeBlock) {
             abort(404);
@@ -196,13 +197,13 @@ class CalendarController extends Controller
         return view('calendar.partials.day-column', [
             'day' => $validated['day_of_week'],
             'timeBlocks' => $timeBlocksForDay,
-            'selectedChild' => Child::find($validated['child_id'], $this->supabase),
+            'selectedChild' => Child::find((string) $validated['child_id'], $this->supabase),
         ])->with('htmx_trigger', 'timeBlockUpdated');
     }
 
     public function destroy(int $id): View
     {
-        $timeBlock = TimeBlock::find($id, $this->supabase);
+        $timeBlock = TimeBlock::find((string) $id, $this->supabase);
 
         if (! $timeBlock) {
             abort(404);

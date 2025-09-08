@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Child;
 use App\Services\CacheService;
 use App\Services\SupabaseClient;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
@@ -61,7 +62,7 @@ class ChildController extends Controller
         return view('children.partials.form', ['child' => new Child]);
     }
 
-    public function store(Request $request): View
+    public function store(Request $request): View|RedirectResponse
     {
         \Log::debug('ChildController::store - Method called', [
             'request_data' => $request->all(),
@@ -112,7 +113,7 @@ class ChildController extends Controller
 
         // After successful save, verify the child can be retrieved
         if ($child->id) {
-            $verifyChild = Child::find($child->id, $this->supabase);
+            $verifyChild = Child::find((string) $child->id, $this->supabase);
             \Log::debug('Child verification after save', [
                 'original_child_id' => $child->id,
                 'verification_result' => $verifyChild ? 'found' : 'not_found',
@@ -138,7 +139,7 @@ class ChildController extends Controller
 
     public function show(int $id): View
     {
-        $child = Child::find($id, $this->supabase);
+        $child = Child::find((string) $id, $this->supabase);
 
         if (! $child || $child->user_id !== Session::get('user_id')) {
             abort(404);
@@ -161,7 +162,7 @@ class ChildController extends Controller
 
     public function edit(int $id): View
     {
-        $child = Child::find($id, $this->supabase);
+        $child = Child::find((string) $id, $this->supabase);
 
         if (! $child || $child->user_id !== Session::get('user_id')) {
             abort(404);
@@ -172,7 +173,7 @@ class ChildController extends Controller
 
     public function update(Request $request, int $id): View
     {
-        $child = Child::find($id, $this->supabase);
+        $child = Child::find((string) $id, $this->supabase);
 
         if (! $child || $child->user_id !== Session::get('user_id')) {
             abort(404);
@@ -202,7 +203,7 @@ class ChildController extends Controller
 
     public function destroy(int $id): string
     {
-        $child = Child::find($id, $this->supabase);
+        $child = Child::find((string) $id, $this->supabase);
 
         if (! $child || $child->user_id !== Session::get('user_id')) {
             abort(404);

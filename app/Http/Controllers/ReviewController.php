@@ -8,6 +8,7 @@ use App\Models\ReviewSlot;
 use App\Models\Session;
 use App\Services\SupabaseClient;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Session as SessionFacade;
@@ -36,7 +37,7 @@ class ReviewController extends Controller
 
         // Default to first child or selected child
         $selectedChildId = $request->get('child_id', $children->first()?->id);
-        $selectedChild = $selectedChildId ? Child::find($selectedChildId, $this->supabase) : null;
+        $selectedChild = $selectedChildId ? Child::find((string) $selectedChildId, $this->supabase) : null;
 
         if (! $selectedChild) {
             return view('reviews.index', [
@@ -75,7 +76,7 @@ class ReviewController extends Controller
     /**
      * Start a review session
      */
-    public function startSession(Request $request, int $childId): View
+    public function startSession(Request $request, int $childId): View|RedirectResponse
     {
         $userId = SessionFacade::get('user_id');
         $accessToken = SessionFacade::get('supabase_token');
@@ -85,7 +86,7 @@ class ReviewController extends Controller
             $this->supabase->setUserToken($accessToken);
         }
 
-        $child = Child::find($childId, $this->supabase);
+        $child = Child::find((string) $childId, $this->supabase);
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
@@ -119,7 +120,7 @@ class ReviewController extends Controller
             $this->supabase->setUserToken($accessToken);
         }
 
-        $review = Review::find($reviewId, $this->supabase);
+        $review = Review::find((string) $reviewId, $this->supabase);
         if (! $review) {
             abort(404);
         }
@@ -162,7 +163,7 @@ class ReviewController extends Controller
             $this->supabase->setUserToken($accessToken);
         }
 
-        $review = Review::find($reviewId, $this->supabase);
+        $review = Review::find((string) $reviewId, $this->supabase);
         if (! $review) {
             abort(404);
         }
@@ -182,7 +183,7 @@ class ReviewController extends Controller
     /**
      * Complete session with evidence capture
      */
-    public function completeSession(Request $request, int $sessionId): View
+    public function completeSession(Request $request, int $sessionId): View|RedirectResponse
     {
         $validated = $request->validate([
             'evidence_notes' => 'nullable|string|max:2000',
@@ -201,7 +202,7 @@ class ReviewController extends Controller
             $this->supabase->setUserToken($accessToken);
         }
 
-        $session = Session::find($sessionId, $this->supabase);
+        $session = Session::find((string) $sessionId, $this->supabase);
         if (! $session) {
             abort(404);
         }
@@ -264,7 +265,7 @@ class ReviewController extends Controller
             $this->supabase->setUserToken($accessToken);
         }
 
-        $child = Child::find($childId, $this->supabase);
+        $child = Child::find((string) $childId, $this->supabase);
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
@@ -322,7 +323,7 @@ class ReviewController extends Controller
 
             // Verify child belongs to the current user
             try {
-                $child = Child::find($validated['child_id'], $this->supabase);
+                $child = Child::find((string) $validated['child_id'], $this->supabase);
                 if (! $child || $child->user_id !== $userId) {
                     abort(403);
                 }
@@ -427,7 +428,7 @@ class ReviewController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             if ($request->header('HX-Request')) {
                 return response()->view('reviews.partials.slots-manager', [
-                    'error' => 'Validation failed: '.implode(' ', array_flatten($e->errors())),
+                    'error' => 'Validation failed: '.implode(' ', collect($e->errors())->flatten()->toArray()),
                     'weeklySlots' => [],
                     'child' => null,
                 ], 422);
@@ -468,7 +469,7 @@ class ReviewController extends Controller
             $this->supabase->setUserToken($accessToken);
         }
 
-        $reviewSlot = ReviewSlot::find($id, $this->supabase);
+        $reviewSlot = ReviewSlot::find((string) $id, $this->supabase);
         if (! $reviewSlot) {
             abort(404);
         }
@@ -512,7 +513,7 @@ class ReviewController extends Controller
             $this->supabase->setUserToken($accessToken);
         }
 
-        $reviewSlot = ReviewSlot::find($id, $this->supabase);
+        $reviewSlot = ReviewSlot::find((string) $id, $this->supabase);
         if (! $reviewSlot) {
             abort(404);
         }
@@ -547,7 +548,7 @@ class ReviewController extends Controller
             $this->supabase->setUserToken($accessToken);
         }
 
-        $reviewSlot = ReviewSlot::find($id, $this->supabase);
+        $reviewSlot = ReviewSlot::find((string) $id, $this->supabase);
         if (! $reviewSlot) {
             abort(404);
         }

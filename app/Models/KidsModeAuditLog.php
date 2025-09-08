@@ -89,7 +89,8 @@ class KidsModeAuditLog extends Model
                 ->eq('user_id', $userId)
                 ->order('created_at', 'desc')
                 ->limit($limit)
-                ->get();
+                ->get()
+                ->toArray();
         } catch (\Exception $e) {
             Log::error('Failed to fetch kids mode audit logs', [
                 'user_id' => $userId,

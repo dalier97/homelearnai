@@ -12,6 +12,7 @@ This directory contains the Claude Code hooks configuration for automatic code q
      - PHP syntax validation (`php -l`)
      - Laravel Pint code formatting (auto-fix)
      - Basic security checks (XSS, debug statements)
+     - **PHPStan static analysis** (type checking on modified files)
    - **Timeout**: 30 seconds
 
 2. **JavaScript/TypeScript Quality Check** (`js-quality-check.sh`)
@@ -133,6 +134,14 @@ You can test the individual scripts manually:
 - Adjust security checks in the individual scripts
 - Add file exclusions for generated files
 - Modify linter configurations
+
+### PHPStan Issues
+
+- Run `composer run phpstan` to see all type errors in the codebase
+- Fix return type mismatches by using union types (e.g., `View|RedirectResponse`)  
+- Add proper type hints to method parameters and return values
+- Use `instanceof` checks before calling methods on exception interfaces
+- Replace `env()` calls with `config()` in classes outside config directory
 
 ## 💡 Best Practices
 

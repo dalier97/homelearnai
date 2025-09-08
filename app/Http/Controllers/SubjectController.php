@@ -107,7 +107,7 @@ class SubjectController extends Controller
             }
 
             // Verify child belongs to the current user
-            $child = Child::find($validated['child_id'], $this->supabase);
+            $child = Child::find((string) $validated['child_id'], $this->supabase);
             if (! $child || $child->user_id !== $userId) {
                 return response('Child not found or access denied', 403);
             }
@@ -147,7 +147,7 @@ class SubjectController extends Controller
     /**
      * Display the specified subject.
      */
-    public function show(Request $request, int $id)
+    public function show(Request $request, string $id)
     {
         try {
             $userId = session('user_id');
@@ -155,7 +155,7 @@ class SubjectController extends Controller
                 return redirect()->route('login');
             }
 
-            $subject = Subject::find($id, $this->supabase);
+            $subject = Subject::find((string) $id, $this->supabase);
 
             if (! $subject || $subject->user_id !== $userId) {
                 return redirect()->route('subjects.index')->with('error', 'Subject not found.');
@@ -164,10 +164,10 @@ class SubjectController extends Controller
             $units = $subject->units($this->supabase);
 
             if ($request->header('HX-Request')) {
-                return view('subjects.partials.subject-details', compact('subject', 'units'));
+                return view((string) 'subjects.partials.subject-details', compact('subject', 'units'));
             }
 
-            return view('subjects.show', compact('subject', 'units'));
+            return view((string) 'subjects.show', compact('subject', 'units'));
         } catch (\Exception $e) {
             Log::error('Error fetching subject: '.$e->getMessage());
 
@@ -178,7 +178,7 @@ class SubjectController extends Controller
     /**
      * Show the form for editing the specified subject.
      */
-    public function edit(Request $request, int $id)
+    public function edit(Request $request, string $id)
     {
         try {
             $userId = session('user_id');
@@ -186,7 +186,7 @@ class SubjectController extends Controller
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find($id, $this->supabase);
+            $subject = Subject::find((string) $id, $this->supabase);
 
             if (! $subject || $subject->user_id !== $userId) {
                 return response('Subject not found', 404);
@@ -209,7 +209,7 @@ class SubjectController extends Controller
     /**
      * Update the specified subject in storage.
      */
-    public function update(Request $request, int $id)
+    public function update(Request $request, string $id)
     {
         try {
             $userId = session('user_id');
@@ -217,7 +217,7 @@ class SubjectController extends Controller
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find($id, $this->supabase);
+            $subject = Subject::find((string) $id, $this->supabase);
 
             if (! $subject || $subject->user_id !== $userId) {
                 return response('Subject not found', 404);
@@ -263,7 +263,7 @@ class SubjectController extends Controller
     /**
      * Remove the specified subject from storage.
      */
-    public function destroy(Request $request, int $id)
+    public function destroy(Request $request, string $id)
     {
         try {
             $userId = session('user_id');
@@ -271,7 +271,7 @@ class SubjectController extends Controller
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find($id, $this->supabase);
+            $subject = Subject::find((string) $id, $this->supabase);
 
             if (! $subject || $subject->user_id !== $userId) {
                 return response('Subject not found', 404);
@@ -327,7 +327,7 @@ class SubjectController extends Controller
         }
 
         // Verify child belongs to the current user
-        $child = Child::find($childId, $this->supabase);
+        $child = Child::find((string) $childId, $this->supabase);
         if (! $child || $child->user_id !== $userId) {
             return response('Child not found or access denied', 403);
         }
@@ -363,7 +363,7 @@ class SubjectController extends Controller
             ]);
 
             // Verify child belongs to the current user
-            $child = Child::find($validated['child_id'], $this->supabase);
+            $child = Child::find((string) $validated['child_id'], $this->supabase);
             if (! $child || $child->user_id !== $userId) {
                 return response('Child not found or access denied', 403);
             }

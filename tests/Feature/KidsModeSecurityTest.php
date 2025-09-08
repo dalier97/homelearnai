@@ -215,13 +215,13 @@ class KidsModeSecurityTest extends TestCase
 
         // Check for CSP header
         $this->assertNotNull($response->headers->get('Content-Security-Policy'));
-        $this->assertStringContains("object-src 'none'", $response->headers->get('Content-Security-Policy'));
-        $this->assertStringContains("frame-src 'none'", $response->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString("object-src 'none'", $response->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString("frame-src 'none'", $response->headers->get('Content-Security-Policy'));
 
         // Check for Permissions Policy
         $this->assertNotNull($response->headers->get('Permissions-Policy'));
-        $this->assertStringContains('camera=()', $response->headers->get('Permissions-Policy'));
-        $this->assertStringContains('microphone=()', $response->headers->get('Permissions-Policy'));
+        $this->assertStringContainsString('camera=()', $response->headers->get('Permissions-Policy'));
+        $this->assertStringContainsString('microphone=()', $response->headers->get('Permissions-Policy'));
     }
 
     /** @test */
@@ -337,15 +337,18 @@ class KidsModeSecurityTest extends TestCase
      */
     private function mockUserPreferences(array $preferences): void
     {
+        // Mock SupabaseQueryBuilder
+        $queryBuilder = $this->mock(\App\Services\SupabaseQueryBuilder::class);
+        $queryBuilder->shouldReceive('select')->andReturnSelf();
+        $queryBuilder->shouldReceive('eq')->andReturnSelf();
+        $queryBuilder->shouldReceive('single')->andReturn($preferences);
+        $queryBuilder->shouldReceive('update')->andReturnSelf();
+        $queryBuilder->shouldReceive('insert')->andReturnSelf();
+
         // Mock the SupabaseClient to return test preferences
-        $this->mock(SupabaseClient::class, function ($mock) use ($preferences) {
+        $this->mock(SupabaseClient::class, function ($mock) use ($queryBuilder) {
             $mock->shouldReceive('setUserToken')->andReturnSelf();
-            $mock->shouldReceive('from')->with('user_preferences')->andReturnSelf();
-            $mock->shouldReceive('select')->andReturnSelf();
-            $mock->shouldReceive('eq')->andReturnSelf();
-            $mock->shouldReceive('single')->andReturn($preferences);
-            $mock->shouldReceive('update')->andReturnSelf();
-            $mock->shouldReceive('insert')->andReturnSelf();
+            $mock->shouldReceive('from')->with('user_preferences')->andReturn($queryBuilder);
         });
     }
 }

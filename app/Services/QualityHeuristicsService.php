@@ -128,7 +128,7 @@ class QualityHeuristicsService
         // Concentration span recommendations
         if ($age <= 12) {
             $backToBackSessions = $this->findBackToBackSessions($sessions, $timeBlocks);
-            if ($backToBackSessions->isNotEmpty()) {
+            if (! empty($backToBackSessions)) {
                 $warnings[] = [
                     'type' => 'back_to_back_sessions',
                     'severity' => 'medium',

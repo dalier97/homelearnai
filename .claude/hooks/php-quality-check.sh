@@ -70,4 +70,32 @@ for file in $php_files; do
 done
 echo -e "${GREEN}✅ Basic security check passed${NC}"
 
+# 4. PHPStan Static Analysis (on modified files only)
+echo "🧮 Running PHPStan static analysis on modified files..."
+if [ -f "./vendor/bin/phpstan" ]; then
+    # Filter valid PHP files
+    valid_files=""
+    for file in $php_files; do
+        if [ -f "$file" ]; then
+            valid_files="$valid_files $file"
+        fi
+    done
+    
+    if [ ! -z "$valid_files" ]; then
+        if ./vendor/bin/phpstan analyse --memory-limit=512M --no-progress --quiet $valid_files; then
+            echo -e "${GREEN}✅ PHPStan analysis passed for modified files${NC}"
+        else
+            echo -e "${RED}❌ PHPStan found type errors in modified files${NC}"
+            echo ""
+            echo -e "${YELLOW}💡 Run 'composer run phpstan' to see all errors${NC}"
+            echo -e "${YELLOW}💡 Or run PHPStan on specific files: ./vendor/bin/phpstan analyse$valid_files${NC}"
+            exit 1
+        fi
+    else
+        echo -e "${YELLOW}ℹ️  No valid PHP files to analyze${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️  PHPStan not found, skipping static analysis${NC}"
+fi
+
 echo -e "${GREEN}🎉 All PHP quality checks passed!${NC}"

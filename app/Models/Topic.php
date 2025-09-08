@@ -42,7 +42,7 @@ class Topic
         }
     }
 
-    public static function find(int $id, SupabaseClient $supabase): ?self
+    public static function find(string $id, SupabaseClient $supabase): ?self
     {
         $data = $supabase->from('topics')
             ->eq('id', $id)
@@ -109,7 +109,7 @@ class Topic
      */
     public function unit(SupabaseClient $supabase): ?Unit
     {
-        return Unit::find($this->unit_id, $supabase);
+        return Unit::find((string) $this->unit_id, $supabase);
     }
 
     /**
@@ -133,7 +133,7 @@ class Topic
 
         $topics = collect([]);
         foreach ($this->prerequisites as $topicId) {
-            $topic = self::find($topicId, $supabase);
+            $topic = self::find((string) $topicId, $supabase);
             if ($topic) {
                 $topics->push($topic);
             }

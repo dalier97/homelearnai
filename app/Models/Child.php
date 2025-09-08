@@ -35,7 +35,7 @@ class Child
         }
     }
 
-    public static function find(int $id, SupabaseClient $supabase): ?self
+    public static function find(string $id, SupabaseClient $supabase): ?self
     {
         $data = $supabase->from('children')
             ->eq('id', $id)

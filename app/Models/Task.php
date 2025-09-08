@@ -41,7 +41,7 @@ class Task
         }
     }
 
-    public static function find(int $id, SupabaseClient $supabase): ?self
+    public static function find(string $id, SupabaseClient $supabase): ?self
     {
         $data = $supabase->from('tasks')
             ->eq('id', $id)

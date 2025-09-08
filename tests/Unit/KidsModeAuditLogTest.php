@@ -33,17 +33,21 @@ class KidsModeAuditLogTest extends TestCase
     {
         $insertedData = null;
 
-        // Mock SupabaseClient
+        // Mock SupabaseClient with flexible return type
         $this->mock(SupabaseClient::class, function ($mock) use (&$insertedData) {
             $mock->shouldReceive('setServiceKey')->once();
-            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturnSelf();
-            $mock->shouldReceive('insert')
+
+            // Create a mock object that has both from() and insert() methods
+            $mockQueryBuilder = \Mockery::mock();
+            $mockQueryBuilder->shouldReceive('insert')
                 ->once()
                 ->andReturnUsing(function ($data) use (&$insertedData) {
                     $insertedData = $data;
 
                     return true;
                 });
+
+            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturn($mockQueryBuilder);
         });
 
         $metadata = [
@@ -79,7 +83,7 @@ class KidsModeAuditLogTest extends TestCase
 
         $this->mock(SupabaseClient::class, function ($mock) use (&$insertedData) {
             $mock->shouldReceive('setServiceKey')->once();
-            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturnSelf();
+            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturn($queryBuilder);
             $mock->shouldReceive('insert')
                 ->once()
                 ->andReturnUsing(function ($data) use (&$insertedData) {
@@ -112,7 +116,7 @@ class KidsModeAuditLogTest extends TestCase
         // Mock SupabaseClient to throw an exception
         $this->mock(SupabaseClient::class, function ($mock) {
             $mock->shouldReceive('setServiceKey')->once();
-            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturnSelf();
+            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturn($queryBuilder);
             $mock->shouldReceive('insert')->once()->andThrow(new \Exception('Database error'));
         });
 
@@ -163,7 +167,7 @@ class KidsModeAuditLogTest extends TestCase
 
         $this->mock(SupabaseClient::class, function ($mock) use ($mockLogs) {
             $mock->shouldReceive('setServiceKey')->once();
-            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturnSelf();
+            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturn($queryBuilder);
             $mock->shouldReceive('select')->with('*')->andReturnSelf();
             $mock->shouldReceive('eq')->with('user_id', $this->userId)->andReturnSelf();
             $mock->shouldReceive('order')->with('created_at', 'desc')->andReturnSelf();
@@ -187,7 +191,7 @@ class KidsModeAuditLogTest extends TestCase
 
         $this->mock(SupabaseClient::class, function ($mock) use ($mockFailedLogs) {
             $mock->shouldReceive('setServiceKey')->once();
-            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturnSelf();
+            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturn($queryBuilder);
             $mock->shouldReceive('select')->with('id')->andReturnSelf();
             $mock->shouldReceive('eq')->with('user_id', $this->userId)->andReturnSelf();
             $mock->shouldReceive('eq')->with('action', 'pin_failed')->andReturnSelf();
@@ -209,7 +213,7 @@ class KidsModeAuditLogTest extends TestCase
 
         $this->mock(SupabaseClient::class, function ($mock) use ($mockIpLogs) {
             $mock->shouldReceive('setServiceKey')->once();
-            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturnSelf();
+            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturn($queryBuilder);
             $mock->shouldReceive('select')->with('id')->andReturnSelf();
             $mock->shouldReceive('eq')->with('ip_address', $this->ipAddress)->andReturnSelf();
             $mock->shouldReceive('eq')->with('action', 'pin_failed')->andReturnSelf();
@@ -228,7 +232,7 @@ class KidsModeAuditLogTest extends TestCase
         // Mock SupabaseClient to throw an exception on query
         $this->mock(SupabaseClient::class, function ($mock) {
             $mock->shouldReceive('setServiceKey')->once();
-            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturnSelf();
+            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturn($queryBuilder);
             $mock->shouldReceive('select')->andReturnSelf();
             $mock->shouldReceive('eq')->andReturnSelf();
             $mock->shouldReceive('order')->andReturnSelf();
@@ -252,7 +256,7 @@ class KidsModeAuditLogTest extends TestCase
     {
         $this->mock(SupabaseClient::class, function ($mock) {
             $mock->shouldReceive('setServiceKey')->once();
-            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturnSelf();
+            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturn($queryBuilder);
             $mock->shouldReceive('select')->with('id')->andReturnSelf();
             $mock->shouldReceive('eq')->with('user_id', $this->userId)->andReturnSelf();
             $mock->shouldReceive('eq')->with('action', 'pin_failed')->andReturnSelf();
@@ -278,7 +282,7 @@ class KidsModeAuditLogTest extends TestCase
 
         $this->mock(SupabaseClient::class, function ($mock) use (&$insertedData) {
             $mock->shouldReceive('setServiceKey')->once();
-            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturnSelf();
+            $mock->shouldReceive('from')->with('kids_mode_audit_logs')->andReturn($queryBuilder);
             $mock->shouldReceive('insert')
                 ->once()
                 ->andReturnUsing(function ($data) use (&$insertedData) {

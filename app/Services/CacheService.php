@@ -17,8 +17,6 @@ class CacheService
 
     private const LONG_CACHE = 3600;    // 1 hour
 
-    private const DAILY_CACHE = 86400;  // 24 hours
-
     /**
      * Cache user's children data
      */
@@ -245,7 +243,7 @@ class CacheService
                 // For wildcard patterns, we'd need a more sophisticated cache clear
                 // For now, clear specific known keys
                 for ($i = 1; $i <= 7; $i++) {
-                    $key = str_replace('*', $i, $pattern);
+                    $key = str_replace('*', (string) $i, $pattern);
                     Cache::forget($key);
                 }
             } else {

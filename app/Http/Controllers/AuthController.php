@@ -120,7 +120,7 @@ class AuthController extends Controller
                 Session::put('user_id', $loginResult['user']['id']);
 
                 // Migrate pre-auth locale cookie to database
-                $this->migratePreAuthLocale($request, $loginResult['user']['id']);
+                $this->migrateLocaleToDatabase($request, $loginResult['user']['id']);
 
                 // Ensure user has locale preference in database
                 $this->ensureUserLocalePreference($request, $loginResult['user']['id'], $loginResult['access_token']);
@@ -165,7 +165,7 @@ class AuthController extends Controller
                 Session::put('user_id', $loginResult['user']['id']);
 
                 // Migrate pre-auth locale cookie to database
-                $this->migratePreAuthLocale($request, $loginResult['user']['id']);
+                $this->migrateLocaleToDatabase($request, $loginResult['user']['id']);
 
                 // Ensure user has locale preference in database
                 $this->ensureUserLocalePreference($request, $loginResult['user']['id'], $loginResult['access_token']);
@@ -270,11 +270,11 @@ class AuthController extends Controller
                 if ($existing) {
                     // Update existing preference
                     $this->supabase->from('user_preferences')
+                        ->eq('user_id', $userId)
                         ->update([
                             'locale' => $cookieLocale,
                             'updated_at' => now()->toISOString(),
-                        ])
-                        ->eq('user_id', $userId);
+                        ]);
                 } else {
                     // Insert new preference
                     $this->supabase->from('user_preferences')

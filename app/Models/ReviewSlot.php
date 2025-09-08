@@ -32,8 +32,8 @@ class ReviewSlot
             if (property_exists($this, $key)) {
                 if (in_array($key, ['created_at', 'updated_at']) && $value) {
                     $this->$key = Carbon::parse($value);
-                } elseif ($key === 'is_active' && is_string($value)) {
-                    $this->$key = $value === 'true' || $value === '1' || $value === 1;
+                } elseif ($key === 'is_active') {
+                    $this->$key = $value === 'true' || $value === '1' || $value === true || $value === 1;
                 } else {
                     $this->$key = $value;
                 }
@@ -41,7 +41,7 @@ class ReviewSlot
         }
     }
 
-    public static function find(int $id, SupabaseClient $supabase): ?self
+    public static function find(string $id, SupabaseClient $supabase): ?self
     {
         $data = $supabase->from('review_slots')
             ->eq('id', $id)
@@ -168,7 +168,7 @@ class ReviewSlot
      */
     public function child(SupabaseClient $supabase): ?Child
     {
-        return Child::find($this->child_id, $supabase);
+        return Child::find((string) $this->child_id, $supabase);
     }
 
     /**
@@ -179,7 +179,7 @@ class ReviewSlot
         $start = Carbon::createFromFormat('H:i:s', $this->start_time);
         $end = Carbon::createFromFormat('H:i:s', $this->end_time);
 
-        return $start->diffInMinutes($end);
+        return (int) $start->diffInMinutes($end);
     }
 
     /**
@@ -292,7 +292,7 @@ class ReviewSlot
         $slotStart = Carbon::createFromFormat('H:i:s', $this->start_time);
         $slotStart->setDate($now->year, $now->month, $now->day);
 
-        return $now->diffInMinutes($slotStart);
+        return (int) $now->diffInMinutes($slotStart);
     }
 
     /**
@@ -342,7 +342,9 @@ class ReviewSlot
             ];
         }
 
-        return $supabase->from('review_slots')->insert($slots);
+        $result = $supabase->from('review_slots')->insert($slots);
+
+        return ! empty($result);
     }
 
     public function toArray(): array

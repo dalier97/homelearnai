@@ -159,7 +159,7 @@ class SchedulingEngine
             $difficulty += 2; // Busy day
         }
 
-        return $difficulty;
+        return (int) $difficulty;
     }
 
     /**
@@ -170,11 +170,20 @@ class SchedulingEngine
         $rescheduled = [];
 
         // Get sessions to reschedule
-        $sessions = empty($sessionIds)
-            ? Session::forChild($child->id, $this->supabase)
+        if (empty($sessionIds)) {
+            $sessions = Session::forChild($child->id, $this->supabase)
                 ->where('commitment_type', 'flexible')
-                ->where('status', 'scheduled')
-            : Session::whereIn('id', $sessionIds, $this->supabase);
+                ->where('status', 'scheduled');
+        } else {
+            // Fetch sessions by IDs individually
+            $sessions = collect();
+            foreach ($sessionIds as $sessionId) {
+                $session = Session::find((string) $sessionId, $this->supabase);
+                if ($session) {
+                    $sessions->push($session);
+                }
+            }
+        }
 
         foreach ($sessions as $session) {
             if (! $session->canBeRescheduled()) {

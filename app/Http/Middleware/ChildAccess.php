@@ -34,7 +34,7 @@ class ChildAccess
         $childId = $request->route('child_id') ?? $request->route('id');
 
         if ($childId) {
-            $child = Child::find($childId, $this->supabase);
+            $child = Child::find((string) $childId, $this->supabase);
 
             if (! $child) {
                 abort(404, 'Child not found');

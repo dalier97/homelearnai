@@ -32,9 +32,6 @@ class Review
 
     public ?Carbon $updated_at = null;
 
-    // SRS intervals: 1, 3, 7, 14, 30, 60, 120, 240 days
-    private const SRS_INTERVALS = [1, 3, 7, 14, 30, 60, 120, 240];
-
     private const MAX_INTERVAL = 240; // Max 8 months
 
     private const MIN_EASE_FACTOR = 1.3;
@@ -54,7 +51,7 @@ class Review
         }
     }
 
-    public static function find(int $id, SupabaseClient $supabase): ?self
+    public static function find(string $id, SupabaseClient $supabase): ?self
     {
         $data = $supabase->from('reviews')
             ->eq('id', $id)
@@ -279,17 +276,17 @@ class Review
      */
     public function session(SupabaseClient $supabase): ?Session
     {
-        return Session::find($this->session_id, $supabase);
+        return Session::find((string) $this->session_id, $supabase);
     }
 
     public function child(SupabaseClient $supabase): ?Child
     {
-        return Child::find($this->child_id, $supabase);
+        return Child::find((string) $this->child_id, $supabase);
     }
 
     public function topic(SupabaseClient $supabase): ?Topic
     {
-        return Topic::find($this->topic_id, $supabase);
+        return Topic::find((string) $this->topic_id, $supabase);
     }
 
     /**
@@ -313,7 +310,7 @@ class Review
             return 0;
         }
 
-        return Carbon::now()->diffInDays($this->due_date, false);
+        return (int) Carbon::now()->diffInDays($this->due_date, false);
     }
 
     /**

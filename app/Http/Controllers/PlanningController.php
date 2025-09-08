@@ -12,6 +12,7 @@ use App\Services\QualityHeuristicsService;
 use App\Services\SchedulingEngine;
 use App\Services\SupabaseClient;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session as SessionFacade;
 use Illuminate\View\View;
@@ -38,7 +39,7 @@ class PlanningController extends Controller
 
         // Default to first child or selected child
         $selectedChildId = $request->get('child_id', $children->first()?->id);
-        $selectedChild = $selectedChildId ? Child::find($selectedChildId, $this->supabase) : null;
+        $selectedChild = $selectedChildId ? Child::find((string) $selectedChildId, $this->supabase) : null;
 
         if (! $selectedChild) {
             return view('planning.index', [
@@ -104,12 +105,12 @@ class PlanningController extends Controller
         ));
     }
 
-    public function createSession(Request $request): View
+    public function createSession(Request $request): View|RedirectResponse
     {
         // Handle GET request - show form
         if ($request->isMethod('GET')) {
             $childId = $request->get('child_id');
-            $child = Child::find($childId, $this->supabase);
+            $child = Child::find((string) $childId, $this->supabase);
 
             if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
                 abort(403);
@@ -147,13 +148,13 @@ class PlanningController extends Controller
         ]);
 
         // Verify child belongs to the current user
-        $child = Child::find($validated['child_id'], $this->supabase);
+        $child = Child::find((string) $validated['child_id'], $this->supabase);
         if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
             abort(403);
         }
 
         // Get topic and use its estimated minutes if not provided
-        $topic = Topic::find($validated['topic_id'], $this->supabase);
+        $topic = Topic::find((string) $validated['topic_id'], $this->supabase);
         if (! $topic) {
             abort(404, 'Topic not found');
         }
@@ -194,13 +195,13 @@ class PlanningController extends Controller
         ])->with('htmx_trigger', 'sessionCreated');
     }
 
-    public function updateSessionStatus(Request $request, int $id): View
+    public function updateSessionStatus(Request $request, int $id): \Illuminate\Http\Response
     {
         $validated = $request->validate([
             'status' => 'required|string|in:backlog,planned,scheduled,done',
         ]);
 
-        $session = Session::find($id, $this->supabase);
+        $session = Session::find((string) $id, $this->supabase);
         if (! $session) {
             abort(404);
         }
@@ -244,7 +245,7 @@ class PlanningController extends Controller
         return response($response)->header('HX-Trigger', 'sessionStatusUpdated');
     }
 
-    public function scheduleSession(Request $request, int $id): View
+    public function scheduleSession(Request $request, int $id): \Illuminate\Http\Response
     {
         $validated = $request->validate([
             'scheduled_day_of_week' => 'required|integer|min:1|max:7',
@@ -253,7 +254,7 @@ class PlanningController extends Controller
             'scheduled_date' => 'nullable|date|after_or_equal:today',
         ]);
 
-        $session = Session::find($id, $this->supabase);
+        $session = Session::find((string) $id, $this->supabase);
         if (! $session) {
             abort(404);
         }
@@ -300,9 +301,9 @@ class PlanningController extends Controller
         return response($response)->header('HX-Trigger', 'sessionScheduled');
     }
 
-    public function unscheduleSession(int $id): View
+    public function unscheduleSession(int $id): \Illuminate\Http\Response
     {
-        $session = Session::find($id, $this->supabase);
+        $session = Session::find((string) $id, $this->supabase);
         if (! $session) {
             abort(404);
         }
@@ -342,7 +343,7 @@ class PlanningController extends Controller
 
     public function deleteSession(int $id): string
     {
-        $session = Session::find($id, $this->supabase);
+        $session = Session::find((string) $id, $this->supabase);
         if (! $session) {
             abort(404);
         }
@@ -364,7 +365,7 @@ class PlanningController extends Controller
 
     public function showSkipDayModal(Request $request, int $id): View
     {
-        $session = Session::find($id, $this->supabase);
+        $session = Session::find((string) $id, $this->supabase);
         if (! $session) {
             abort(404);
         }
@@ -383,14 +384,14 @@ class PlanningController extends Controller
         ]);
     }
 
-    public function skipSessionDay(Request $request, int $id): View
+    public function skipSessionDay(Request $request, int $id): \Illuminate\Http\Response
     {
         $validated = $request->validate([
             'skip_date' => 'required|date',
             'reason' => 'nullable|string|max:255',
         ]);
 
-        $session = Session::find($id, $this->supabase);
+        $session = Session::find((string) $id, $this->supabase);
         if (! $session) {
             abort(404);
         }
@@ -434,7 +435,7 @@ class PlanningController extends Controller
             'commitment_type' => 'required|string|in:fixed,preferred,flexible',
         ]);
 
-        $session = Session::find($id, $this->supabase);
+        $session = Session::find((string) $id, $this->supabase);
         if (! $session) {
             abort(404);
         }
@@ -454,14 +455,14 @@ class PlanningController extends Controller
         ])->with('htmx_trigger', 'commitmentTypeUpdated');
     }
 
-    public function redistributeCatchUp(Request $request): View
+    public function redistributeCatchUp(Request $request): \Illuminate\Http\Response
     {
         $validated = $request->validate([
             'child_id' => 'required|integer|exists:children,id',
             'max_sessions' => 'nullable|integer|min:1|max:10',
         ]);
 
-        $child = Child::find($validated['child_id'], $this->supabase);
+        $child = Child::find((string) $validated['child_id'], $this->supabase);
         if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
             abort(403);
         }
@@ -499,7 +500,7 @@ class PlanningController extends Controller
             'priority' => 'required|integer|min:1|max:5',
         ]);
 
-        $catchUpSession = CatchUpSession::find($id, $this->supabase);
+        $catchUpSession = CatchUpSession::find((string) $id, $this->supabase);
         if (! $catchUpSession) {
             abort(404);
         }
@@ -523,7 +524,7 @@ class PlanningController extends Controller
 
     public function deleteCatchUpSession(int $id): string
     {
-        $catchUpSession = CatchUpSession::find($id, $this->supabase);
+        $catchUpSession = CatchUpSession::find((string) $id, $this->supabase);
         if (! $catchUpSession) {
             abort(404);
         }
@@ -548,7 +549,7 @@ class PlanningController extends Controller
             'original_date' => 'required|date',
         ]);
 
-        $session = Session::find($id, $this->supabase);
+        $session = Session::find((string) $id, $this->supabase);
         if (! $session) {
             abort(404);
         }
@@ -575,7 +576,7 @@ class PlanningController extends Controller
             'child_id' => 'required|integer|exists:children,id',
         ]);
 
-        $child = Child::find($validated['child_id'], $this->supabase);
+        $child = Child::find((string) $validated['child_id'], $this->supabase);
         if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
             abort(403);
         }
@@ -599,7 +600,7 @@ class PlanningController extends Controller
             'child_id' => 'required|integer|exists:children,id',
         ]);
 
-        $child = Child::find($validated['child_id'], $this->supabase);
+        $child = Child::find((string) $validated['child_id'], $this->supabase);
         if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
             abort(403);
         }

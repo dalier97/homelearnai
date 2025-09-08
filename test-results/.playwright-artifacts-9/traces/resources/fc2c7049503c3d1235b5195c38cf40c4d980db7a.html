@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="cKAPxTSovoAvSVyvA4cDk5Ee71SKAdMu3Akip2e5" />
+
+    <title>TaskMaster</title>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      .htmx-indicator {
+        display: none;
+      }
+      .htmx-request .htmx-indicator {
+        display: inline-block;
+      }
+      .htmx-swapping {
+        opacity: 0;
+        transition: opacity 200ms ease-out;
+      }
+
+      .priority-urgent {
+        border-left: 4px solid #ef4444;
+      }
+      .priority-high {
+        border-left: 4px solid #f59e0b;
+      }
+      .priority-medium {
+        border-left: 4px solid #3b82f6;
+      }
+      .priority-low {
+        border-left: 4px solid #6b7280;
+      }
+    </style>
+
+      </head>
+  <body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex items-center space-x-8">
+            <h1 class="text-xl font-semibold text-gray-900">
+              <a href="http://127.0.0.1:18001/dashboard" class="flex items-center space-x-2">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+                <span>Homeschool Hub</span>
+              </a>
+            </h1>
+
+            <!-- Navigation Menu -->
+                      </div>
+
+          <div class="flex items-center space-x-4">
+            <!-- Language Switcher -->
+            <div class="relative" x-data="languageSwitcher()" x-init="init()">
+    <!-- Current Language Button -->
+    <button @click="open = !open" 
+            data-testid="language-switcher"
+            class="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
+            :class="{ 'text-blue-600 bg-blue-50': open }"
+            :disabled="loading">
+        <span class="text-lg">🇬🇧</span>
+        <span class="hidden sm:inline font-medium">English</span>
+        <span class="sm:hidden font-medium">EN</span>
+        
+        <!-- Loading spinner -->
+        <svg x-show="loading" class="animate-spin h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        
+        <!-- Dropdown arrow -->
+        <svg x-show="!loading" class="w-4 h-4 transition-transform duration-200" 
+             :class="open ? 'rotate-180' : ''" 
+             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </button>
+
+    <!-- Dropdown Menu -->
+    <div x-show="open" 
+         @click.away="open = false" 
+         x-transition:enter="transition ease-out duration-100"
+         x-transition:enter-start="transform opacity-0 scale-95"
+         x-transition:enter-end="transform opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-75"
+         x-transition:leave-start="transform opacity-100 scale-100"
+         x-transition:leave-end="transform opacity-0 scale-95"
+         class="absolute top-full right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+        
+                    <button @click="switchLanguage('en')"
+                    data-testid="language-option-en"
+                    class="w-full flex items-center px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                    :class="currentLocale === 'en' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'"
+                    :disabled="loading || currentLocale === 'en'">
+                <span class="text-lg mr-3">🇬🇧</span>
+                <span class="flex-1 text-left font-medium">English</span>
+                <!-- Current indicator -->
+                <svg x-show="currentLocale === 'en'" 
+                     class="w-4 h-4 text-blue-600" 
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </button>
+                    <button @click="switchLanguage('ru')"
+                    data-testid="language-option-ru"
+                    class="w-full flex items-center px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+                    :class="currentLocale === 'ru' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'"
+                    :disabled="loading || currentLocale === 'ru'">
+                <span class="text-lg mr-3">🇷🇺</span>
+                <span class="flex-1 text-left font-medium">Русский</span>
+                <!-- Current indicator -->
+                <svg x-show="currentLocale === 'ru'" 
+                     class="w-4 h-4 text-blue-600" 
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </button>
+            </div>
+</div>
+
+<script>
+    function languageSwitcher() {
+        return {
+            open: false,
+            loading: false,
+            currentLocale: 'en',
+            
+            init() {
+                // Close dropdown on escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.open = false;
+                    }
+                });
+            },
+            
+            async switchLanguage(locale) {
+                if (this.loading || this.currentLocale === locale) {
+                    return;
+                }
+                
+                this.loading = true;
+                
+                try {
+                    // Use the unified locale endpoint
+                    const response = await fetch('http://127.0.0.1:18001/locale/update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': 'cKAPxTSovoAvSVyvA4cDk5Ee71SKAdMu3Akip2e5',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ locale: locale })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Update component state
+                        this.currentLocale = locale;
+                        window.currentLocale = locale;
+                        
+                        // Check if we're on an authentication page (login, register, etc.)
+                        const isAuthPage = window.location.pathname.match(/^\/(login|register|password|auth)/);
+                        
+                                                // In testing environment, always reload to ensure session-based locale is shown
+                        // This handles cases where JWT is expired but session fallback worked
+                        console.log('Testing environment: reloading page for reliable locale switch');
+                        window.location.reload();
+                                                
+                        // Debug logging for E2E tests
+                                                console.log('Language switch successful', {
+                            newLocale: locale,
+                            response: data,
+                            isAuthPage: isAuthPage,
+                            willReload: isAuthPage
+                        });
+                                                
+                    } else {
+                        throw new Error(data.message || window.__("Failed to change language"));
+                    }
+                    
+                } catch (error) {
+                    console.error('Language switch error:', error);
+                    
+                    // Show error toast
+                    if (window.showToast) {
+                        window.showToast(error.message || window.__("Failed to change language"), 'error');
+                    }
+                    
+                    // Fallback: reload page if dynamic update fails
+                                        console.log('Dynamic language switch failed, falling back to page reload');
+                    setTimeout(() => {
+                        window.location.replace(window.location.href);
+                    }, 1000);
+                                        
+                } finally {
+                    this.loading = false;
+                    this.open = false;
+                }
+            },
+            
+            async loadTranslations(locale) {
+                try {
+                    const response = await fetch('http://127.0.0.1:18001/translations/' + locale, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        window.translations = data.translations;
+                        
+                                                console.log('Translations loaded for locale:', locale, {
+                            translationCount: Object.keys(data.translations).length,
+                            sampleTranslations: {
+                                login: data.translations.login,
+                                'Language changed successfully': data.translations['Language changed successfully']
+                            }
+                        });
+                                            } else {
+                        console.error('Failed to load translations:', data.message);
+                    }
+                } catch (error) {
+                    console.error('Translation loading error:', error);
+                    throw error; // Re-throw to trigger fallback
+                }
+            },
+            
+            updatePageTranslations() {
+                // Update elements with data-translate attributes
+                document.querySelectorAll('[data-translate]').forEach(element => {
+                    const key = element.getAttribute('data-translate');
+                    if (key && window.translations[key]) {
+                        element.textContent = window.translations[key];
+                    }
+                });
+                
+                // Update common form elements and buttons
+                this.updateCommonElements();
+                
+                // Trigger custom event for other components to update
+                window.dispatchEvent(new CustomEvent('locale-changed', {
+                    detail: { locale: this.currentLocale }
+                }));
+            },
+            
+            updateCommonElements() {
+                // Update page title if it has a translation key in meta tag
+                const titleMeta = document.querySelector('meta[name="title-key"]');
+                if (titleMeta && window.translations[titleMeta.content]) {
+                    document.title = window.translations[titleMeta.content];
+                }
+                
+                // Update submit buttons
+                document.querySelectorAll('button[type="submit"]').forEach(button => {
+                    if (button.textContent.trim()) {
+                        // Try to find translation for common button texts
+                        const commonTranslations = {
+                            'Submit': window.__("Submit"),
+                            'Save': window.__("Save"),
+                            'Update': window.__("Update"),
+                            'Create': window.__("Create"),
+                            'Login': window.__("Login"),
+                            'Register': window.__("Register")
+                        };
+                        
+                        Object.keys(commonTranslations).forEach(key => {
+                            if (button.textContent.includes(key)) {
+                                button.textContent = button.textContent.replace(key, commonTranslations[key]);
+                            }
+                        });
+                    }
+                });
+            }
+        }
+    }
+</script>
+
+<!-- Add global event listeners for language changes -->
+<script>
+    // Listen for language change events to update other components
+    window.addEventListener('locale-changed', function(event) {
+                console.log('Global locale change event received:', event.detail);
+                
+        // Update any other dynamic content that might need refreshing
+        // This can be extended as needed for specific components
+    });
+</script>            
+                      </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Loading Indicator -->
+    <div class="htmx-indicator fixed top-4 right-4 z-50">
+      <div class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center">
+        <svg class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        Loading...
+      </div>
+    </div>
+
+    <!-- Kids Mode Indicator -->
+    
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8"><div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to Homeschool Hub</h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        Or
+        <a href="http://127.0.0.1:18001/register" class="font-medium text-blue-600 hover:text-blue-500">
+          create a new account
+        </a>
+      </p>
+    </div>
+
+    <form class="mt-8 space-y-6" action="http://127.0.0.1:18001/login" method="POST">
+      <input type="hidden" name="_token" value="cKAPxTSovoAvSVyvA4cDk5Ee71SKAdMu3Akip2e5" autocomplete="off">      
+            
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+                <p>Invalid email or password. If you just registered, please check your email to confirm your account first.</p>
+              </div>
+      
+      <div class="rounded-md shadow-sm -space-y-px">
+        <div>
+          <label for="email" class="sr-only">Email address</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+            placeholder="Email address"
+            value=""
+          />
+        </div>
+        <div>
+          <label for="password" class="sr-only">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+            placeholder="Password"
+          />
+        </div>
+      </div>
+
+      <div>
+        <button
+          type="submit"
+          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Sign in
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+</main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+    <!-- HTMX Response Headers -->
+    
+    <script>
+      // Expose translations to JavaScript
+      window.translations = {"welcome":"Welcome","login":"Login","register":"Register","logout":"Logout","email":"Email","password":"Password","name":"Name","Name":"Name","Full name":"Full name","Password (min. 8 characters)":"Password (min. 8 characters)","Confirm Password":"Confirm Password","Confirm password":"Confirm password","Create account":"Create account","save":"Save","cancel":"Cancel","dashboard":"Dashboard","settings":"Settings","language":"Language","English":"English","Russian":"Russian","Language changed successfully":"Language changed successfully","Failed to change language":"Failed to change language","User not authenticated":"User not authenticated","Failed to update language preference":"Failed to update language preference","timezone":"Timezone","date_format":"Date Format","_comment_auth":"=== Authentication ===","Sign in to Homeschool Hub":"Sign in to Homeschool Hub","Sign in":"Sign in","Or":"Or","Email address":"Email address","Password":"Password","create a new account":"create a new account","Create your account":"Create your account","sign in to existing account":"sign in to existing account","create_your_account":"Create your account","sign_in_to_existing_account":"sign in to existing account","full_name":"Full name","password_min_8_characters":"Password (min. 8 characters)","confirm_password":"Confirm Password","confirm_password_placeholder":"Confirm password","create_account":"Create account","confirming_email":"Confirming Email...","please_wait_while_we_confirm_your_email_address":"Please wait while we confirm your email address.","email_confirmed":"Email Confirmed!","your_email_has_been_confirmed_successfully_you_can_now_log_in":"Your email has been confirmed successfully. You can now log in.","password_recovery_link_detected_redirecting":"Password recovery link detected. Redirecting...","invalid_confirmation_link_please_try_registering_again":"Invalid confirmation link. Please try registering again.","welcome_user":"Welcome, :email","_comment_navigation":"=== Navigation ===","Homeschool Hub":"Homeschool Hub","homeschool_hub":"Homeschool Hub","Dashboard":"Dashboard","parent_dashboard":"Parent Dashboard","Children":"Children","children":"Children","Subjects":"Subjects","subjects":"Subjects","Planning":"Planning","planning":"Planning","Reviews":"Reviews","reviews":"Reviews","Calendar":"Calendar","calendar":"Calendar","Child Views":"Child Views","child_views":"Child Views","child_view":"Child View","child":"Child",":name\u0027s Today":":name\u0027s Today","User":"User","Welcome, :email":"Welcome, :email","Logout":"Logout","_comment_actions":"=== Actions ===","add":"Add","edit":"Edit","update":"Update","delete":"Delete","create":"Create","remove":"Remove","close":"Close","back":"Back","view":"View","manage":"Manage","start":"Start","complete":"Complete","skip":"Skip","resume":"Resume","loading":"Loading...","creating":"Creating...","search":"Search","filter":"Filter","sort":"Sort","export":"Export","import":"Import","_comment_dashboard":"=== Dashboard ===","week_of_multi_child_oversight_and_planning":"Week of :week_start - Multi-child oversight and planning","planning_board":"Planning Board","manage_children":"Manage Children","week_progress":"Week Progress","sessions":"sessions","no_sessions_scheduled_for_today":"No sessions scheduled for today","complete_today":"Complete Today","reviews_count":":count Reviews","this_weeks_progress":"This Week\u0027s Progress","mark_all_todays_sessions_as_complete":"Mark all today\u0027s sessions as complete?","independence":"Independence:","level":"Level :level","sessions_need_catch_up":":count sessions need catch-up","independence_level_updated":"Independence level updated!","_comment_children":"=== Children Management ===","my_children":"My Children","manage_your_childrens_profiles_for_homeschool_planning":"Manage your children\u0027s profiles for homeschool planning","add_child":"Add Child","edit_child":"Edit Child","update_child":"Update Child","delete_child":"Delete Child","childs_name":"Child\u0027s Name","enter_childs_full_name":"Enter child\u0027s full name","age_range":"Age Range","select_age":"Select age","years_old":":age years old","this_will_help_us_suggest_ageappropriate_curriculum_and_learning_activities":"This will help us suggest age-appropriate curriculum and learning activities.","independence_level":"Independence Level","controls_what_your_child_can_do_independently_in_their_learning_interface":"Controls what your child can do independently in their learning interface.","no_children_added_yet":"No children added yet","add_your_first_child_to_start_planning_their_homeschool_curriculum":"Add your first child to start planning their homeschool curriculum!","are_you_sure_you_want_to_delete_child_this_will_also_delete_all_their_time_blocks_and_learning_data":"Are you sure you want to delete :name? This will also delete all their time blocks and learning data.","total_children":"Total Children","no_children_found":"No children found","add_a_child_first_to_import_calendar_events":"Add a child first to import calendar events.","no_children_available_create_a_child_first":"No children available - create a child first","children_found":":count children found","age_years_range":":min - :max yrs","select_a_child":"Select a child","choose_a_child":"Choose a child...","all_children":"All Children","_comment_subjects":"=== Subjects ===","manage_your_curriculum_subjects_and_organize_your_learning_units":"Manage your curriculum subjects and organize your learning units.","add_subject":"Add Subject","edit_subject":"Edit Subject","subject_name":"Subject Name","no_subjects_created_yet":"No subjects created yet","get_started_by_creating_your_first_subject":"Get started by creating your first subject.","no_subjects_yet":"No subjects yet","add_new_subject":"Add New Subject","are_you_sure_you_want_to_delete_this_subject_this_action_cannot_be_undone":"Are you sure you want to delete this subject? This action cannot be undone.","created_recently":"Created :date","units":":count units","start_building_curriculum_by_adding_subjects":"Start building :name\u0027s curriculum by adding subjects","_comment_units":"=== Units ===","add_new_unit":"Add New Unit","edit_unit":"Edit Unit","save_unit":"Save Unit","update_unit":"Update Unit","unit_name":"Unit Name","brief_description_of_this_unit":"Brief description of this unit","target_completion_date_optional":"Target Completion Date (Optional)","no_units_yet":"No units yet","get_started_by_creating_your_first_unit_in_this_subject":"Get started by creating your first unit in this subject.","are_you_sure_you_want_to_delete_this_unit":"Are you sure you want to delete this unit?","unit_details":"Unit Details","target_completion":"Target completion: :date","due":"Due :date","overdue":"Overdue","unit_ready_for_completion":"Unit Ready for Completion","all_required_topics_have_been_completed_this_unit_can_be_marked_as_done":"All required topics have been completed. This unit can be marked as done.","completion_gate_not_met":"Completion Gate Not Met","all_required_topics_must_be_completed_before_this_unit_can_be_marked_as_done":"All required topics must be completed before this unit can be marked as done.","mark_as_done":"Mark as done","required_topics":"Required Topics:","remaining_required":"Remaining Required:","total_topics":"Total Topics:","unit":"Unit: :name","_comment_topics":"=== Topics ===","add_new_topic":"Add New Topic","edit_topic":"Edit Topic","save_topic":"Save Topic","update_topic":"Update Topic","topic_name":"Topic Name","brief_description_of_this_topic":"Brief description of this topic","required":"Required","optional":"Optional","estimated_duration_minutes":"Estimated Duration (Minutes)","how_long_you_expect_this_topic_to_take_5480_minutes":"How long you expect this topic to take (5-480 minutes)","no_topics_yet":"No topics yet","get_started_by_creating_your_first_topic_in_this_unit":"Get started by creating your first topic in this unit.","are_you_sure_you_want_to_delete_this_topic":"Are you sure you want to delete this topic?","required_topic":"Required topic","required_topics_must_be_completed_for_unit_completion":"Required topics must be completed for unit completion","no_topics_available":"No topics available.","choose_a_topic":"Choose a topic...","add_session_for_this_topic":"Add session for this topic","select_topic":"Select Topic","next_topics_to_work_on":"Next Topics to Work On","topic_planning_board":"Topic Planning Board","_comment_planning":"=== Planning ===","plan_and_schedule_learning_sessions_for_your_children":"Plan and schedule learning sessions for your children","this_weeks_plan":"This Week\u0027s Plan","select_child":"Select child","select_child_colon":"Select Child:","no_schedule_created_yet":"No schedule created yet","create_subjects_and_units_first":"Create subjects and units first","planned":"Planned","scheduled":"Scheduled","completed":"Completed","backlog":"Backlog","catchup_lane":"Catch-Up Lane","drag_sessions_here_to_plan_them":"Drag sessions here to plan them","drag_planned_sessions_here_to_schedule_them":"Drag planned sessions here to schedule them","scheduled_sessions":"Scheduled Sessions","completed_sessions_appear_here":"Completed sessions appear here","skipped_sessions_appear_here":"Skipped sessions appear here","no_catchup_sessions":"No catch-up sessions","you_can_move_sessions":"You can move sessions!","you_can_reorder_these":"You can reorder these!","create_learning_session":"Create Learning Session","create_session":"Create Session","estimated_time_minutes":"Estimated time: :minutes minutes","scheduled_for_time":"Scheduled for :time","schedule_this_session":"Schedule this session","unschedule_session":"Unschedule session","move_to_planned":"Move to Planned","are_you_sure_you_want_to_delete_this_session":"Are you sure you want to delete this session?","reschedule_session":"Reschedule Session","here_are_the_best_available_time_slots_for_rescheduling_this_session":"Here are the best available time slots for rescheduling this session:","no_suitable_time_slots_were_found_for_rescheduling_this_session_in_the_next_two_weeks":"No suitable time slots were found for rescheduling this session in the next two weeks.","find_time_slots":"Find Time Slots","no_available_slots":"No Available Slots","available_time":"Available Time","recommended":"Recommended","difficulty":"Difficulty: :difficulty\/10","automatically_reschedule_up_to_5_catchup_sessions":"Automatically reschedule up to 5 catch-up sessions","this_session_can_be_automatically_rescheduled_if_needed":"This session can be automatically rescheduled if needed.","flexible_session":"Flexible Session","originally_scheduled_for":"Originally scheduled for :date","missed":"Missed: :date","skipped_from":"Skipped from :date","completed_date_time":"Completed :date","reassigned_to_new_session":"Reassigned to new session","skip_session_day":"Skip Session Day","skip_day":"Skip Day","date_to_skip":"Date to skip","reason_optional":"Reason (optional)","why_are_you_skipping_this_session":"Why are you skipping this session?","what_happens_when_you_skip":"What happens when you skip:","are_you_sure_you_want_to_cancel_this_catchup_session":"Are you sure you want to cancel this catch-up session?","custom_duration_minutes":"Custom Duration (minutes)","session_notes":"Session Notes","notes_captured":"Notes captured","voice_memo_recorded":"Voice memo recorded","voice_memo":"Voice memo:","voice_note":"Voice Note","photo":"Photo","photos":"Photos","learning_evidence":"Learning Evidence","write_notes":"Write Notes","session_completed":"Session Completed!","session_complete":"Session Complete!","close_session":"Close Session","a_review_card_has_been_created_and_will_appear_in_your_review_queue_tomorrow":"A review card has been created and will appear in your review queue tomorrow.","change_priority":"Change Priority","_comment_reviews":"=== Reviews ===","review_system":"Review System","spaced_repetition_learning_for_mastery":"Spaced repetition learning for mastery","no_child_selected":"No child selected","add_a_child_first_to_start_using_the_review_system":"Add a child first to start using the review system.","start_review_session":"Start Review Session","quick_review_items":"Quick Review (:count items)","items_due_for_review":":count items due for review","cards_remaining":":count cards remaining","great_job_all_reviews_are_done_for_now":"Great job! All reviews are done for now.","lets_review_some_things_youve_learned_before":"Let\u0027s review some things you\u0027ve learned before!","keep_up_the_awesome_learning":"Keep up the awesome learning, :name!","review_session":"Review Session","think_about_how_well_you_remember_this_topic_then_reveal_the_answer":"Think about how well you remember this topic, then reveal the answer:","show_answer":"Show Answer","review_this_topic_and_assess_your_understanding":"Review this topic and assess your understanding.","now_rate_your_recall":"Now rate your recall:","again":"Again","hard":"Hard","good":"Good","normal":"Normal","easy":"Easy","longer":"Longer","srs_details":"SRS Details","last_reviewed":"Last reviewed: :date","never":"Never","due_date":"Due :date","current_interval_days":"Current interval: :days days","ease_factor":"Ease factor: :factor","interval_formatted":"Interval: :interval","interval_change":"Interval: :old \u2192 :new","ease_factor_change":"Ease factor: :old \u2192 :new","next_review":"Next Review","due_today":"Due Today","evidence_photo":"Evidence photo","back_to_reviews":"Back to Reviews","review_slots":"Review Slots","manage_review_slots":"Manage Review Slots","manage_daily_review_time_slots_for_child":"Manage daily review time slots for :name","add_review_slot":"Add Review Slot","weekly_schedule":"Weekly Schedule","no_review_slots_scheduled":"No review slots scheduled","add_slot":"Add Slot","edit_slot":"Edit slot","delete_slot":"Delete slot","activate_deactivate_slot":":action slot","activate":"Activate","deactivate":"Deactivate","disable":"Disable","enable":"Enable","are_you_sure_you_want_to_delete_this_review_slot":"Are you sure you want to delete this review slot?","edit_review_slot":"Edit Review Slot","day_of_week":"Day of Week","monday":"Monday","tuesday":"Tuesday","wednesday":"Wednesday","thursday":"Thursday","friday":"Friday","saturday":"Saturday","sunday":"Sunday","start_time":"Start Time","end_time":"End Time","slot_type":"Slot Type","micro_session_5_min":"Micro Session (5 min)","standard_session_1530_min":"Standard Session (15-30 min)","micro_session":"Micro Session","standard_session":"Standard Session","unknown":"Unknown","update_slot":"Update Slot","duration":"Duration","duration_formatted":"Duration: :duration","today_lowercase":"today","active_now":"Active now!","starts_in_minutes":"Starts in :minutes minutes","active":"Active","days_overdue":":days days overdue","new_cards":"New Cards","mastered":"Mastered","retention":"Retention","performance_analytics":"Performance Analytics","total_reviews":"Total Reviews","retention_rate":"Retention Rate","performance_by_status":"Performance by Status","learning":"Learning","reviewing":"Reviewing","recent_performance":"Recent Performance","this_week":"This Week","reviews_lowercase":"Reviews","success":"Success","avg_days":"Avg Days","avg_interval_days":"Avg Interval (days)","new_lowercase":"New","this_month":"This Month","todays_review_slots":"Today\u0027s Review Slots","no_review_slots_scheduled_for_today":"No review slots scheduled for today.","set_up_review_slots":"Set up review slots","review_queue":"Review Queue","all_caught_up":"All caught up!","no_reviews_due_right_now_great_work":"No reviews due right now. Great work!","quick_actions":"Quick Actions","review_stats":"Review Stats","overall_retention":"Overall Retention","next_scheduled_review":"Next Scheduled Review","no_scheduled_review_slots":"No scheduled review slots","learning_progress":"Learning Progress","review_history":"Review History","view_all":"View All","date":"Date","topic":"Topic","performance":"Performance","no_review_history_yet":"No review history yet","unknown_topic":"Unknown Topic","not_available":"N\/A","repetitions_count":":count repetitions","notes":"Notes","session_completed_evidence_captured_for_child":"Session Completed!","evidence_captured_for_child":"Evidence captured for :name.","back_to_dashboard":"Back to Dashboard","enjoy_your_free_time":"Enjoy your free time! \ud83c\udf89","_comment_calendar":"=== Calendar ===","weekly_calendar":"Weekly Calendar","manage_time_blocks_and_learning_schedules":"Manage time blocks and learning schedules","add_time_block":"Add Time Block","total_time_blocks":"Total Time Blocks: :count","weekly_hours":"Weekly Hours","no_blocks":"No blocks","review_time":"Review Time","add_children_first_to_create_their_learning_schedules":"Add children first to create their learning schedules","add_children":"Add Children","select_a_child_to_view_their_calendar":"Select a child to view their calendar","choose_a_child_from_the_dropdown_above_to_manage_their_schedule":"Choose a child from the dropdown above to manage their schedule","create_time_blocks_to_organize_childs_learning_schedule":"Create time blocks to organize :name\u0027s learning schedule","select_day":"Select day","activity":"Activity","activity_placeholder":"e.g., Math, Reading, Art, Science","quick_suggestions":"Quick suggestions:","math_910am":"Math 9-10am","reading_101511am":"Reading 10:15-11am","science_111512pm":"Science 11:15-12pm","commitment_type":"Commitment Type","update_block":"Update Block","add_block":"Add Block","are_you_sure_you_want_to_delete_this_time_block":"Are you sure you want to delete this time block?","no_time_blocks":"No time blocks","import_calendar":"Import Calendar","upload_ics_file":"Upload ICS File","supported_formats":"Supported formats: :formats","preview_import":"Preview Import","weekly_utilization":"Weekly Utilization","no_sessions_scheduled":"No sessions scheduled","no_schedule":"No schedule","view_full_calendar":"View Full Calendar","view_schedule":"View Schedule","create_schedule":"Create Schedule","todays_sessions":"Today\u0027s Sessions","_comment_tasks":"=== Tasks ===","my_tasks":"My Tasks","search_tasks":"Search tasks...","all_priorities":"All Priorities","urgent":"Urgent","high":"High","medium":"Medium","low":"Low","all_status":"All Status","pending":"Pending","add_task":"Add Task","are_you_sure_you_want_to_delete_this_task":"Are you sure you want to delete this task?","no_tasks_found":"No tasks found","create_your_first_task_to_get_started":"Create your first task to get started!","_comment_time_status":"=== Time \u0026 Status ===","today":"Today","yesterday":"Yesterday","tomorrow":"Tomorrow","next_week":"Next Week","last_week":"Last Week","next_month":"Next Month","last_month":"Last Month","weekly":"Weekly","monthly":"Monthly","yes":"Yes","no":"No","all":"All","none":"None","done":"Done","complete_exclamation":"Complete!","coming_soon":"Coming soon","_comment_messages":"=== Messages ===","created_successfully":"Created successfully","updated_successfully":"Updated successfully","deleted_successfully":"Deleted successfully","saved_successfully":"Saved successfully","not_found":"Not found","access_denied":"Access denied","operation_failed":"Operation failed","please_try_again":"Please try again","Invalid email or password. If you just registered, please check your email to confirm your account first.":"Invalid email or password. If you just registered, please check your email to confirm your account first.","Please confirm your email address before logging in. Check your inbox for the confirmation email.":"Please confirm your email address before logging in. Check your inbox for the confirmation email.","Unable to log in. Please try again.":"Unable to log in. Please try again.","Registration successful! Please check your email to confirm your account.":"Registration successful! Please check your email to confirm your account.","Registration successful! You can now log in.":"Registration successful! You can now log in.","Registration failed. Please try again.":"Registration failed. Please try again.","are_you_sure":"Are you sure?","this_action_cannot_be_undone":"This action cannot be undone","operation_completed":"Operation completed","error_occurred":"An error occurred","_comment_misc":"=== Miscellaneous ===","choose_a_color":"Choose a color...","target_date":"Target Date:","description":"Description","minutes":"minutes","hours":"hours","days":"days","weeks":"weeks","months":"months","years":"years","or":"Or","and":"and","age_group":"Age Group: :group","capacity_status":"Capacity :status","overloaded_days":"Overloaded Days","weekly_capacity_overview":"Weekly Capacity Overview","deploy_now":"Deploy now","documentation":"Documentation","watch_video_tutorials_at":"Watch video tutorials at","read_the":"Read the","lets_get_started":"Let\u0027s get started","laravel_has_an_incredibly_rich_ecosystem":"Laravel has an incredibly rich ecosystem.","we_suggest_starting_with_the_following":"We suggest starting with the following.","_comment_learning":"=== Learning Specific ===","curriculum_subjects":"Curriculum \u0026 Subjects","learning_plans":"Learning Plans","learning_sessions":"Learning Sessions","spaced_repetition":"Spaced Repetition","age_appropriate":"Age Appropriate","homeschool_planning":"Homeschool Planning","curriculum_planning":"Curriculum Planning","_comment_auth_errors":"=== Authentication Error Messages ===","An account with this email already exists. Please log in instead.":"An account with this email already exists. Please log in instead.","Password must be at least 8 characters long.":"Password must be at least 8 characters long.","Please provide a valid email address.":"Please provide a valid email address.","A database error occurred. Please try again later.":"A database error occurred. Please try again later.","Unable to connect to the authentication service. Please try again.":"Unable to connect to the authentication service. Please try again.","Registration encountered an error. Please try again or contact support if the problem persists.":"Registration encountered an error. Please try again or contact support if the problem persists.","Registration could not be completed. Please ensure all fields are correct and try again.":"Registration could not be completed. Please ensure all fields are correct and try again.","Registration completed. If you experience any issues, please contact support.":"Registration completed. If you experience any issues, please contact support.","_comment_js_htmx_messages":"=== JavaScript\/HTMX Messages ===","Error creating review slot. Please try again.":"Error creating review slot. Please try again.","Error updating slot:":"Error updating slot:","Please select a date to skip.":"Please select a date to skip.","Error:":"Error:","Error processing review:":"Error processing review:","Failed to load translations":"Failed to load translations","Failed to reload translations:":"Failed to reload translations:","Error loading subjects. Please try again.":"Error loading subjects. Please try again.","Error creating subject. Please try again.":"Error creating subject. Please try again.","Error updating subject. Please try again.":"Error updating subject. Please try again.","Cannot delete subject with existing units. Please delete all units first.":"Cannot delete subject with existing units. Please delete all units first.","Error deleting subject. Please try again.":"Error deleting subject. Please try again.","Error loading units. Please try again.":"Error loading units. Please try again.","Error creating unit. Please try again.":"Error creating unit. Please try again.","Error updating unit. Please try again.":"Error updating unit. Please try again.","Cannot delete unit with existing topics. Please delete all topics first.":"Cannot delete unit with existing topics. Please delete all topics first.","Error deleting unit. Please try again.":"Error deleting unit. Please try again.","Error loading topics. Please try again.":"Error loading topics. Please try again.","Error creating topic. Please try again.":"Error creating topic. Please try again.","Error updating topic. Please try again.":"Error updating topic. Please try again.","Error deleting topic. Please try again.":"Error deleting topic. Please try again.","_comment_session_management":"=== Session Management ===","you_need_to":"You need to","first":"first","select_a_child_from_the_dropdown_above_to_start_planning_their_learning_sessions":"Select a child from the dropdown above to start planning their learning sessions","session_created_successfully":"Session created successfully!","session_updated_successfully":"Session updated successfully!","session_deleted_successfully":"Session deleted successfully!","session_scheduled_successfully":"Session scheduled successfully!","session_unscheduled_successfully":"Session unscheduled successfully!","optional_defaults_to_topic_estimate":"optional, defaults to topic estimate","session_moves_to_catch_up_lane":"Session moves to the Catch-Up Lane","priority_set_based_on_commitment_type":"Priority is set based on commitment type","auto_reschedule_suggestions_will_be_provided":"Auto-reschedule suggestions will be provided","you_can_manually_reschedule_later":"You can manually reschedule later","plan":"Plan","schedule":"Schedule","unschedule":"Unschedule","delete_session":"Delete Session","fixed":"Fixed","preferred":"Preferred","flexible":"Flexible","capacity_used_percentage":":percentage% capacity used","days_from_original":":days days from original","schedule_here":"Schedule Here","try_reducing_the_session_duration":"Try reducing the session duration","consider_adding_more_time_blocks_to_the_weekly_schedule":"Consider adding more time blocks to the weekly schedule","look_for_available_slots_further_in_the_future":"Look for available slots further in the future","view_capacity_analysis":"View Capacity Analysis","add_session_from_topic":"Add Session from Topic","_comment_new_children_calendar":"=== New Children \u0026 Calendar Keys ===","edit_profile":"Edit Profile","time_blocks":"Time Blocks","progress":"Progress","add_new_child":"Add New Child","age":"Age","level_1_guided_view_only":"Level 1 - Guided (View Only)","level_2_basic_can_reorder_tasks":"Level 2 - Basic (Can Reorder Tasks)","level_3_intermediate_move_sessions_in_week":"Level 3 - Intermediate (Move Sessions in Week)","level_4_advanced_propose_weekly_plans":"Level 4 - Advanced (Propose Weekly Plans)","edit_time_block":"Edit Time Block","add_new_time_block":"Add New Time Block","time_block_added_successfully":"Time block added successfully!","time_block_updated_successfully":"Time block updated successfully!","time_block_deleted_successfully":"Time block deleted successfully!","_comment_form_placeholders":"=== Form Placeholders ===","session_duration_placeholder":"30","search_tasks_placeholder":"Search tasks...","topic_name_example":"e.g., Tables 1-3","topic_description_placeholder":"Brief description of this topic","unit_name_example":"e.g., Multiplication Tables","unit_description_placeholder":"Brief description of this unit","subject_name_example":"e.g., Mathematics, English Language Arts, Science","_comment_new_final_cleanup":"=== Final Cleanup Keys ===","modal_content_loaded_by_htmx":"Modal content will be loaded here by HTMX","confirm_delete_subject":"Are you sure you want to delete this subject? This action cannot be undone.","confirm_delete_unit":"Are you sure you want to delete this unit?","confirm_delete_topic":"Are you sure you want to delete this topic?","confirm_delete_child":"Are you sure you want to delete :name? This will also delete all their time blocks and learning data.","units_count":":count units","topics_count":":count topics","created_date":"Created :date","recently":"Recently","view_subject":"View Subject","view_unit":"View Unit","view_child":"View Child","age_years":":age years old","add_first_child_start_planning":"Add your first child to start planning their homeschool curriculum!","childs_weekly_schedule":":name\u0027s Weekly Schedule","total_time_blocks_colon":"Total Time Blocks: :count","weekly_hours_colon":"Weekly Hours:","add_children_first_create_schedules":"Add children first to create their learning schedules","select_child_view_calendar":"Select a child to view their calendar","choose_child_dropdown_manage_schedule":"Choose a child from the dropdown above to manage their schedule","choose_child_ellipsis":"Choose a child...","add_child_first_import_events":"Add a child first to import calendar events.","supported_formats_colon":"Supported formats: :formats","get_started_creating_first_unit_in_subject":"Get started by creating your first unit in this subject.","add_unit":"Add Unit","get_started_creating_first_topic_in_unit":"Get started by creating your first topic in this unit.","add_topic":"Add Topic","drag_sessions_here_to_plan":"Drag sessions here to plan them","drag_planned_sessions_here_to_schedule":"Drag planned sessions here to schedule them","no_sessions_yet":"No sessions yet","session_completed_exclamation":"Session Completed!","photos_uploaded":":count photo|:count photos uploaded","attachments_uploaded":":count attachment|:count attachments uploaded","review_card_created_tomorrow":"A review card has been created and will appear in your review queue tomorrow.","create_first_task_get_started":"Create your first task to get started!","manage_childrens_profiles_homeschool_planning":"Manage your children\u0027s profiles for homeschool planning","manage_curriculum_subjects_organize_units":"Manage your curriculum subjects and organize your learning units.","get_started_creating_first_subject":"Get started by creating your first subject.","Child added successfully!":"Child added successfully!","Child updated successfully!":"Child updated successfully!","Child deleted successfully!":"Child deleted successfully!","age_range_years":":min - :max yrs","quick_start_subjects":"Quick Start: Add Standard Subjects","select_grade_level":"Select Grade Level","elementary_k5":"Elementary (K-5)","middle_school_68":"Middle School (6-8)","high_school_912":"High School (9-12)","recommended_subjects":"Recommended Subjects","select_subjects_to_add":"Select subjects to add:","add_custom_subjects":"Add Custom Subjects","custom_subject_placeholder":"Enter custom subject name","create_selected_subjects":"Create Selected Subjects","create_1_subject":"Create 1 Subject","create_count_subjects":"Create :count Subjects","skip_quick_start":"Skip and create manually",":count subjects created successfully":":count subjects created successfully","quick_start_description":"Get started quickly by selecting standard subjects for your grade level. You can customize these later.","at_least_one_subject_required":"Please select at least one subject","reading_language_arts":"Reading\/Language Arts","mathematics":"Mathematics","science":"Science","social_studies":"Social Studies","english_language_arts":"English Language Arts","life_science":"Life Science","earth_science":"Earth Science","physical_science":"Physical Science","world_history":"World History","us_history":"U.S. History","biology":"Biology","chemistry":"Chemistry","physics":"Physics","algebra":"Algebra","geometry":"Geometry","calculus":"Calculus","art":"Art","music":"Music","physical_education":"Physical Education","health":"Health","world_language":"World Language","foreign_language":"Foreign Language","computer_science":"Computer Science","economics":"Economics","psychology":"Psychology","showing_subjects_for":"Showing subjects for","please_add_children_first_before_managing_subjects":"Please add children first before managing subjects.","creating_subjects_for":"Creating subjects for","please_select_child_to_continue":"Please select a child to continue","_comment_kids_mode":"=== Kids Mode PIN Management ===","kids_mode_settings":"Kids Mode Settings","set_kids_mode_pin":"Set Kids Mode PIN","update_kids_mode_pin":"Update Kids Mode PIN","current_pin":"Current PIN","new_pin":"New PIN","confirm_pin":"Confirm PIN","pin_not_set":"No PIN set","pin_is_set":"PIN is set","reset_pin":"Reset PIN","pin_updated":"Kids Mode PIN updated successfully","pin_reset":"Kids Mode PIN has been reset","pin_must_be_4_digits":"PIN must be exactly 4 digits","pins_do_not_match":"PINs do not match","enter_parent_pin":"Enter Parent PIN to Exit","incorrect_pin":"Incorrect PIN. Try again.","too_many_attempts":"Too many attempts. Please wait 5 minutes.","exit_kids_mode":"Exit Kids Mode","back_to_learning":"Back to Learning","Signed in as":"Signed in as","Show\/hide PIN":"Show\/hide PIN","Re-enter the same 4-digit PIN":"Re-enter the same 4-digit PIN","Security Information":"Security Information","Your PIN is encrypted and securely stored":"Your PIN is encrypted and securely stored","After 5 failed attempts, PIN entry is locked for 5 minutes":"After 5 failed attempts, PIN entry is locked for 5 minutes","Only use digits 0-9 for your PIN":"Only use digits 0-9 for your PIN","Choose a PIN that children cannot easily guess":"Choose a PIN that children cannot easily guess","Are you sure you want to reset your PIN? This will remove PIN protection from Kids Mode.":"Are you sure you want to reset your PIN? This will remove PIN protection from Kids Mode.","Secure your parental controls with a 4-digit PIN":"Secure your parental controls with a 4-digit PIN","PIN Not Set":"PIN Not Set","A parent needs to set up a PIN first":"A parent needs to set up a PIN first","Go to Dashboard":"Go to Dashboard","Account Locked":"Account Locked","Try again after :time":"Try again after :time","Locked":"Locked","Enter the 4-digit PIN to exit Kids Mode":"Enter the 4-digit PIN to exit Kids Mode","Learning time with :name":"Learning time with :name","Ask a parent to help exit Kids Mode":"Ask a parent to help exit Kids Mode","Clear":"Clear","An error occurred. Please try again.":"An error occurred. Please try again.","Attempts remaining":"Attempts remaining","_comment_kids_mode_ui":"=== Kids Mode UI ===","enter_kids_mode":"Enter Kids Mode","kids_mode_active":"Kids Mode Active","set_pin_first":"Set PIN First","kids_mode_for":"Enter Kids Mode for :name","My Today":"My Today","My Reviews":"My Reviews","Entered :time":"Entered :time","Kids mode PIN has been set successfully":"Kids mode PIN has been set successfully"};
+      window.currentLocale = 'en';
+      
+      // Debug info for E2E tests
+            console.log('Layout: Translations loaded', {
+        currentLocale: window.currentLocale,
+        sampleTranslations: {
+          login: window.translations.login || 'not found',
+          'create account': window.translations['create account'] || 'not found'
+        }
+      });
+            
+      // JavaScript translation helper
+      window.__ = function(key, params = {}) {
+        let translation = window.translations[key] || key;
+        
+        // Handle parameter replacement
+        Object.keys(params).forEach(param => {
+          const placeholder = ':' + param;
+          translation = translation.replace(new RegExp(placeholder, 'g'), params[param]);
+        });
+        
+        return translation;
+      };
+      
+      // Dynamic translation reloading function
+      window.reloadTranslations = async function(locale) {
+        try {
+                    console.log('Reloading translations for locale:', locale);
+                    
+          const response = await fetch('/translations/' + locale, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'X-CSRF-TOKEN': 'cKAPxTSovoAvSVyvA4cDk5Ee71SKAdMu3Akip2e5'
+            },
+            credentials: 'same-origin'
+          });
+          
+          if (!response.ok) {
+            throw new Error('Translation loading failed: ' + response.status);
+          }
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            // Update global translations
+            window.translations = data.translations;
+            window.currentLocale = locale;
+            
+                        console.log('Translations reloaded successfully', {
+              locale: locale,
+              translationCount: Object.keys(data.translations).length,
+              sampleTranslations: {
+                login: data.translations.login || 'not found',
+                'Language changed successfully': data.translations['Language changed successfully'] || 'not found'
+              }
+            });
+                        
+            return true;
+          } else {
+            throw new Error(data.message || window.__('Failed to load translations'));
+          }
+        } catch (error) {
+          console.error(window.__('Failed to reload translations:'), error);
+          
+                    console.log('Translation reload failed, will trigger fallback');
+                    
+          return false;
+        }
+      };
+      
+      // Enhanced translation update function
+      window.updateAllTranslatableElements = function() {
+        // Update elements with data-translate attributes
+        document.querySelectorAll('[data-translate]').forEach(element => {
+          const key = element.getAttribute('data-translate');
+          if (key && window.translations[key]) {
+            if (element.tagName === 'INPUT') {
+              // For input placeholders
+              if (element.hasAttribute('placeholder')) {
+                element.placeholder = window.translations[key];
+              } else {
+                element.value = window.translations[key];
+              }
+            } else {
+              element.textContent = window.translations[key];
+            }
+          }
+        });
+        
+        // Update meta tags that depend on translations
+        const titleKey = document.querySelector('meta[name="title-key"]');
+        if (titleKey && window.translations[titleKey.content]) {
+          document.title = window.translations[titleKey.content];
+        }
+        
+        // Update aria-labels and alt texts
+        document.querySelectorAll('[data-translate-aria]').forEach(element => {
+          const key = element.getAttribute('data-translate-aria');
+          if (key && window.translations[key]) {
+            element.setAttribute('aria-label', window.translations[key]);
+          }
+        });
+        
+        document.querySelectorAll('[data-translate-alt]').forEach(element => {
+          const key = element.getAttribute('data-translate-alt');
+          if (key && window.translations[key]) {
+            element.setAttribute('alt', window.translations[key]);
+          }
+        });
+        
+        // Trigger custom event for other components
+        window.dispatchEvent(new CustomEvent('translations-updated', {
+          detail: { locale: window.currentLocale }
+        }));
+        
+                console.log('All translatable elements updated for locale:', window.currentLocale);
+              };
+
+      // Configure HTMX
+      document.body.addEventListener('htmx:configRequest', (event) => {
+        event.detail.headers['X-CSRF-TOKEN'] = 'cKAPxTSovoAvSVyvA4cDk5Ee71SKAdMu3Akip2e5';
+      });
+
+      // Toast notifications
+      document.body.addEventListener('taskCreated', () => showToast('Task created!', 'success'));
+      document.body.addEventListener('taskUpdated', () => showToast('Task updated!', 'success'));
+      document.body.addEventListener('taskDeleted', () => showToast('Task deleted!', 'info'));
+      document.body.addEventListener('taskToggled', () =>
+        showToast('Task status changed!', 'success')
+      );
+
+      function showToast(message, type = 'info') {
+        const colors = {
+          success: 'bg-green-500',
+          error: 'bg-red-500',
+          info: 'bg-blue-500',
+          warning: 'bg-yellow-500',
+        };
+
+        const toast = document.createElement('div');
+        toast.className = `${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full`;
+        toast.textContent = message;
+
+        document.getElementById('toast-container').appendChild(toast);
+
+        setTimeout(() => toast.classList.remove('translate-x-full'), 10);
+        setTimeout(() => {
+          toast.classList.add('translate-x-full');
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+    </script>
+
+      </body>
+</html>

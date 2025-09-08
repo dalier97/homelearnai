@@ -29,12 +29,12 @@ class TopicController extends Controller
                 return redirect()->route('login')->with('error', 'Please log in to continue.');
             }
 
-            $subject = Subject::find($subjectId, $this->supabase);
+            $subject = Subject::find((string) $subjectId, $this->supabase);
             if (! $subject || $subject->user_id !== $userId) {
                 return redirect()->route('subjects.index')->with('error', 'Subject not found.');
             }
 
-            $unit = Unit::find($unitId, $this->supabase);
+            $unit = Unit::find((string) $unitId, $this->supabase);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return redirect()->route('subjects.show', $subjectId)->with('error', 'Unit not found.');
             }
@@ -68,12 +68,12 @@ class TopicController extends Controller
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find($subjectId, $this->supabase);
+            $subject = Subject::find((string) $subjectId, $this->supabase);
             if (! $subject || $subject->user_id !== $userId) {
                 return response('Subject not found', 404);
             }
 
-            $unit = Unit::find($unitId, $this->supabase);
+            $unit = Unit::find((string) $unitId, $this->supabase);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return response('Unit not found', 404);
             }
@@ -101,12 +101,12 @@ class TopicController extends Controller
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find($subjectId, $this->supabase);
+            $subject = Subject::find((string) $subjectId, $this->supabase);
             if (! $subject || $subject->user_id !== $userId) {
                 return response('Subject not found', 404);
             }
 
-            $unit = Unit::find($unitId, $this->supabase);
+            $unit = Unit::find((string) $unitId, $this->supabase);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return response('Unit not found', 404);
             }
@@ -161,26 +161,26 @@ class TopicController extends Controller
                 return redirect()->route('login');
             }
 
-            $subject = Subject::find($subjectId, $this->supabase);
+            $subject = Subject::find((string) $subjectId, $this->supabase);
             if (! $subject || $subject->user_id !== $userId) {
                 return redirect()->route('subjects.index')->with('error', 'Subject not found.');
             }
 
-            $unit = Unit::find($unitId, $this->supabase);
+            $unit = Unit::find((string) $unitId, $this->supabase);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return redirect()->route('subjects.show', $subjectId)->with('error', 'Unit not found.');
             }
 
-            $topic = Topic::find($id, $this->supabase);
+            $topic = Topic::find((string) $id, $this->supabase);
             if (! $topic || $topic->unit_id !== $unitId) {
                 return redirect()->route('units.show', [$subjectId, $unitId])->with('error', 'Topic not found.');
             }
 
             if ($request->header('HX-Request')) {
-                return view('topics.partials.topic-details', compact('topic', 'unit', 'subject'));
+                return view((string) 'topics.partials.topic-details', compact('topic', 'unit', 'subject'));
             }
 
-            return view('topics.show', compact('topic', 'unit', 'subject'));
+            return view((string) 'topics.show', compact('topic', 'unit', 'subject'));
         } catch (\Exception $e) {
             Log::error('Error fetching topic: '.$e->getMessage());
 
@@ -199,17 +199,17 @@ class TopicController extends Controller
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find($subjectId, $this->supabase);
+            $subject = Subject::find((string) $subjectId, $this->supabase);
             if (! $subject || $subject->user_id !== $userId) {
                 return response('Subject not found', 404);
             }
 
-            $unit = Unit::find($unitId, $this->supabase);
+            $unit = Unit::find((string) $unitId, $this->supabase);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return response('Unit not found', 404);
             }
 
-            $topic = Topic::find($id, $this->supabase);
+            $topic = Topic::find((string) $id, $this->supabase);
             if (! $topic || $topic->unit_id !== $unitId) {
                 return response('Topic not found', 404);
             }
@@ -237,17 +237,17 @@ class TopicController extends Controller
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find($subjectId, $this->supabase);
+            $subject = Subject::find((string) $subjectId, $this->supabase);
             if (! $subject || $subject->user_id !== $userId) {
                 return response('Subject not found', 404);
             }
 
-            $unit = Unit::find($unitId, $this->supabase);
+            $unit = Unit::find((string) $unitId, $this->supabase);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return response('Unit not found', 404);
             }
 
-            $topic = Topic::find($id, $this->supabase);
+            $topic = Topic::find((string) $id, $this->supabase);
             if (! $topic || $topic->unit_id !== $unitId) {
                 return response('Topic not found', 404);
             }
@@ -298,17 +298,17 @@ class TopicController extends Controller
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find($subjectId, $this->supabase);
+            $subject = Subject::find((string) $subjectId, $this->supabase);
             if (! $subject || $subject->user_id !== $userId) {
                 return response('Subject not found', 404);
             }
 
-            $unit = Unit::find($unitId, $this->supabase);
+            $unit = Unit::find((string) $unitId, $this->supabase);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return response('Unit not found', 404);
             }
 
-            $topic = Topic::find($id, $this->supabase);
+            $topic = Topic::find((string) $id, $this->supabase);
             if (! $topic || $topic->unit_id !== $unitId) {
                 return response('Topic not found', 404);
             }

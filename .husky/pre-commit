@@ -2,6 +2,20 @@
 echo "Running PHP linter..."
 ./vendor/bin/pint --test
 
+# Run PHPStan static analysis
+echo "Running PHPStan static analysis..."
+if [ -f "./vendor/bin/phpstan" ]; then
+    ./vendor/bin/phpstan analyse --memory-limit=512M --no-progress
+    if [ $? -ne 0 ]; then
+        echo "❌ PHPStan found type errors. Please fix them before committing."
+        echo "💡 Run 'composer run phpstan' to see detailed errors"
+        exit 1
+    fi
+    echo "✅ PHPStan analysis passed!"
+else
+    echo "⚠️  PHPStan not installed, skipping static analysis"
+fi
+
 # Run lint-staged for JS/TS files  
 npx lint-staged
 

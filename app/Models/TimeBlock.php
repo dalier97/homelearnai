@@ -54,7 +54,7 @@ class TimeBlock
         }
     }
 
-    public static function find(int $id, SupabaseClient $supabase): ?self
+    public static function find(string $id, SupabaseClient $supabase): ?self
     {
         $data = $supabase->from('time_blocks')
             ->eq('id', $id)
@@ -134,7 +134,7 @@ class TimeBlock
      */
     public function child(SupabaseClient $supabase): ?Child
     {
-        return Child::find($this->child_id, $supabase);
+        return Child::find((string) $this->child_id, $supabase);
     }
 
     /**
@@ -161,7 +161,7 @@ class TimeBlock
         $start = Carbon::createFromFormat('H:i:s', $this->start_time);
         $end = Carbon::createFromFormat('H:i:s', $this->end_time);
 
-        return $end->diffInMinutes($start);
+        return (int) $end->diffInMinutes($start);
     }
 
     /**

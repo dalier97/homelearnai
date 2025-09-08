@@ -238,13 +238,13 @@ class DashboardController extends Controller
             'reason' => 'nullable|string|max:255',
         ]);
 
-        $session = Session::find($validated['session_id'], $this->supabase);
+        $session = Session::find((string) $validated['session_id'], $this->supabase);
         if (! $session) {
             return response()->json(['error' => 'Session not found'], 404);
         }
 
         // Verify ownership
-        $child = Child::find($session->child_id, $this->supabase);
+        $child = Child::find((string) $session->child_id, $this->supabase);
         if ($child->user_id !== LaravelSession::get('user_id')) {
             return response()->json(['error' => 'Access denied'], 403);
         }
@@ -270,13 +270,13 @@ class DashboardController extends Controller
             'new_day_of_week' => 'required|integer|min:1|max:7',
         ]);
 
-        $session = Session::find($validated['session_id'], $this->supabase);
+        $session = Session::find((string) $validated['session_id'], $this->supabase);
         if (! $session) {
             return response()->json(['error' => 'Session not found'], 404);
         }
 
         // Verify ownership
-        $child = Child::find($session->child_id, $this->supabase);
+        $child = Child::find((string) $session->child_id, $this->supabase);
         if ($child->user_id !== LaravelSession::get('user_id')) {
             return response()->json(['error' => 'Access denied'], 403);
         }
@@ -303,7 +303,7 @@ class DashboardController extends Controller
             'evidence_notes' => 'nullable|string',
         ]);
 
-        $child = Child::find($validated['child_id'], $this->supabase);
+        $child = Child::find((string) $validated['child_id'], $this->supabase);
         if (! $child || $child->user_id !== LaravelSession::get('user_id')) {
             return response()->json(['error' => 'Access denied'], 403);
         }
@@ -332,13 +332,13 @@ class DashboardController extends Controller
      */
     public function completeSession(Request $request, $sessionId)
     {
-        $session = Session::find($sessionId, $this->supabase);
+        $session = Session::find((string) $sessionId, $this->supabase);
         if (! $session) {
             return response()->json(['error' => 'Session not found'], 404);
         }
 
         // Verify ownership
-        $child = Child::find($session->child_id, $this->supabase);
+        $child = Child::find((string) $session->child_id, $this->supabase);
         if ($child->user_id !== LaravelSession::get('user_id')) {
             return response()->json(['error' => 'Access denied'], 403);
         }
@@ -368,7 +368,7 @@ class DashboardController extends Controller
             'session_order.*' => 'integer',
         ]);
 
-        $child = Child::find($childId, $this->supabase);
+        $child = Child::find((string) $childId, $this->supabase);
         if (! $child || $child->user_id !== LaravelSession::get('user_id')) {
             return response()->json(['error' => 'Access denied'], 403);
         }
@@ -379,7 +379,7 @@ class DashboardController extends Controller
 
         // Update session orders
         foreach ($validated['session_order'] as $order => $sessionId) {
-            $session = Session::find($sessionId, $this->supabase);
+            $session = Session::find((string) $sessionId, $this->supabase);
             if ($session && $session->child_id === $child->id) {
                 // You could add an order field to sessions if needed
                 // For now, this would be handled by the frontend
@@ -402,12 +402,12 @@ class DashboardController extends Controller
             'new_day_of_week' => 'required|integer|min:1|max:7',
         ]);
 
-        $session = Session::find($validated['session_id'], $this->supabase);
+        $session = Session::find((string) $validated['session_id'], $this->supabase);
         if (! $session) {
             return response()->json(['error' => 'Session not found'], 404);
         }
 
-        $child = Child::find($session->child_id, $this->supabase);
+        $child = Child::find((string) $session->child_id, $this->supabase);
         if (! $child || $child->user_id !== LaravelSession::get('user_id')) {
             return response()->json(['error' => 'Access denied'], 403);
         }
@@ -435,7 +435,7 @@ class DashboardController extends Controller
             'independence_level' => 'required|integer|min:1|max:4',
         ]);
 
-        $child = Child::find($childId, $this->supabase);
+        $child = Child::find((string) $childId, $this->supabase);
         if (! $child || $child->user_id !== LaravelSession::get('user_id')) {
             return response()->json(['error' => 'Access denied'], 403);
         }
