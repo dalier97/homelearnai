@@ -175,7 +175,7 @@ class Session
      */
     public function child(SupabaseClient $supabase): ?Child
     {
-        return Child::find((string) $this->child_id, $supabase);
+        return Child::find((int) $this->child_id);
     }
 
     /**
@@ -185,7 +185,7 @@ class Session
     {
         $topic = $this->topic($supabase);
 
-        return $topic ? $topic->unit($supabase) : null;
+        return $topic ? $topic->unit : null;
     }
 
     /**
@@ -195,7 +195,7 @@ class Session
     {
         $topic = $this->topic($supabase);
 
-        return $topic ? $topic->subject($supabase) : null;
+        return $topic ? $topic->subject : null;
     }
 
     /**

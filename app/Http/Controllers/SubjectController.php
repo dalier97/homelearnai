@@ -4,18 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Child;
 use App\Models\Subject;
-use App\Services\SupabaseClient;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class SubjectController extends Controller
 {
-    private SupabaseClient $supabase;
-
-    public function __construct(SupabaseClient $supabase)
-    {
-        $this->supabase = $supabase;
-    }
+    // No constructor needed - using Eloquent relationships
 
     /**
      * Display a listing of subjects.
@@ -23,29 +18,31 @@ class SubjectController extends Controller
     public function index(Request $request)
     {
         try {
-            $userId = session('user_id');
-            if (! $userId) {
+            if (! auth()->check()) {
                 return redirect()->route('login')->with('error', 'Please log in to continue.');
             }
 
-            // Get all children for this user
-            $children = Child::forUser($userId, $this->supabase);
+            // Get all children for this user using Eloquent relationships
+            $user = auth()->user();
+            $children = $user->children()->orderBy('name')->get();
 
             // Determine selected child
             $selectedChildId = $request->get('child_id');
             $selectedChild = null;
 
             if ($selectedChildId) {
+                /** @var \App\Models\Child|null $selectedChild */
                 $selectedChild = $children->firstWhere('id', (int) $selectedChildId);
             } elseif ($children->count() === 1) {
                 // Auto-select if only one child
+                /** @var \App\Models\Child $selectedChild */
                 $selectedChild = $children->first();
                 $selectedChildId = $selectedChild->id;
             }
 
             // Get subjects for the selected child or show empty state
             if ($selectedChild) {
-                $subjects = Subject::forChild($selectedChild->id, $this->supabase);
+                $subjects = $selectedChild->subjects()->orderBy('name')->get();
             } else {
                 $subjects = collect([]);
             }
@@ -89,8 +86,7 @@ class SubjectController extends Controller
     public function store(Request $request)
     {
         try {
-            $userId = session('user_id');
-            if (! $userId) {
+            if (! auth()->check()) {
                 return response('Unauthorized', 401);
             }
 
@@ -106,23 +102,24 @@ class SubjectController extends Controller
                 return back()->withErrors(['color' => 'Invalid color selected.']);
             }
 
-            // Verify child belongs to the current user
-            $child = Child::find((string) $validated['child_id'], $this->supabase);
-            if (! $child || $child->user_id !== $userId) {
+            // Verify child belongs to the current user using relationships
+            /** @var \App\Models\Child|null $child */
+            $child = auth()->user()->children()->find($validated['child_id']);
+            if (! $child) {
                 return response('Child not found or access denied', 403);
             }
 
             $subject = new Subject([
                 'name' => $validated['name'],
                 'color' => $validated['color'],
-                'user_id' => $userId,
+                'user_id' => auth()->id(),
                 'child_id' => $validated['child_id'],
             ]);
 
-            if ($subject->save($this->supabase)) {
+            if ($subject->save()) {
                 if ($request->header('HX-Request')) {
-                    // Return updated subjects list for the specific child
-                    $subjects = Subject::forChild($validated['child_id'], $this->supabase);
+                    // Return updated subjects list for the specific child using relationships
+                    $subjects = $child->subjects()->orderBy('name')->get();
                     $showQuickStart = false;
                     $selectedChild = $child;
 
@@ -150,18 +147,24 @@ class SubjectController extends Controller
     public function show(Request $request, string $id)
     {
         try {
-            $userId = session('user_id');
-            if (! $userId) {
+            if (! auth()->check()) {
                 return redirect()->route('login');
             }
 
-            $subject = Subject::find((string) $id, $this->supabase);
+            $user = auth()->user();
+            $subject = $user->children()
+                ->with('subjects.units')
+                ->get()
+                ->pluck('subjects')
+                ->flatten()
+                ->where('id', $id)
+                ->first();
 
-            if (! $subject || $subject->user_id !== $userId) {
+            if (! $subject) {
                 return redirect()->route('subjects.index')->with('error', 'Subject not found.');
             }
 
-            $units = $subject->units($this->supabase);
+            $units = $subject->units;
 
             if ($request->header('HX-Request')) {
                 return view((string) 'subjects.partials.subject-details', compact('subject', 'units'));
@@ -181,14 +184,15 @@ class SubjectController extends Controller
     public function edit(Request $request, string $id)
     {
         try {
-            $userId = session('user_id');
-            if (! $userId) {
+            if (! auth()->check()) {
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find((string) $id, $this->supabase);
+            $subject = Subject::where('id', $id)
+                ->where('user_id', auth()->id())
+                ->first();
 
-            if (! $subject || $subject->user_id !== $userId) {
+            if (! $subject) {
                 return response('Subject not found', 404);
             }
 
@@ -212,14 +216,15 @@ class SubjectController extends Controller
     public function update(Request $request, string $id)
     {
         try {
-            $userId = session('user_id');
-            if (! $userId) {
+            if (! auth()->check()) {
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find((string) $id, $this->supabase);
+            $subject = Subject::where('id', $id)
+                ->where('user_id', auth()->id())
+                ->first();
 
-            if (! $subject || $subject->user_id !== $userId) {
+            if (! $subject) {
                 return response('Subject not found', 404);
             }
 
@@ -237,12 +242,16 @@ class SubjectController extends Controller
             $subject->name = $validated['name'];
             $subject->color = $validated['color'];
 
-            if ($subject->save($this->supabase)) {
+            if ($subject->save()) {
                 if ($request->header('HX-Request')) {
-                    // Return updated subjects list
-                    $subjects = Subject::forUser($userId, $this->supabase);
+                    // Return updated subjects list using child relationship
+                    /** @var \App\Models\Child $child */
+                    $child = $subject->child;
+                    $subjects = $child->subjects()->orderBy('name')->get();
+                    $showQuickStart = false;
+                    $selectedChild = $child;
 
-                    return view('subjects.partials.subjects-list', compact('subjects'));
+                    return view('subjects.partials.subjects-list', compact('subjects', 'showQuickStart', 'selectedChild'));
                 }
 
                 return redirect()->route('subjects.index')->with('success', 'Subject updated successfully.');
@@ -266,19 +275,20 @@ class SubjectController extends Controller
     public function destroy(Request $request, string $id)
     {
         try {
-            $userId = session('user_id');
-            if (! $userId) {
+            if (! auth()->check()) {
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find((string) $id, $this->supabase);
+            $subject = Subject::where('id', $id)
+                ->where('user_id', auth()->id())
+                ->first();
 
-            if (! $subject || $subject->user_id !== $userId) {
+            if (! $subject) {
                 return response('Subject not found', 404);
             }
 
             // Check if subject has units - prevent deletion if it has units
-            $unitCount = $subject->getUnitCount($this->supabase);
+            $unitCount = $subject->units()->count();
             if ($unitCount > 0) {
                 if ($request->header('HX-Request')) {
                     return response('<div class="text-red-500">'.__('Cannot delete subject with existing units. Please delete all units first.').'</div>', 400);
@@ -287,12 +297,16 @@ class SubjectController extends Controller
                 return back()->withErrors(['error' => 'Cannot delete subject with existing units. Please delete all units first.']);
             }
 
-            if ($subject->delete($this->supabase)) {
+            if ($subject->delete()) {
                 if ($request->header('HX-Request')) {
-                    // Return updated subjects list
-                    $subjects = Subject::forUser($userId, $this->supabase);
+                    // Return updated subjects list using child relationship
+                    /** @var \App\Models\Child $child */
+                    $child = $subject->child;
+                    $subjects = $child->subjects()->orderBy('name')->get();
+                    $showQuickStart = false;
+                    $selectedChild = $child;
 
-                    return view('subjects.partials.subjects-list', compact('subjects'));
+                    return view('subjects.partials.subjects-list', compact('subjects', 'showQuickStart', 'selectedChild'));
                 }
 
                 return redirect()->route('subjects.index')->with('success', 'Subject deleted successfully.');
@@ -315,8 +329,7 @@ class SubjectController extends Controller
      */
     public function quickStartForm(Request $request)
     {
-        $userId = session('user_id');
-        if (! $userId) {
+        if (! auth()->check()) {
             return response('Unauthorized', 401);
         }
 
@@ -326,9 +339,10 @@ class SubjectController extends Controller
             return response('Child ID is required', 400);
         }
 
-        // Verify child belongs to the current user
-        $child = Child::find((string) $childId, $this->supabase);
-        if (! $child || $child->user_id !== $userId) {
+        // Verify child belongs to the current user using relationships
+        /** @var \App\Models\Child|null $child */
+        $child = auth()->user()->children()->find($childId);
+        if (! $child) {
             return response('Child not found or access denied', 403);
         }
 
@@ -348,8 +362,7 @@ class SubjectController extends Controller
     public function quickStartStore(Request $request)
     {
         try {
-            $userId = session('user_id');
-            if (! $userId) {
+            if (! auth()->check()) {
                 return response('Unauthorized', 401);
             }
 
@@ -362,9 +375,10 @@ class SubjectController extends Controller
                 'child_id' => 'required|integer|exists:children,id',
             ]);
 
-            // Verify child belongs to the current user
-            $child = Child::find((string) $validated['child_id'], $this->supabase);
-            if (! $child || $child->user_id !== $userId) {
+            // Verify child belongs to the current user using relationships
+            /** @var \App\Models\Child|null $child */
+            $child = auth()->user()->children()->find($validated['child_id']);
+            if (! $child) {
                 return response('Child not found or access denied', 403);
             }
 
@@ -377,11 +391,11 @@ class SubjectController extends Controller
                 $subject = new Subject([
                     'name' => $subjectName,
                     'color' => $this->getSubjectColor($subjectName, $colorOptions, $colorIndex),
-                    'user_id' => $userId,
+                    'user_id' => auth()->id(),
                     'child_id' => $validated['child_id'],
                 ]);
 
-                if ($subject->save($this->supabase)) {
+                if ($subject->save()) {
                     $createdCount++;
                     $colorIndex++;
                 }
@@ -394,11 +408,11 @@ class SubjectController extends Controller
                         $subject = new Subject([
                             'name' => trim($customName),
                             'color' => $colorOptions[$colorIndex % count($colorOptions)],
-                            'user_id' => $userId,
+                            'user_id' => auth()->id(),
                             'child_id' => $validated['child_id'],
                         ]);
 
-                        if ($subject->save($this->supabase)) {
+                        if ($subject->save()) {
                             $createdCount++;
                             $colorIndex++;
                         }
@@ -407,8 +421,8 @@ class SubjectController extends Controller
             }
 
             if ($request->header('HX-Request')) {
-                // Return updated subjects list for the specific child
-                $subjects = Subject::forChild($validated['child_id'], $this->supabase);
+                // Return updated subjects list for the specific child using relationships
+                $subjects = $child->subjects()->orderBy('name')->get();
                 $showQuickStart = false;
                 $selectedChild = $child;
 

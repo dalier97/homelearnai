@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 class IcsImportService
 {
     public function __construct(
+        /** @phpstan-ignore-next-line property.onlyWritten */
         private SupabaseClient $supabase
     ) {}
 
@@ -19,7 +20,7 @@ class IcsImportService
     public function importIcsFile(UploadedFile $file, int $childId, int $userId): array
     {
         // Validate child belongs to user
-        $child = Child::find((string) $childId, $this->supabase);
+        $child = Child::find($childId);
         if (! $child || (int) $child->user_id !== $userId) {
             throw new \InvalidArgumentException('Child not found or access denied');
         }
@@ -59,7 +60,7 @@ class IcsImportService
     public function importIcsFromUrl(string $url, int $childId, int $userId): array
     {
         // Validate child belongs to user
-        $child = Child::find((string) $childId, $this->supabase);
+        $child = Child::find($childId);
         if (! $child || (int) $child->user_id !== $userId) {
             throw new \InvalidArgumentException('Child not found or access denied');
         }

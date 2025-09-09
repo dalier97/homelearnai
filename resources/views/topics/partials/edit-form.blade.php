@@ -23,7 +23,7 @@
                     type="text" 
                     id="name" 
                     name="name" 
-                    value="{{ old('name', $topic->name) }}"
+                    value="{{ old('name', $topic->title) }}"
                     required 
                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="{{ __('topic_name_example') }}">

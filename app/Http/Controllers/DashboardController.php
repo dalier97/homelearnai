@@ -6,16 +6,14 @@ use App\Models\CatchUpSession;
 use App\Models\Child;
 use App\Models\Review;
 use App\Models\Session;
+use App\Models\User;
 use App\Services\CacheService;
-use App\Services\SupabaseClient;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session as LaravelSession;
 
 class DashboardController extends Controller
 {
     public function __construct(
-        private SupabaseClient $supabase,
         private CacheService $cache
     ) {}
 
@@ -24,22 +22,35 @@ class DashboardController extends Controller
      */
     public function parentDashboard()
     {
-        $userId = LaravelSession::get('user_id');
-        $accessToken = LaravelSession::get('supabase_token');
-
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
+        $userId = auth()->id();
 
         // Check if PIN is set up for kids mode
         $pinIsSet = $this->checkKidsModePinStatus($userId);
 
+        // Check if user has any children
+        $children = $this->cache->getUserChildren($userId) ?? Child::forUser($userId);
+
+        if ($children->isEmpty()) {
+            // Only redirect to onboarding if user hasn't completed it yet
+            $user = auth()->user();
+            $userPrefs = $user->getPreferences();
+
+            if (! $userPrefs->onboarding_completed) {
+                return redirect('/onboarding');
+            }
+
+            // User completed onboarding but has no children - show empty dashboard with CTA
+            return view('dashboard.parent', [
+                'children' => collect(),
+                'dashboard_data' => [],
+                'pin_is_set' => $pinIsSet,
+                'show_add_children_cta' => true,
+            ]);
+        }
+
         // Try to get cached dashboard data
         $cacheKey = "parent_dashboard_{$userId}";
-        $cachedData = $this->cache->cacheExpensiveQuery($cacheKey, function () use ($userId) {
-            $children = $this->cache->getUserChildren($userId) ?? Child::forUser($userId, $this->supabase);
-
+        $cachedData = $this->cache->cacheExpensiveQuery($cacheKey, function () use ($userId, $children) {
             if (! $this->cache->getUserChildren($userId)) {
                 $this->cache->cacheUserChildren($userId, $children);
             }
@@ -47,12 +58,15 @@ class DashboardController extends Controller
             $dashboardData = [];
 
             foreach ($children as $child) {
+                /** @var \App\Models\Child $child */
                 $childDashboard = $this->cache->getChildDashboard($child->id);
 
                 if (! $childDashboard) {
                     $todaySessions = $this->getTodaySessionsForChild($child->id);
-                    $reviewQueue = Review::getReviewQueue($child->id, $this->supabase)->take(10);
-                    $catchUpSessions = CatchUpSession::pending($child->id, $this->supabase)->take(5);
+                    // TODO: Convert to Eloquent when Review model is converted
+                    $reviewQueue = collect(); // Review::getReviewQueue($child->id)->take(10);
+                    // TODO: Convert to Eloquent when CatchUpSession model is converted
+                    $catchUpSessions = collect(); // CatchUpSession::pending($child->id)->take(5);
 
                     $childDashboard = [
                         'child' => $child,
@@ -93,7 +107,8 @@ class DashboardController extends Controller
         $todaySessions = $this->getTodaySessionsForChild($child->id)->take(3);
 
         // Get review queue (5-10 items max)
-        $reviewQueue = Review::getReviewQueue($child->id, $this->supabase)->take(10);
+        // TODO: Convert to Eloquent when Review model is converted
+        $reviewQueue = collect(); // Review::getReviewQueue($child->id)->take(10);
 
         // Get upcoming sessions for the week (for level 3+ independence)
         $weekSessions = [];
@@ -116,11 +131,8 @@ class DashboardController extends Controller
      */
     private function getTodaySessionsForChild(int $childId): \Illuminate\Support\Collection
     {
-        $today = Carbon::now();
-        $dayOfWeek = $today->dayOfWeekIso; // 1=Monday, 7=Sunday
-
-        return Session::forChildAndDay($childId, $dayOfWeek, $this->supabase)
-            ->where('status', 'scheduled');
+        // TODO: Convert to Eloquent when Session model is converted
+        return collect(); // Session::forChildAndDay($childId, $dayOfWeek)->where('status', 'scheduled');
     }
 
     /**
@@ -128,24 +140,8 @@ class DashboardController extends Controller
      */
     private function getWeekSessionsForChild(int $childId): array
     {
-        $weekSessions = [];
-        $startOfWeek = Carbon::now()->startOfWeek();
-
-        for ($i = 0; $i < 7; $i++) {
-            $day = $startOfWeek->copy()->addDays($i);
-            $dayOfWeek = $day->dayOfWeekIso;
-
-            $sessions = Session::forChildAndDay($childId, $dayOfWeek, $this->supabase)
-                ->where('status', 'scheduled');
-
-            $weekSessions[$dayOfWeek] = [
-                'date' => $day,
-                'day_name' => $day->format('l'),
-                'sessions' => $sessions,
-            ];
-        }
-
-        return $weekSessions;
+        // TODO: Convert to Eloquent when Session model is converted
+        return []; // Return empty array until Session model is converted
     }
 
     /**
@@ -153,29 +149,15 @@ class DashboardController extends Controller
      */
     private function getCapacityStatus(int $childId): array
     {
-        // Get this week's scheduled sessions
-        $thisWeekSessions = collect();
-        $startOfWeek = Carbon::now()->startOfWeek();
-
-        for ($i = 0; $i < 7; $i++) {
-            $dayOfWeek = $startOfWeek->copy()->addDays($i)->dayOfWeekIso;
-            $daySessions = Session::forChildAndDay($childId, $dayOfWeek, $this->supabase)
-                ->where('status', 'scheduled');
-            $thisWeekSessions = $thisWeekSessions->merge($daySessions);
-        }
-
-        $totalMinutes = $thisWeekSessions->sum('estimated_minutes');
-        $completedMinutes = $thisWeekSessions->where('status', 'completed')->sum('estimated_minutes');
-        $catchUpCount = CatchUpSession::pending($childId, $this->supabase)->count();
-
+        // TODO: Convert to Eloquent when Session and CatchUpSession models are converted
         return [
-            'total_sessions' => $thisWeekSessions->count(),
-            'completed_sessions' => $thisWeekSessions->where('status', 'completed')->count(),
-            'total_minutes' => $totalMinutes,
-            'completed_minutes' => $completedMinutes,
-            'completion_percentage' => $totalMinutes > 0 ? round(($completedMinutes / $totalMinutes) * 100) : 0,
-            'catch_up_count' => $catchUpCount,
-            'status' => $this->determineCapacityStatus($totalMinutes, $completedMinutes, $catchUpCount),
+            'total_sessions' => 0,
+            'completed_sessions' => 0,
+            'total_minutes' => 0,
+            'completed_minutes' => 0,
+            'completion_percentage' => 0,
+            'catch_up_count' => 0,
+            'status' => $this->determineCapacityStatus(0, 0, 0),
         ];
     }
 
@@ -204,23 +186,19 @@ class DashboardController extends Controller
      */
     private function getWeeklyProgress(int $childId): array
     {
+        // TODO: Convert to Eloquent when Session model is converted
         $startOfWeek = Carbon::now()->startOfWeek();
         $dailyProgress = [];
 
         for ($i = 0; $i < 7; $i++) {
             $day = $startOfWeek->copy()->addDays($i);
-            $dayOfWeek = $day->dayOfWeekIso;
-
-            $sessions = Session::forChildAndDay($childId, $dayOfWeek, $this->supabase);
-            $completed = $sessions->where('status', 'completed')->count();
-            $total = $sessions->count();
 
             $dailyProgress[] = [
                 'day' => $day->format('D'),
                 'date' => $day->format('M j'),
-                'completed' => $completed,
-                'total' => $total,
-                'percentage' => $total > 0 ? round(($completed / $total) * 100) : 0,
+                'completed' => 0,
+                'total' => 0,
+                'percentage' => 0,
             ];
         }
 
@@ -238,25 +216,10 @@ class DashboardController extends Controller
             'reason' => 'nullable|string|max:255',
         ]);
 
-        $session = Session::find((string) $validated['session_id'], $this->supabase);
-        if (! $session) {
-            return response()->json(['error' => 'Session not found'], 404);
-        }
-
-        // Verify ownership
-        $child = Child::find((string) $session->child_id, $this->supabase);
-        if ($child->user_id !== LaravelSession::get('user_id')) {
-            return response()->json(['error' => 'Access denied'], 403);
-        }
-
-        $date = Carbon::parse($validated['date']);
-        $catchUpSession = $session->skipDay($date, $validated['reason'], $this->supabase);
-
+        // TODO: Convert to Eloquent when Session model is converted
         return response()->json([
-            'success' => true,
-            'message' => 'Session moved to catch-up queue',
-            'catch_up_session' => $catchUpSession->toArray(),
-        ]);
+            'error' => 'Skip day functionality temporarily disabled during migration',
+        ], 503);
     }
 
     /**
@@ -270,27 +233,10 @@ class DashboardController extends Controller
             'new_day_of_week' => 'required|integer|min:1|max:7',
         ]);
 
-        $session = Session::find((string) $validated['session_id'], $this->supabase);
-        if (! $session) {
-            return response()->json(['error' => 'Session not found'], 404);
-        }
-
-        // Verify ownership
-        $child = Child::find((string) $session->child_id, $this->supabase);
-        if ($child->user_id !== LaravelSession::get('user_id')) {
-            return response()->json(['error' => 'Access denied'], 403);
-        }
-
-        // Update session
-        $session->scheduled_day_of_week = $validated['new_day_of_week'];
-        $session->scheduled_date = Carbon::parse($validated['new_date']);
-        $session->save($this->supabase);
-
+        // TODO: Convert to Eloquent when Session model is converted
         return response()->json([
-            'success' => true,
-            'message' => 'Session moved successfully',
-            'session' => $session->toArray(),
-        ]);
+            'error' => 'Move theme functionality temporarily disabled during migration',
+        ], 503);
     }
 
     /**
@@ -303,28 +249,15 @@ class DashboardController extends Controller
             'evidence_notes' => 'nullable|string',
         ]);
 
-        $child = Child::find((string) $validated['child_id'], $this->supabase);
-        if (! $child || $child->user_id !== LaravelSession::get('user_id')) {
+        $child = Child::findOrFail($validated['child_id']);
+        if ($child->user_id !== auth()->id()) {
             return response()->json(['error' => 'Access denied'], 403);
         }
 
-        $todaySessions = $this->getTodaySessionsForChild($child->id);
-        $completedCount = 0;
-
-        foreach ($todaySessions as $session) {
-            $session->status = 'completed';
-            $session->completed_at = Carbon::now();
-            $session->evidence_notes = $validated['evidence_notes'] ?? 'Bulk completed by parent';
-            if ($session->save($this->supabase)) {
-                $completedCount++;
-            }
-        }
-
+        // TODO: Convert to Eloquent when Session model is converted
         return response()->json([
-            'success' => true,
-            'message' => "Marked {$completedCount} sessions as complete",
-            'completed_count' => $completedCount,
-        ]);
+            'error' => 'Bulk complete functionality temporarily disabled during migration',
+        ], 503);
     }
 
     /**
@@ -332,30 +265,10 @@ class DashboardController extends Controller
      */
     public function completeSession(Request $request, $sessionId)
     {
-        $session = Session::find((string) $sessionId, $this->supabase);
-        if (! $session) {
-            return response()->json(['error' => 'Session not found'], 404);
-        }
-
-        // Verify ownership
-        $child = Child::find((string) $session->child_id, $this->supabase);
-        if ($child->user_id !== LaravelSession::get('user_id')) {
-            return response()->json(['error' => 'Access denied'], 403);
-        }
-
-        $session->status = 'completed';
-        $session->completed_at = Carbon::now();
-        $session->save($this->supabase);
-
-        // Clear related caches
-        $this->cache->clearSessionCaches($session->child_id);
-        $this->cache->clearChildCache($session->child_id);
-
+        // TODO: Convert to Eloquent when Session model is converted
         return response()->json([
-            'success' => true,
-            'message' => 'Session completed!',
-            'session' => $session->toArray(),
-        ]);
+            'error' => 'Complete session functionality temporarily disabled during migration',
+        ], 503);
     }
 
     /**
@@ -368,8 +281,8 @@ class DashboardController extends Controller
             'session_order.*' => 'integer',
         ]);
 
-        $child = Child::find((string) $childId, $this->supabase);
-        if (! $child || $child->user_id !== LaravelSession::get('user_id')) {
+        $child = Child::findOrFail($childId);
+        if ($child->user_id !== auth()->id()) {
             return response()->json(['error' => 'Access denied'], 403);
         }
 
@@ -377,19 +290,10 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Child independence level does not allow reordering'], 403);
         }
 
-        // Update session orders
-        foreach ($validated['session_order'] as $order => $sessionId) {
-            $session = Session::find((string) $sessionId, $this->supabase);
-            if ($session && $session->child_id === $child->id) {
-                // You could add an order field to sessions if needed
-                // For now, this would be handled by the frontend
-            }
-        }
-
+        // TODO: Convert to Eloquent when Session model is converted
         return response()->json([
-            'success' => true,
-            'message' => 'Sessions reordered successfully',
-        ]);
+            'error' => 'Reorder sessions functionality temporarily disabled during migration',
+        ], 503);
     }
 
     /**
@@ -402,28 +306,10 @@ class DashboardController extends Controller
             'new_day_of_week' => 'required|integer|min:1|max:7',
         ]);
 
-        $session = Session::find((string) $validated['session_id'], $this->supabase);
-        if (! $session) {
-            return response()->json(['error' => 'Session not found'], 404);
-        }
-
-        $child = Child::find((string) $session->child_id, $this->supabase);
-        if (! $child || $child->user_id !== LaravelSession::get('user_id')) {
-            return response()->json(['error' => 'Access denied'], 403);
-        }
-
-        if (! $child->canMoveSessionsInWeek()) {
-            return response()->json(['error' => 'Child independence level does not allow moving sessions'], 403);
-        }
-
-        $session->scheduled_day_of_week = $validated['new_day_of_week'];
-        $session->save($this->supabase);
-
+        // TODO: Convert to Eloquent when Session model is converted
         return response()->json([
-            'success' => true,
-            'message' => 'Session moved successfully',
-            'session' => $session->toArray(),
-        ]);
+            'error' => 'Move session functionality temporarily disabled during migration',
+        ], 503);
     }
 
     /**
@@ -435,13 +321,13 @@ class DashboardController extends Controller
             'independence_level' => 'required|integer|min:1|max:4',
         ]);
 
-        $child = Child::find((string) $childId, $this->supabase);
-        if (! $child || $child->user_id !== LaravelSession::get('user_id')) {
+        $child = Child::findOrFail($childId);
+        if ($child->user_id !== auth()->id()) {
             return response()->json(['error' => 'Access denied'], 403);
         }
 
         $child->independence_level = $validated['independence_level'];
-        $child->save($this->supabase);
+        $child->save();
 
         return response()->json([
             'success' => true,
@@ -456,12 +342,14 @@ class DashboardController extends Controller
     private function checkKidsModePinStatus(string $userId): bool
     {
         try {
-            $preferences = $this->supabase->from('user_preferences')
-                ->select('kids_mode_pin')
-                ->eq('user_id', $userId)
-                ->single();
+            $user = User::find($userId);
+            if (! $user) {
+                return false;
+            }
 
-            return ! empty($preferences['kids_mode_pin']);
+            $userPrefs = $user->getPreferences();
+
+            return $userPrefs->hasPinSetup();
         } catch (\Exception $e) {
             \Log::error('Failed to check kids mode PIN status', [
                 'user_id' => $userId,

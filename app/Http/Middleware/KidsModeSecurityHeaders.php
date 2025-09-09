@@ -74,10 +74,10 @@ class KidsModeSecurityHeaders
 
         $policies = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Needed for HTMX and Alpine.js
-            "style-src 'self' 'unsafe-inline'", // Needed for Tailwind CSS
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://cdn.jsdelivr.net", // Allow CDN scripts
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net", // Allow styles from CDN and fonts
             "img-src 'self' data: blob:",
-            "font-src 'self' data:",
+            "font-src 'self' data: https://fonts.bunny.net",
             "connect-src 'self'",
             "media-src 'self'",
             "object-src 'none'", // Disable plugins

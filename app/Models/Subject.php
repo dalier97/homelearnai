@@ -2,126 +2,136 @@
 
 namespace App\Models;
 
-use App\Services\SupabaseClient;
-use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
-class Subject
+class Subject extends Model
 {
-    public ?int $id = null;
+    use HasFactory;
 
-    public string $name;
+    /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'name',
+        'color',
+        'user_id',
+        'child_id',
+    ];
 
-    public string $color = '#3b82f6';
+    /**
+     * The attributes that should be cast.
+     */
+    protected $casts = [
+        'user_id' => 'integer',
+        'child_id' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
-    public string $user_id;
+    /**
+     * The model's default values for attributes.
+     */
+    protected $attributes = [
+        'color' => '#3b82f6',
+    ];
 
-    public ?int $child_id = null;
-
-    public ?Carbon $created_at = null;
-
-    public ?Carbon $updated_at = null;
-
-    public function __construct(array $attributes = [])
+    /**
+     * Get the user that owns the subject.
+     */
+    public function user(): BelongsTo
     {
-        foreach ($attributes as $key => $value) {
-            if (property_exists($this, $key)) {
-                if (in_array($key, ['created_at', 'updated_at']) && $value) {
-                    $this->$key = Carbon::parse($value);
-                } else {
-                    $this->$key = $value;
-                }
-            }
-        }
-    }
-
-    public static function find(string $id, SupabaseClient $supabase): ?self
-    {
-        $data = $supabase->from('subjects')
-            ->eq('id', $id)
-            ->single();
-
-        return $data ? new self($data) : null;
-    }
-
-    public static function where(string $column, mixed $value, SupabaseClient $supabase): Collection
-    {
-        return $supabase->from('subjects')
-            ->eq($column, $value)
-            ->orderBy('name', 'asc')
-            ->get()
-            ->map(fn ($item) => new self($item));
-    }
-
-    public static function forUser(string $userId, SupabaseClient $supabase): Collection
-    {
-        return self::where('user_id', $userId, $supabase);
-    }
-
-    public static function forChild(int $childId, SupabaseClient $supabase): Collection
-    {
-        return self::where('child_id', $childId, $supabase);
-    }
-
-    public function save(SupabaseClient $supabase): bool
-    {
-        $data = [
-            'name' => $this->name,
-            'color' => $this->color,
-            'user_id' => $this->user_id,
-            'child_id' => $this->child_id,
-        ];
-
-        if ($this->id) {
-            // Update existing
-            $result = $supabase->from('subjects')
-                ->eq('id', $this->id)
-                ->update($data);
-        } else {
-            // Create new
-            $result = $supabase->from('subjects')->insert($data);
-            if ($result && isset($result[0]['id'])) {
-                $this->id = $result[0]['id'];
-                $this->created_at = Carbon::now();
-            }
-        }
-
-        return ! empty($result);
-    }
-
-    public function delete(SupabaseClient $supabase): bool
-    {
-        if (! $this->id) {
-            return false;
-        }
-
-        return $supabase->from('subjects')
-            ->eq('id', $this->id)
-            ->delete();
+        return $this->belongsTo(User::class);
     }
 
     /**
-     * Get all units for this subject
+     * Get the child that owns the subject (if any).
      */
-    public function units(SupabaseClient $supabase): Collection
+    public function child(): BelongsTo
     {
-        return $supabase->from('units')
-            ->eq('subject_id', $this->id)
-            ->orderBy('target_completion_date', 'asc')
-            ->get()
-            ->map(fn ($item) => new \App\Models\Unit($item));
+        return $this->belongsTo(Child::class);
+    }
+
+    /**
+     * Get the units for this subject.
+     */
+    public function units(): HasMany
+    {
+        return $this->hasMany(Unit::class);
+    }
+
+    /**
+     * Get all topics for this subject through units.
+     */
+    public function topics()
+    {
+        return $this->hasManyThrough(Topic::class, Unit::class);
+    }
+
+    /**
+     * Get all sessions for this subject through topics.
+     * Note: Session is still using Supabase pattern, so this relationship is not functional yet
+     */
+    public function sessions()
+    {
+        // Cannot use hasManyThrough with non-Eloquent Session model
+        // return $this->hasManyThrough(\App\Models\Session::class, \App\Models\Topic::class);
+        throw new \BadMethodCallException('Session relationship not yet available - Session model is still using Supabase pattern');
+    }
+
+    /**
+     * Scope to get subjects for a specific user
+     */
+    public function scopeForUser($query, string $userId)
+    {
+        return $query->where('user_id', $userId)->orderBy('name');
+    }
+
+    /**
+     * Scope to get subjects for a specific child
+     */
+    public function scopeForChild($query, int $childId)
+    {
+        return $query->where('child_id', $childId)->orderBy('name');
+    }
+
+    /**
+     * Compatibility methods for existing controllers that expect SupabaseClient
+     * These maintain API compatibility during migration
+     */
+    public static function forUser(string $userId, $supabase = null): Collection
+    {
+        return self::where('user_id', $userId)->orderBy('name')->get();
+    }
+
+    public static function forChild(int $childId, $supabase = null): Collection
+    {
+        return self::where('child_id', $childId)->orderBy('name')->get();
+    }
+
+    // Override find to support string IDs for compatibility
+    public static function find($id, $columns = ['*'])
+    {
+        return parent::find((int) $id, $columns);
     }
 
     /**
      * Get count of units in this subject
      */
-    public function getUnitCount(SupabaseClient $supabase): int
+    public function getUnitCount(): int
     {
-        $units = $supabase->from('units')
-            ->eq('subject_id', $this->id)
-            ->get();
+        return $this->units()->count();
+    }
 
-        return count($units);
+    /**
+     * Compatibility method for controllers that still pass SupabaseClient
+     */
+    public function getUnitCount_compat($supabase = null): int
+    {
+        return $this->getUnitCount();
     }
 
     /**

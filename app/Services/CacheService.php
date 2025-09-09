@@ -20,7 +20,7 @@ class CacheService
     /**
      * Cache user's children data
      */
-    public function cacheUserChildren(string $userId, Collection $children): void
+    public function cacheUserChildren(string $userId, \Illuminate\Database\Eloquent\Collection $children): void
     {
         $cacheKey = "user_children_{$userId}";
         Cache::put($cacheKey, $children, self::MEDIUM_CACHE);
@@ -29,7 +29,7 @@ class CacheService
     /**
      * Get cached user children
      */
-    public function getUserChildren(string $userId): ?Collection
+    public function getUserChildren(string $userId): ?\Illuminate\Database\Eloquent\Collection
     {
         $cacheKey = "user_children_{$userId}";
 
@@ -331,6 +331,7 @@ class CacheService
         $children = $this->getUserChildren($userId);
         if ($children) {
             foreach ($children as $child) {
+                /** @var \App\Models\Child $child */
                 $stats['child_caches'][$child->id] = [
                     'sessions' => Cache::has("child_sessions_{$child->id}"),
                     'timeblocks' => Cache::has("child_timeblocks_{$child->id}"),

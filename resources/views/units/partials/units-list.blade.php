@@ -23,12 +23,14 @@
                                 <button 
                                     hx-get="{{ route('units.edit', [$subject->id, $unit->id]) }}"
                                     hx-target="#unit-modal"
+                                    hx-swap="innerHTML"
                                     class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     {{ __('edit') }}
                                 </button>
                                 <button 
                                     hx-delete="{{ route('units.destroy', [$subject->id, $unit->id]) }}"
                                     hx-target="#units-list"
+                                    hx-swap="innerHTML"
                                     hx-confirm="{{ __('confirm_delete_unit') }}"
                                     class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                                     {{ __('delete') }}
@@ -82,6 +84,7 @@
                 type="button"
                 hx-get="{{ route('units.create', $subject->id) }}"
                 hx-target="#unit-modal"
+                hx-swap="innerHTML"
                 class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white hover:opacity-90 transition-opacity"
                 style="background-color: {{ $subject->color }}">
                 {{ __('add_unit') }}

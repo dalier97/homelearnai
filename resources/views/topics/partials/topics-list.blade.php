@@ -32,6 +32,7 @@
                         <button 
                             hx-get="{{ route('topics.edit', [$subject->id, $unit->id, $topic->id]) }}"
                             hx-target="#topic-modal"
+                            hx-swap="innerHTML"
                             class="text-gray-400 hover:text-gray-600 p-1">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -40,6 +41,7 @@
                         <button 
                             hx-delete="{{ route('topics.destroy', [$subject->id, $unit->id, $topic->id]) }}"
                             hx-target="#topics-list"
+                            hx-swap="innerHTML"
                             hx-confirm="{{ __('confirm_delete_topic') }}"
                             class="text-red-400 hover:text-red-600 p-1">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,6 +65,7 @@
                 type="button"
                 hx-get="{{ route('topics.create', [$subject->id, $unit->id]) }}"
                 hx-target="#topic-modal"
+                hx-swap="innerHTML"
                 class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white hover:opacity-90 transition-opacity"
                 style="background-color: {{ $subject->color }}">
                 {{ __('add_topic') }}

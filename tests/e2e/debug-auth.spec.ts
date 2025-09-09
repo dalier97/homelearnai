@@ -6,7 +6,9 @@ test('debug registration and dashboard access', async ({ page }) => {
   // Step 1: Try registration
   console.log('1. Going to register page...');
   await page.goto('/register');
-  await expect(page.locator('h2')).toContainText('Create your account');
+  // Wait for Laravel Breeze registration form to load (no h2 heading expected)
+  await expect(page.locator('input[name="name"]')).toBeVisible();
+  await expect(page.locator('button[type="submit"]')).toContainText('Register');
   
   // Step 2: Fill registration form
   console.log('2. Filling registration form...');

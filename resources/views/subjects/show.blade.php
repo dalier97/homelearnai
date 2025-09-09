@@ -24,6 +24,7 @@
                 type="button"
                 hx-get="{{ route('units.create', $subject->id) }}"
                 hx-target="#unit-modal"
+                hx-swap="innerHTML"
                 class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg shadow-sm transition-colors">
                 Add Unit
             </button>
@@ -31,6 +32,7 @@
                 type="button"
                 hx-get="{{ route('subjects.edit', $subject->id) }}"
                 hx-target="#subject-modal"
+                hx-swap="innerHTML"
                 class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-6 py-2 rounded-lg shadow-sm transition-colors">
                 Edit Subject
             </button>

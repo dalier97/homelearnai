@@ -78,7 +78,11 @@ test.describe('Kids Mode - Basic Functionality', () => {
     await page.goto('/children');
     
     // Look for add child button
-    const addChildBtn = page.locator('button:has-text("Add Child")');
+    // Look for add child button (prefer header button first, fallback to empty state)
+    let addChildBtn = page.getByTestId('header-add-child-btn');
+    if (await addChildBtn.count() === 0) {
+      addChildBtn = page.getByTestId('empty-state-add-child-btn');
+    }
     if (await addChildBtn.count() > 0) {
       await addChildBtn.click();
       
@@ -199,7 +203,11 @@ test.describe('Kids Mode - Basic Functionality', () => {
     // Create a child first and get the actual child ID
     await page.goto('/children');
     
-    const addChildBtn = page.locator('button:has-text("Add Child")');
+    // Look for add child button (prefer header button first, fallback to empty state)
+    let addChildBtn = page.getByTestId('header-add-child-btn');
+    if (await addChildBtn.count() === 0) {
+      addChildBtn = page.getByTestId('empty-state-add-child-btn');
+    }
     if (await addChildBtn.count() > 0) {
       await addChildBtn.click();
       await page.waitForTimeout(1000);
@@ -259,7 +267,11 @@ test.describe('Kids Mode - Basic Functionality', () => {
     await page.goto('/children');
     
     // Look for add child button
-    const addChildBtn = page.locator('button:has-text("Add Child")');
+    // Look for add child button (prefer header button first, fallback to empty state)
+    let addChildBtn = page.getByTestId('header-add-child-btn');
+    if (await addChildBtn.count() === 0) {
+      addChildBtn = page.getByTestId('empty-state-add-child-btn');
+    }
     if (await addChildBtn.count() > 0) {
       await addChildBtn.click();
       
@@ -303,7 +315,7 @@ test.describe('Kids Mode - Basic Functionality', () => {
     
     // Check if it's an error page or actual child content
     const isErrorPage = await page.getByText(/not found|error|404/i).isVisible();
-    const isChildPage = await page.getByText(/today|learning|session/i).isVisible() ||
+    const isChildPage = await page.getByText(/today|learning|session/i).first().isVisible() ||
                        await page.locator('[data-testid]').count() > 0;
     
     // Should be either an error page or child page, not a blank page
@@ -356,7 +368,11 @@ test.describe('Kids Mode - Basic Functionality', () => {
     
     // Create a child and get the child ID for mobile exit test
     await page.goto('/children');
-    const addChildBtn = page.locator('button:has-text("Add Child")');
+    // Look for add child button (prefer header button first, fallback to empty state)
+    let addChildBtn = page.getByTestId('header-add-child-btn');
+    if (await addChildBtn.count() === 0) {
+      addChildBtn = page.getByTestId('empty-state-add-child-btn');
+    }
     if (await addChildBtn.count() > 0) {
       await addChildBtn.click();
       await page.waitForTimeout(1000);

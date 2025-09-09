@@ -281,7 +281,7 @@ class Review
 
     public function child(SupabaseClient $supabase): ?Child
     {
-        return Child::find((string) $this->child_id, $supabase);
+        return Child::find((int) $this->child_id);
     }
 
     public function topic(SupabaseClient $supabase): ?Topic

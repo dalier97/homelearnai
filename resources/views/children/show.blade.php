@@ -105,7 +105,7 @@
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl font-semibold text-gray-900">{{ __('curriculum_subjects') }}</h2>
             <button
-                hx-get="{{ route('subjects.create') }}"
+                hx-get="{{ route('subjects.create', ['child_id' => $child->id]) }}"
                 hx-target="#subject-modal"
                 hx-swap="innerHTML"
                 class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition flex items-center space-x-2"
@@ -119,7 +119,7 @@
         
         <div id="subjects-list">
             @if($subjects->count() > 0)
-                @include('subjects.partials.subjects-list', ['subjects' => $subjects, 'supabase' => app(\App\Services\SupabaseClient::class)])
+                @include('subjects.partials.subjects-list', ['subjects' => $subjects, 'showQuickStart' => false, 'selectedChild' => $child])
             @else
                 <div class="text-center py-12">
                     <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

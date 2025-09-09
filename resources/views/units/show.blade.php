@@ -27,6 +27,7 @@
                 type="button"
                 hx-get="{{ route('topics.create', [$subject->id, $unit->id]) }}"
                 hx-target="#topic-modal"
+                hx-swap="innerHTML"
                 class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg shadow-sm transition-colors">
                 Add Topic
             </button>
@@ -34,6 +35,7 @@
                 type="button"
                 hx-get="{{ route('units.edit', [$subject->id, $unit->id]) }}"
                 hx-target="#unit-modal"
+                hx-swap="innerHTML"
                 class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-6 py-2 rounded-lg shadow-sm transition-colors">
                 Edit Unit
             </button>

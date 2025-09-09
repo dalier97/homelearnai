@@ -7,7 +7,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IcsImportController;
 use App\Http\Controllers\KidsModeController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PlanningController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TaskController;
@@ -20,15 +22,16 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Authentication routes
-Route::middleware('guest')->group(function () {
+// Legacy Supabase Authentication routes (for transition period)
+// These routes are prefixed to avoid conflicts with Breeze routes
+Route::prefix('auth/supabase')->name('supabase.')->middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
 
     // Email confirmation callback from Supabase
-    Route::get('/auth/confirm', [AuthController::class, 'confirmEmail'])->name('auth.confirm');
+    Route::get('/confirm', [AuthController::class, 'confirmEmail'])->name('confirm');
 });
 
 // Locale routes (available to both guests and authenticated users)
@@ -40,12 +43,27 @@ Route::get('/locales', [LocaleController::class, 'getAvailableLocales'])->name('
 // Legacy locale routes for backward compatibility
 Route::post('/locale/session', [LocaleController::class, 'updateSessionLocale'])->name('locale.session');
 
-// Protected routes
-Route::middleware(\App\Http\Middleware\SupabaseAuth::class)->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+// Protected routes - using Laravel native auth middleware
+Route::middleware('auth')->group(function () {
+    // Legacy Supabase logout route (for transition period)
+    Route::post('/auth/supabase/logout', [AuthController::class, 'logout'])->name('supabase.logout');
 
     // Legacy user locale route for backward compatibility
     Route::post('/locale/user', [LocaleController::class, 'updateUserLocale'])->name('locale.user');
+
+    // Profile management routes (Laravel Breeze)
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Onboarding routes
+    Route::prefix('onboarding')->name('onboarding.')->group(function () {
+        Route::get('/', [OnboardingController::class, 'index'])->name('index')->middleware('redirect-if-onboarding-completed');
+        Route::post('/children', [OnboardingController::class, 'saveChildren'])->name('children');
+        Route::post('/subjects', [OnboardingController::class, 'saveSubjects'])->name('subjects');
+        Route::post('/complete', [OnboardingController::class, 'complete'])->name('complete');
+        Route::post('/skip', [OnboardingController::class, 'skip'])->name('skip');
+    });
 
     // Dashboard routes - Parent/Child Views (Milestone 5)
     // Main dashboard (redirect to parent view) - blocked in kids mode
@@ -170,9 +188,9 @@ Route::middleware(\App\Http\Middleware\SupabaseAuth::class)->group(function () {
     Route::prefix('subjects')->name('subjects.')->group(function () {
         // Allow viewing subjects in kids mode
         Route::get('/', [SubjectController::class, 'index'])->name('index');
-        Route::get('/{id}', [SubjectController::class, 'show'])->name('show');
 
         // Block creation and editing in kids mode (parent-only)
+        // IMPORTANT: Define specific routes BEFORE wildcard {id} routes
         Route::middleware('not-in-kids-mode')->group(function () {
             Route::get('/create', [SubjectController::class, 'create'])->name('create');
             Route::post('/', [SubjectController::class, 'store'])->name('store');
@@ -182,15 +200,18 @@ Route::middleware(\App\Http\Middleware\SupabaseAuth::class)->group(function () {
             Route::put('/{id}', [SubjectController::class, 'update'])->name('update');
             Route::delete('/{id}', [SubjectController::class, 'destroy'])->name('destroy');
         });
+
+        // Wildcard route MUST come AFTER specific routes
+        Route::get('/{id}', [SubjectController::class, 'show'])->name('show');
     });
 
     // Unit management routes (nested under subjects)
     Route::prefix('subjects/{subjectId}/units')->name('units.')->group(function () {
         // Allow viewing units in kids mode
         Route::get('/', [UnitController::class, 'index'])->name('index');
-        Route::get('/{id}', [UnitController::class, 'show'])->name('show');
 
         // Block creation and editing in kids mode (parent-only)
+        // IMPORTANT: Define specific routes BEFORE wildcard {id} routes
         Route::middleware('not-in-kids-mode')->group(function () {
             Route::get('/create', [UnitController::class, 'create'])->name('create');
             Route::post('/', [UnitController::class, 'store'])->name('store');
@@ -198,15 +219,18 @@ Route::middleware(\App\Http\Middleware\SupabaseAuth::class)->group(function () {
             Route::put('/{id}', [UnitController::class, 'update'])->name('update');
             Route::delete('/{id}', [UnitController::class, 'destroy'])->name('destroy');
         });
+
+        // Wildcard route MUST come AFTER specific routes
+        Route::get('/{id}', [UnitController::class, 'show'])->name('show');
     });
 
     // Topic management routes (nested under subjects/units)
     Route::prefix('subjects/{subjectId}/units/{unitId}/topics')->name('topics.')->group(function () {
         // Allow viewing topics in kids mode
         Route::get('/', [TopicController::class, 'index'])->name('index');
-        Route::get('/{id}', [TopicController::class, 'show'])->name('show');
 
         // Block creation and editing in kids mode (parent-only)
+        // IMPORTANT: Define specific routes BEFORE wildcard {id} routes
         Route::middleware('not-in-kids-mode')->group(function () {
             Route::get('/create', [TopicController::class, 'create'])->name('create');
             Route::post('/', [TopicController::class, 'store'])->name('store');
@@ -214,6 +238,9 @@ Route::middleware(\App\Http\Middleware\SupabaseAuth::class)->group(function () {
             Route::put('/{id}', [TopicController::class, 'update'])->name('update');
             Route::delete('/{id}', [TopicController::class, 'destroy'])->name('destroy');
         });
+
+        // Wildcard route MUST come AFTER specific routes
+        Route::get('/{id}', [TopicController::class, 'show'])->name('show');
     });
 
     // Task routes (keeping original task functionality)
@@ -242,6 +269,9 @@ Route::middleware(\App\Http\Middleware\SupabaseAuth::class)->group(function () {
         // Exit kids mode - PIN validation (always accessible)
         Route::get('/exit', [KidsModeController::class, 'showExitScreen'])->name('exit');
         Route::post('/exit', [KidsModeController::class, 'validateExitPin'])->name('exit.validate');
+        Route::get('/exit-test', function () {
+            return view('kids-mode.exit-test');
+        })->name('exit-test');
 
         // PIN management for parents - blocked in kids mode
         Route::middleware('not-in-kids-mode')->group(function () {
@@ -251,3 +281,6 @@ Route::middleware(\App\Http\Middleware\SupabaseAuth::class)->group(function () {
         });
     });
 });
+
+// Include Laravel Breeze auth routes
+require __DIR__.'/auth.php';

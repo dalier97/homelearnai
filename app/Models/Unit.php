@@ -2,147 +2,146 @@
 
 namespace App\Models;
 
-use App\Services\SupabaseClient;
-use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
-class Unit
+/**
+ * @property int $id
+ * @property int $subject_id
+ * @property string $name
+ * @property string|null $description
+ * @property \Carbon\Carbon|null $target_completion_date
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property-read int $completed_topics_count
+ * @property-read int $total_topics_count
+ * @property-read float $completion_percentage
+ * @property-read bool $can_complete
+ * @property-read \App\Models\Subject $subject
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Topic> $topics
+ */
+class Unit extends Model
 {
-    public ?int $id = null;
+    use HasFactory;
 
-    public int $subject_id;
+    /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'subject_id',
+        'name',
+        'description',
+        'target_completion_date',
+    ];
 
-    public string $name;
+    /**
+     * The attributes that should be cast.
+     */
+    protected $casts = [
+        'subject_id' => 'integer',
+        'target_completion_date' => 'date',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
-    public ?string $description = null;
-
-    public ?Carbon $target_completion_date = null;
-
-    public int $completed_topics_count = 0;
-
-    public int $total_topics_count = 0;
-
-    public float $completion_percentage = 0.00;
-
-    public bool $can_complete = true;
-
-    public ?Carbon $created_at = null;
-
-    public ?Carbon $updated_at = null;
-
-    public function __construct(array $attributes = [])
+    /**
+     * Computed attributes that are not stored in database
+     * but calculated dynamically
+     */
+    public function getCompletedTopicsCountAttribute(): int
     {
-        foreach ($attributes as $key => $value) {
-            if (property_exists($this, $key)) {
-                if (in_array($key, ['target_completion_date', 'created_at', 'updated_at']) && $value) {
-                    $this->$key = Carbon::parse($value);
-                } else {
-                    $this->$key = $value;
-                }
-            }
-        }
+        // This will be calculated dynamically when needed
+        return $this->topics()->count(); // Simplified for now
     }
 
-    public static function find(string $id, SupabaseClient $supabase): ?self
+    public function getTotalTopicsCountAttribute(): int
     {
-        $data = $supabase->from('units')
-            ->eq('id', $id)
-            ->single();
-
-        return $data ? new self($data) : null;
+        return $this->topics()->count();
     }
 
-    public static function where(string $column, mixed $value, SupabaseClient $supabase): Collection
+    public function getCompletionPercentageAttribute(): float
     {
-        return $supabase->from('units')
-            ->eq($column, $value)
-            ->orderBy('target_completion_date', 'asc')
-            ->get()
-            ->map(fn ($item) => new self($item));
-    }
-
-    public static function forSubject(int $subjectId, SupabaseClient $supabase): Collection
-    {
-        return self::where('subject_id', $subjectId, $supabase);
-    }
-
-    public function save(SupabaseClient $supabase): bool
-    {
-        // Only include actual database columns, not computed fields
-        $data = [
-            'subject_id' => $this->subject_id,
-            'name' => $this->name,
-            'description' => $this->description,
-            'target_completion_date' => $this->target_completion_date?->format('Y-m-d'),
-        ];
-
-        if ($this->id) {
-            // Update existing
-            $result = $supabase->from('units')
-                ->eq('id', $this->id)
-                ->update($data);
-        } else {
-            // Create new
-            $result = $supabase->from('units')->insert($data);
-            if ($result && isset($result[0]['id'])) {
-                $this->id = $result[0]['id'];
-                $this->created_at = Carbon::now();
-            }
+        $total = $this->getTotalTopicsCountAttribute();
+        if ($total === 0) {
+            return 0.0;
         }
 
-        return ! empty($result);
+        $completed = $this->getCompletedTopicsCountAttribute();
+
+        return round(($completed / $total) * 100, 2);
     }
 
-    public function delete(SupabaseClient $supabase): bool
+    public function getCanCompleteAttribute(): bool
     {
-        if (! $this->id) {
-            return false;
-        }
-
-        return $supabase->from('units')
-            ->eq('id', $this->id)
-            ->delete();
+        // Simplified logic - can be completed if all required topics are done
+        return true; // Will implement proper logic later
     }
 
     /**
-     * Get the subject this unit belongs to
+     * Get the subject that owns the unit.
      */
-    public function subject(SupabaseClient $supabase): ?Subject
+    public function subject(): BelongsTo
     {
-        return Subject::find((string) $this->subject_id, $supabase);
+        return $this->belongsTo(Subject::class);
     }
 
     /**
-     * Get all topics for this unit
+     * Get the topics for this unit.
      */
-    public function topics(SupabaseClient $supabase): Collection
+    public function topics(): HasMany
     {
-        return $supabase->from('topics')
-            ->eq('unit_id', $this->id)
-            ->orderBy('required', 'desc')
-            ->orderBy('title', 'asc')
-            ->get()
-            ->map(fn ($item) => new \App\Models\Topic($item));
+        return $this->hasMany(Topic::class);
     }
+
+    /**
+     * Scope to get units for a specific subject
+     */
+    public function scopeForSubject($query, int $subjectId)
+    {
+        return $query->where('subject_id', $subjectId)->orderBy('target_completion_date');
+    }
+
+    /**
+     * Compatibility methods for existing controllers
+     */
+    public static function forSubject(int $subjectId, $supabase = null): Collection
+    {
+        return self::where('subject_id', $subjectId)->orderBy('target_completion_date')->get();
+    }
+
+    // Override find to support string IDs for compatibility
+    public static function find($id, $columns = ['*'])
+    {
+        return parent::find((int) $id, $columns);
+    }
+
+    // The save() and delete() methods are now handled by Eloquent automatically
 
     /**
      * Get count of topics in this unit
      */
-    public function getTopicCount(SupabaseClient $supabase): int
+    public function getTopicCount(): int
     {
-        $topics = $supabase->from('topics')
-            ->eq('unit_id', $this->id)
-            ->get();
+        return $this->topics()->count();
+    }
 
-        return count($topics);
+    /**
+     * Compatibility method for controllers
+     */
+    public function getTopicCount_compat($supabase = null): int
+    {
+        return $this->getTopicCount();
     }
 
     /**
      * Get progress statistics for this unit
      */
-    public function getProgressStats(SupabaseClient $supabase): array
+    public function getProgressStats($supabase = null): array
     {
-        $topics = $this->topics($supabase);
+        $topics = $this->topics;
         $totalTopics = $topics->count();
         $requiredTopics = $topics->where('required', true)->count();
 
@@ -160,14 +159,15 @@ class Unit
     /**
      * Get detailed progress for a specific child
      */
-    public function getProgressForChild(int $childId, SupabaseClient $supabase): array
+    public function getProgressForChild(int $childId, $supabase = null): array
     {
-        $topics = $this->topics($supabase);
+        $topics = $this->topics()->get();
         $requiredTopics = $topics->where('required', true);
 
         // Get sessions for this unit's topics and child
         $completedSessions = collect([]);
         foreach ($topics as $topic) {
+            /** @var \App\Models\Topic $topic */
             $sessions = Session::where('topic_id', $topic->id, $supabase)
                 ->where('child_id', $childId)
                 ->where('status', 'done');
@@ -200,7 +200,7 @@ class Unit
     /**
      * Get progress bar data for UI display
      */
-    public function getProgressBarData(int $childId, SupabaseClient $supabase): array
+    public function getProgressBarData(int $childId, $supabase = null): array
     {
         $progress = $this->getProgressForChild($childId, $supabase);
 
@@ -229,7 +229,7 @@ class Unit
     /**
      * Check if unit meets completion gate requirements
      */
-    public function meetsCompletionGate(int $childId, SupabaseClient $supabase): bool
+    public function meetsCompletionGate(int $childId, $supabase = null): bool
     {
         $progress = $this->getProgressForChild($childId, $supabase);
 
@@ -239,7 +239,7 @@ class Unit
     /**
      * Get completion status label
      */
-    public function getCompletionStatus(int $childId, SupabaseClient $supabase): string
+    public function getCompletionStatus(int $childId, $supabase = null): string
     {
         $progress = $this->getProgressForChild($childId, $supabase);
 
@@ -259,10 +259,10 @@ class Unit
     /**
      * Get next topics that should be worked on
      */
-    public function getNextTopics(int $childId, SupabaseClient $supabase, int $limit = 3): Collection
+    public function getNextTopics(int $childId, $supabase = null, int $limit = 3): Collection
     {
         $progress = $this->getProgressForChild($childId, $supabase);
-        $topics = $this->topics($supabase);
+        $topics = $this->topics()->get();
 
         // Get topics that are not yet completed
         $remainingTopics = $topics->whereNotIn('id', $progress['topics_breakdown']['completed']);

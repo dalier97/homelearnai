@@ -4,50 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Child;
 use App\Services\CacheService;
-use App\Services\SupabaseClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class ChildController extends Controller
 {
     public function __construct(
-        private SupabaseClient $supabase,
         private CacheService $cache
     ) {}
 
     public function index(Request $request): View
     {
-        $userId = Session::get('user_id');
-        $accessToken = Session::get('supabase_token');
-
-        // Debug logging for session data
-        \Log::debug('ChildController::index - Session data', [
-            'user_id' => $userId,
-            'has_token' => ! empty($accessToken),
-            'token_length' => $accessToken ? strlen($accessToken) : 0,
-            'session_id' => Session::getId(),
-        ]);
-
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        } else {
-            \Log::warning('ChildController::index - No access token found in session', [
-                'user_id' => $userId,
-                'session_id' => Session::getId(),
-            ]);
-        }
-
-        $children = Child::forUser($userId, $this->supabase);
-
-        // Log the result
-        \Log::debug('ChildController::index - Children query result', [
-            'user_id' => $userId,
-            'children_count' => $children->count(),
-            'has_token' => ! empty($accessToken),
-        ]);
+        // Get authenticated user's children using Eloquent
+        $children = Auth::user()->children()->orderBy('name')->get();
 
         // If HTMX request, return partial
         if ($request->header('HX-Request')) {
@@ -64,70 +35,23 @@ class ChildController extends Controller
 
     public function store(Request $request): View|RedirectResponse
     {
-        \Log::debug('ChildController::store - Method called', [
-            'request_data' => $request->all(),
-            'user_id' => Session::get('user_id'),
-            'session_id' => Session::getId(),
-            'is_htmx' => $request->header('HX-Request') === 'true',
-        ]);
-
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'age' => 'required|integer|min:3|max:25',
             'independence_level' => 'integer|min:1|max:4',
         ]);
 
-        $userId = Session::get('user_id');
-        $accessToken = Session::get('supabase_token');
+        // Create child using Eloquent with authenticated user
+        $child = Auth::user()->children()->create($validated);
 
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
-
-        $child = new Child($validated);
-        $child->user_id = $userId; // Keep as UUID string, don't cast to int
-
-        $saveResult = $child->save($this->supabase);
-
-        // Log the save attempt with more details
-        \Log::debug('Child save attempt', [
-            'child_data' => $child->toArray(),
-            'user_id' => $userId,
-            'has_token' => ! empty($accessToken),
-            'token_length' => $accessToken ? strlen($accessToken) : 0,
-            'save_result' => $saveResult,
-            'child_id_after_save' => $child->id,
-        ]);
-
-        if (! $saveResult) {
-            \Log::error('Failed to save child', [
-                'child_data' => $child->toArray(),
-                'user_id' => $userId,
-                'has_token' => ! empty($accessToken),
-                'token_length' => $accessToken ? strlen($accessToken) : 0,
-            ]);
-            // Return error view or throw exception
-            abort(500, 'Failed to create child');
-        }
-
-        // After successful save, verify the child can be retrieved
-        if ($child->id) {
-            $verifyChild = Child::find((string) $child->id, $this->supabase);
-            \Log::debug('Child verification after save', [
-                'original_child_id' => $child->id,
-                'verification_result' => $verifyChild ? 'found' : 'not_found',
-                'verified_child_data' => $verifyChild ? $verifyChild->toArray() : null,
-            ]);
-        }
-
-        // Clear user cache and parent dashboard cache to ensure dashboard shows the new child
+        // Clear user cache to ensure dashboard shows the new child
+        $userId = Auth::id();
         $this->cache->clearUserCache($userId);
         \Illuminate\Support\Facades\Cache::forget("parent_dashboard_{$userId}");
 
         // For HTMX requests, return the complete updated children list
         if ($request->header('HX-Request')) {
-            $children = Child::forUser($userId, $this->supabase);
+            $children = Auth::user()->children()->orderBy('name')->get();
 
             return view('children.partials.list', compact('children'))
                 ->with('htmx_trigger', 'childCreated');
@@ -139,14 +63,11 @@ class ChildController extends Controller
 
     public function show(int $id): View
     {
-        $child = Child::find((string) $id, $this->supabase);
-
-        if (! $child || $child->user_id !== Session::get('user_id')) {
-            abort(404);
-        }
+        /** @var \App\Models\Child $child */
+        $child = Auth::user()->children()->findOrFail($id);
 
         // Get time blocks for this child organized by day
-        $timeBlocks = $child->timeBlocks($this->supabase);
+        $timeBlocks = $child->timeBlocks;
         $timeBlocksByDay = [];
 
         // Organize by day of week
@@ -154,30 +75,23 @@ class ChildController extends Controller
             $timeBlocksByDay[$day] = $timeBlocks->where('day_of_week', $day);
         }
 
-        // Get subjects for this user
-        $subjects = \App\Models\Subject::forUser(Session::get('user_id'), $this->supabase);
+        // Get subjects for this user (placeholder until Subject model is converted)
+        $subjects = collect();
 
         return view('children.show', compact('child', 'timeBlocksByDay', 'subjects'));
     }
 
     public function edit(int $id): View
     {
-        $child = Child::find((string) $id, $this->supabase);
-
-        if (! $child || $child->user_id !== Session::get('user_id')) {
-            abort(404);
-        }
+        $child = Auth::user()->children()->findOrFail($id);
 
         return view('children.partials.form', compact('child'));
     }
 
     public function update(Request $request, int $id): View
     {
-        $child = Child::find((string) $id, $this->supabase);
-
-        if (! $child || $child->user_id !== Session::get('user_id')) {
-            abort(404);
-        }
+        /** @var \App\Models\Child $child */
+        $child = Auth::user()->children()->findOrFail($id);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -185,14 +99,10 @@ class ChildController extends Controller
             'independence_level' => 'integer|min:1|max:4',
         ]);
 
-        foreach ($validated as $key => $value) {
-            $child->$key = $value;
-        }
-
-        $child->save($this->supabase);
+        $child->update($validated);
 
         // Clear user and child caches after update
-        $userId = Session::get('user_id');
+        $userId = Auth::id();
         $this->cache->clearUserCache($userId);
         $this->cache->clearChildCache($child->id);
         \Illuminate\Support\Facades\Cache::forget("parent_dashboard_{$userId}");
@@ -203,16 +113,13 @@ class ChildController extends Controller
 
     public function destroy(int $id): string
     {
-        $child = Child::find((string) $id, $this->supabase);
-
-        if (! $child || $child->user_id !== Session::get('user_id')) {
-            abort(404);
-        }
+        /** @var \App\Models\Child $child */
+        $child = Auth::user()->children()->findOrFail($id);
 
         $childId = $child->id;
-        $userId = Session::get('user_id');
+        $userId = Auth::id();
 
-        $child->delete($this->supabase);
+        $child->delete();
 
         // Clear user and child caches after deletion
         $this->cache->clearUserCache($userId);

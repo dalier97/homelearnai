@@ -3,166 +3,119 @@
 namespace App\Models;
 
 use App\Services\SupabaseClient;
-use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
-class Child
+/**
+ * @property int $id
+ * @property string $name
+ * @property int $age
+ * @property int $user_id
+ * @property int $independence_level
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Support\Collection $timeBlocks
+ */
+class Child extends Model
 {
-    public ?int $id = null;
+    use HasFactory;
 
-    public string $name;
+    /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'name',
+        'age',
+        'user_id',
+        'independence_level',
+    ];
 
-    public int $age;
+    /**
+     * The attributes that should be cast.
+     */
+    protected $casts = [
+        'age' => 'integer',
+        'independence_level' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
-    public string $user_id;
+    /**
+     * The model's default values for attributes.
+     */
+    protected $attributes = [
+        'independence_level' => 1,
+    ];
 
-    public int $independence_level = 1; // 1-4 levels
-
-    public ?Carbon $created_at = null;
-
-    public ?Carbon $updated_at = null;
-
-    public function __construct(array $attributes = [])
+    /**
+     * Get the user that owns the child.
+     */
+    public function user(): BelongsTo
     {
-        foreach ($attributes as $key => $value) {
-            if (property_exists($this, $key)) {
-                if (in_array($key, ['created_at', 'updated_at']) && $value) {
-                    $this->$key = Carbon::parse($value);
-                } else {
-                    $this->$key = $value;
-                }
-            }
-        }
-    }
-
-    public static function find(string $id, SupabaseClient $supabase): ?self
-    {
-        $data = $supabase->from('children')
-            ->eq('id', $id)
-            ->single();
-
-        return $data ? new self($data) : null;
-    }
-
-    public static function where(string $column, mixed $value, SupabaseClient $supabase): Collection
-    {
-        try {
-            return $supabase->from('children')
-                ->eq($column, $value)
-                ->orderBy('name', 'asc')
-                ->get()
-                ->map(fn ($item) => new self($item));
-        } catch (\Exception $e) {
-            // Log the error for debugging
-            if (function_exists('app') && app() && app()->has('log')) {
-                app('log')->error('Child query failed', [
-                    'column' => $column,
-                    'value' => $value,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
-            return collect([]);
-        }
-    }
-
-    public static function forUser(string $userId, SupabaseClient $supabase): Collection
-    {
-        if (empty($userId)) {
-            if (function_exists('app') && app() && app()->has('log')) {
-                app('log')->warning('Child::forUser called with empty user_id');
-            }
-
-            return collect([]);
-        }
-
-        // Log the query attempt
-        if (function_exists('app') && app() && app()->has('log')) {
-            app('log')->debug('Child::forUser query attempt', [
-                'user_id' => $userId,
-                'user_id_length' => strlen($userId),
-            ]);
-        }
-
-        $result = self::where('user_id', $userId, $supabase);
-
-        // Log the result
-        if (function_exists('app') && app() && app()->has('log')) {
-            app('log')->debug('Child::forUser query result', [
-                'user_id' => $userId,
-                'children_count' => $result->count(),
-                'children_ids' => $result->pluck('id')->toArray(),
-            ]);
-        }
-
-        return $result;
-    }
-
-    public function save(SupabaseClient $supabase): bool
-    {
-        $data = [
-            'name' => $this->name,
-            'age' => $this->age,
-            'user_id' => $this->user_id,
-            'independence_level' => $this->independence_level,
-        ];
-
-        try {
-            if ($this->id) {
-                // Update existing
-                $result = $supabase->from('children')
-                    ->eq('id', $this->id)
-                    ->update($data);
-            } else {
-                // Create new
-                $result = $supabase->from('children')->insert($data);
-                if ($result && isset($result[0]['id'])) {
-                    $this->id = $result[0]['id'];
-                    $this->created_at = Carbon::now();
-
-                    // Create default time blocks for a typical school week
-                    $this->createDefaultTimeBlocks($supabase);
-                }
-            }
-
-            return ! empty($result);
-        } catch (\Exception $e) {
-            // Log the error for debugging
-            if (function_exists('app') && app() && app()->has('log')) {
-                app('log')->error('Child save failed', [
-                    'data' => $data,
-                    'user_id' => $this->user_id,
-                    'error' => $e->getMessage(),
-                    'existing_id' => $this->id,
-                ]);
-            }
-
-            return false;
-        }
-    }
-
-    public function delete(SupabaseClient $supabase): bool
-    {
-        if (! $this->id) {
-            return false;
-        }
-
-        return $supabase->from('children')
-            ->eq('id', $this->id)
-            ->delete();
+        return $this->belongsTo(User::class);
     }
 
     /**
-     * Get time blocks for this child
+     * Get the subjects for this child.
      */
-    public function timeBlocks(SupabaseClient $supabase): Collection
+    public function subjects(): HasMany
     {
-        return $supabase->from('time_blocks')
-            ->eq('child_id', $this->id)
-            ->orderBy('day_of_week', 'asc')
-            ->orderBy('start_time', 'asc')
-            ->get()
-            ->map(fn ($item) => new \App\Models\TimeBlock($item));
+        return $this->hasMany(Subject::class);
+    }
+
+    /**
+     * Get time blocks for this child.
+     * Note: TimeBlock is still using Supabase pattern, so this provides compatibility
+     */
+    public function timeBlocks(?SupabaseClient $supabase = null): Collection
+    {
+        if (! $supabase) {
+            // Return empty collection if no SupabaseClient provided
+            return collect();
+        }
+
+        return TimeBlock::where('child_id', $this->id, $supabase);
+    }
+
+    /**
+     * Accessor for timeBlocks attribute (backward compatibility)
+     */
+    public function getTimeBlocksAttribute(): Collection
+    {
+        // Return empty collection until TimeBlock is converted to Eloquent
+        return collect();
+    }
+
+    /**
+     * Scope to get children for a specific user
+     */
+    public function scopeForUser($query, int|string $userId)
+    {
+        return $query->where('user_id', $userId)->orderBy('name');
+    }
+
+    /**
+     * Static method for backward compatibility with controllers that pass SupabaseClient
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, Child>
+     */
+    public static function forUser(int|string $userId, ?SupabaseClient $supabase = null): \Illuminate\Database\Eloquent\Collection
+    {
+        return self::where('user_id', $userId)->orderBy('name')->get();
+    }
+
+    /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (Child $child) {
+            // TODO: Create default time blocks when TimeBlock is converted to Eloquent
+            // $child->createDefaultTimeBlocks();
+        });
     }
 
     /**
@@ -180,49 +133,6 @@ class Child
             return 'middle_school';
         } else {
             return 'high_school';
-        }
-    }
-
-    /**
-     * Create default time blocks for a new child
-     */
-    private function createDefaultTimeBlocks(SupabaseClient $supabase): void
-    {
-        // Create age-appropriate default time blocks
-        $defaultBlocks = [];
-
-        // Monday to Friday morning blocks (9:00 AM - 11:00 AM)
-        for ($day = 1; $day <= 5; $day++) {
-            $defaultBlocks[] = [
-                'child_id' => $this->id,
-                'day_of_week' => $day,
-                'start_time' => '09:00:00',
-                'end_time' => '11:00:00',
-                'label' => 'Morning Learning',
-            ];
-        }
-
-        // Monday to Friday afternoon blocks (1:00 PM - 3:00 PM)
-        for ($day = 1; $day <= 5; $day++) {
-            $defaultBlocks[] = [
-                'child_id' => $this->id,
-                'day_of_week' => $day,
-                'start_time' => '13:00:00',
-                'end_time' => '15:00:00',
-                'label' => 'Afternoon Learning',
-            ];
-        }
-
-        try {
-            $supabase->from('time_blocks')->insert($defaultBlocks);
-        } catch (\Exception $e) {
-            // Log error but don't fail child creation
-            if (function_exists('app') && app() && app()->has('log')) {
-                app('log')->warning('Failed to create default time blocks for child', [
-                    'child_id' => $this->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
         }
     }
 
@@ -274,20 +184,24 @@ class Child
 
     public function toArray(): array
     {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'age' => $this->age,
-            'user_id' => $this->user_id,
-            'independence_level' => $this->independence_level,
-            'independence_level_label' => $this->getIndependenceLevelLabel(),
-            'can_reorder_tasks' => $this->canReorderTasks(),
-            'can_move_sessions_in_week' => $this->canMoveSessionsInWeek(),
-            'can_propose_weekly_plans' => $this->canProposeWeeklyPlans(),
-            'is_view_only_mode' => $this->isViewOnlyMode(),
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
-            'age_group' => $this->getAgeGroup(),
-        ];
+        $array = parent::toArray();
+
+        // Add computed attributes
+        $array['independence_level_label'] = $this->getIndependenceLevelLabel();
+        $array['can_reorder_tasks'] = $this->canReorderTasks();
+        $array['can_move_sessions_in_week'] = $this->canMoveSessionsInWeek();
+        $array['can_propose_weekly_plans'] = $this->canProposeWeeklyPlans();
+        $array['is_view_only_mode'] = $this->isViewOnlyMode();
+        $array['age_group'] = $this->getAgeGroup();
+
+        // Format timestamps
+        if ($this->created_at) {
+            $array['created_at'] = $this->created_at->toIso8601String();
+        }
+        if ($this->updated_at) {
+            $array['updated_at'] = $this->updated_at->toIso8601String();
+        }
+
+        return $array;
     }
 }

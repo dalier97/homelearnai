@@ -19,7 +19,7 @@ class CalendarController extends Controller
 
     public function index(Request $request): View
     {
-        $userId = Session::get('user_id');
+        $userId = auth()->id();
         $accessToken = Session::get('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
@@ -27,11 +27,11 @@ class CalendarController extends Controller
             $this->supabase->setUserToken($accessToken);
         }
 
-        $children = Child::forUser($userId, $this->supabase);
+        $children = Child::forUser($userId);
 
         // Default to first child or selected child
         $selectedChildId = $request->get('child_id', $children->first()?->id);
-        $selectedChild = $selectedChildId ? Child::find((string) $selectedChildId, $this->supabase) : null;
+        $selectedChild = $selectedChildId ? Child::find($selectedChildId) : null;
 
         // Get time blocks for the selected child
         $timeBlocks = $selectedChild ? $selectedChild->timeBlocks($this->supabase) : collect([]);
@@ -57,7 +57,7 @@ class CalendarController extends Controller
 
     public function create(Request $request): View
     {
-        $children = Child::forUser(Session::get('user_id'), $this->supabase);
+        $children = Child::forUser(auth()->id());
         $selectedChildId = $request->get('child_id');
         $selectedDay = $request->get('day_of_week', 1);
 
@@ -79,8 +79,8 @@ class CalendarController extends Controller
         ]);
 
         // Verify child belongs to the current user
-        $child = Child::find((string) $validated['child_id'], $this->supabase);
-        if (! $child || $child->user_id !== Session::get('user_id')) {
+        $child = Child::find($validated['child_id']);
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -129,11 +129,11 @@ class CalendarController extends Controller
 
         // Verify the time block belongs to user's child
         $child = $timeBlock->child($this->supabase);
-        if (! $child || $child->user_id !== Session::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
-        $children = Child::forUser(Session::get('user_id'), $this->supabase);
+        $children = Child::forUser(auth()->id());
 
         return view('calendar.partials.time-block-form', [
             'timeBlock' => $timeBlock,
@@ -152,7 +152,7 @@ class CalendarController extends Controller
 
         // Verify the time block belongs to user's child
         $child = $timeBlock->child($this->supabase);
-        if (! $child || $child->user_id !== Session::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -197,7 +197,7 @@ class CalendarController extends Controller
         return view('calendar.partials.day-column', [
             'day' => $validated['day_of_week'],
             'timeBlocks' => $timeBlocksForDay,
-            'selectedChild' => Child::find((string) $validated['child_id'], $this->supabase),
+            'selectedChild' => Child::find($validated['child_id']),
         ])->with('htmx_trigger', 'timeBlockUpdated');
     }
 
@@ -211,7 +211,7 @@ class CalendarController extends Controller
 
         // Verify the time block belongs to user's child
         $child = $timeBlock->child($this->supabase);
-        if (! $child || $child->user_id !== Session::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 

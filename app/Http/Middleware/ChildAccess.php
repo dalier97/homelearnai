@@ -18,11 +18,11 @@ class ChildAccess
     public function handle(Request $request, Closure $next)
     {
         // Ensure user is authenticated
-        if (! Session::has('supabase_token') || ! Session::has('user_id')) {
+        if (! auth()->check()) {
             return redirect()->route('login');
         }
 
-        $userId = Session::get('user_id');
+        $userId = auth()->id();
         $accessToken = Session::get('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
@@ -34,7 +34,7 @@ class ChildAccess
         $childId = $request->route('child_id') ?? $request->route('id');
 
         if ($childId) {
-            $child = Child::find((string) $childId, $this->supabase);
+            $child = Child::find((int) $childId);
 
             if (! $child) {
                 abort(404, 'Child not found');
@@ -49,7 +49,7 @@ class ChildAccess
             $request->attributes->set('child', $child);
 
             // Inherit parent's locale for child views
-            $this->inheritParentLocale($request, $userId);
+            $this->inheritParentLocale($request, (string) $userId);
         }
 
         return $next($request);

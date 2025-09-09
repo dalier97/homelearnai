@@ -3,38 +3,36 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
-use App\Services\SupabaseClient;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
 
 class TaskController extends Controller
 {
-    public function __construct(
-        private SupabaseClient $supabase
-    ) {}
+    // No constructor needed - using Eloquent
 
     public function index(Request $request): View
     {
-        $tasks = Task::forUser(Session::get('user_id'), $this->supabase);
+        $query = Task::forUser(auth()->id());
 
         // Filter by search
         if ($search = $request->get('search')) {
-            $tasks = $tasks->filter(function ($task) use ($search) {
-                return str_contains(strtolower($task->title), strtolower($search)) ||
-                       str_contains(strtolower($task->description ?? ''), strtolower($search));
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'ILIKE', '%'.$search.'%')
+                    ->orWhere('description', 'ILIKE', '%'.$search.'%');
             });
         }
 
         // Filter by priority
         if ($priority = $request->get('priority')) {
-            $tasks = $tasks->where('priority', $priority);
+            $query->where('priority', $priority);
         }
 
         // Filter by status
         if ($status = $request->get('status')) {
-            $tasks = $tasks->where('status', $status);
+            $query->where('status', $status);
         }
+
+        $tasks = $query->get();
 
         // If HTMX request, return partial
         if ($request->header('HX-Request')) {
@@ -58,9 +56,8 @@ class TaskController extends Controller
             'due_date' => 'nullable|date',
         ]);
 
-        $task = new Task($validated);
-        $task->user_id = Session::get('user_id');
-        $task->save($this->supabase);
+        $validated['user_id'] = auth()->id();
+        $task = Task::create($validated);
 
         // Return the new task item for HTMX
         return view('tasks.partials.item', compact('task'))
@@ -69,22 +66,18 @@ class TaskController extends Controller
 
     public function edit(int $id): View
     {
-        $task = Task::find((string) $id, $this->supabase);
-
-        if (! $task || $task->user_id !== Session::get('user_id')) {
-            abort(404);
-        }
+        $task = Task::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
 
         return view('tasks.partials.form', compact('task'));
     }
 
     public function update(Request $request, int $id): View
     {
-        $task = Task::find((string) $id, $this->supabase);
-
-        if (! $task || $task->user_id !== Session::get('user_id')) {
-            abort(404);
-        }
+        $task = Task::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -93,11 +86,7 @@ class TaskController extends Controller
             'due_date' => 'nullable|date',
         ]);
 
-        foreach ($validated as $key => $value) {
-            $task->$key = $value;
-        }
-
-        $task->save($this->supabase);
+        $task->update($validated);
 
         return view('tasks.partials.item', compact('task'))
             ->with('htmx_trigger', 'taskUpdated');
@@ -105,14 +94,11 @@ class TaskController extends Controller
 
     public function toggle(int $id): View
     {
-        $task = Task::find((string) $id, $this->supabase);
-
-        if (! $task || $task->user_id !== Session::get('user_id')) {
-            abort(404);
-        }
+        $task = Task::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
 
         $task->toggleComplete();
-        $task->save($this->supabase);
 
         return view('tasks.partials.item', compact('task'))
             ->with('htmx_trigger', 'taskToggled');
@@ -120,13 +106,11 @@ class TaskController extends Controller
 
     public function destroy(int $id): string
     {
-        $task = Task::find((string) $id, $this->supabase);
+        $task = Task::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
 
-        if (! $task || $task->user_id !== Session::get('user_id')) {
-            abort(404);
-        }
-
-        $task->delete($this->supabase);
+        $task->delete();
 
         // Return empty response for HTMX to remove element
         response()->noContent()->header('HX-Trigger', 'taskDeleted')->send();

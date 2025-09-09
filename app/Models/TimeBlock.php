@@ -132,9 +132,9 @@ class TimeBlock
     /**
      * Get the child this time block belongs to
      */
-    public function child(SupabaseClient $supabase): ?Child
+    public function child(?SupabaseClient $supabase = null): ?Child
     {
-        return Child::find((string) $this->child_id, $supabase);
+        return Child::find($this->child_id);
     }
 
     /**

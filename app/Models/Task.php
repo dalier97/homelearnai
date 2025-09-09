@@ -2,106 +2,60 @@
 
 namespace App\Models;
 
-use App\Services\SupabaseClient;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 
-class Task
+class Task extends Model
 {
-    public ?int $id = null;
+    use HasFactory;
 
-    public string $title;
+    /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'title',
+        'description',
+        'priority',
+        'status',
+        'user_id',
+        'due_date',
+        'completed_at',
+    ];
 
-    public ?string $description;
+    /**
+     * The attributes that should be cast.
+     */
+    protected $casts = [
+        'due_date' => 'datetime',
+        'completed_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
-    public string $priority = 'medium';
+    /**
+     * The model's default values for attributes.
+     */
+    protected $attributes = [
+        'priority' => 'medium',
+        'status' => 'pending',
+    ];
 
-    public string $status = 'pending';
-
-    public string $user_id;
-
-    public ?Carbon $due_date = null;
-
-    public ?Carbon $completed_at = null;
-
-    public ?Carbon $created_at = null;
-
-    public ?Carbon $updated_at = null;
-
-    public function __construct(array $attributes = [])
+    /**
+     * Get the user that owns the task.
+     */
+    public function user(): BelongsTo
     {
-        foreach ($attributes as $key => $value) {
-            if (property_exists($this, $key)) {
-                if (in_array($key, ['due_date', 'completed_at', 'created_at', 'updated_at']) && $value) {
-                    $this->$key = Carbon::parse($value);
-                } else {
-                    $this->$key = $value;
-                }
-            }
-        }
+        return $this->belongsTo(User::class);
     }
 
-    public static function find(string $id, SupabaseClient $supabase): ?self
+    /**
+     * Scope to get tasks for a specific user
+     */
+    public function scopeForUser($query, int|string $userId)
     {
-        $data = $supabase->from('tasks')
-            ->eq('id', $id)
-            ->single();
-
-        return $data ? new self($data) : null;
-    }
-
-    public static function where(string $column, mixed $value, SupabaseClient $supabase): Collection
-    {
-        return $supabase->from('tasks')
-            ->eq($column, $value)
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(fn ($item) => new self($item));
-    }
-
-    public static function forUser(string $userId, SupabaseClient $supabase): Collection
-    {
-        return self::where('user_id', $userId, $supabase);
-    }
-
-    public function save(SupabaseClient $supabase): bool
-    {
-        $data = [
-            'title' => $this->title,
-            'description' => $this->description,
-            'priority' => $this->priority,
-            'status' => $this->status,
-            'user_id' => $this->user_id,
-            'due_date' => $this->due_date?->toIso8601String(),
-            'completed_at' => $this->completed_at?->toIso8601String(),
-        ];
-
-        if ($this->id) {
-            // Update existing
-            $result = $supabase->from('tasks')
-                ->eq('id', $this->id)
-                ->update($data);
-        } else {
-            // Create new
-            $result = $supabase->from('tasks')->insert($data);
-            if ($result && isset($result[0]['id'])) {
-                $this->id = $result[0]['id'];
-                $this->created_at = Carbon::now();
-            }
-        }
-
-        return ! empty($result);
-    }
-
-    public function delete(SupabaseClient $supabase): bool
-    {
-        if (! $this->id) {
-            return false;
-        }
-
-        return $supabase->from('tasks')
-            ->eq('id', $this->id)
-            ->delete();
+        return $query->where('user_id', $userId)->orderBy('created_at', 'desc');
     }
 
     public function toggleComplete(): void
@@ -113,6 +67,7 @@ class Task
             $this->status = 'completed';
             $this->completed_at = Carbon::now();
         }
+        $this->save();
     }
 
     public function isOverdue(): bool
@@ -124,18 +79,25 @@ class Task
 
     public function toArray(): array
     {
-        return [
-            'id' => $this->id,
-            'title' => $this->title,
-            'description' => $this->description,
-            'priority' => $this->priority,
-            'status' => $this->status,
-            'user_id' => $this->user_id,
-            'due_date' => $this->due_date?->toIso8601String(),
-            'completed_at' => $this->completed_at?->toIso8601String(),
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
-            'is_overdue' => $this->isOverdue(),
-        ];
+        $array = parent::toArray();
+
+        // Add computed attributes
+        $array['is_overdue'] = $this->isOverdue();
+
+        // Format timestamps
+        if ($this->due_date) {
+            $array['due_date'] = $this->due_date->toIso8601String();
+        }
+        if ($this->completed_at) {
+            $array['completed_at'] = $this->completed_at->toIso8601String();
+        }
+        if ($this->created_at) {
+            $array['created_at'] = $this->created_at->toIso8601String();
+        }
+        if ($this->updated_at) {
+            $array['updated_at'] = $this->updated_at->toIso8601String();
+        }
+
+        return $array;
     }
 }

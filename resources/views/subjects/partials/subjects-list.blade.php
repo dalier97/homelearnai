@@ -25,12 +25,14 @@
                                 <button 
                                     hx-get="{{ route('subjects.edit', $subject->id) }}"
                                     hx-target="#subject-modal"
+                                    hx-swap="innerHTML"
                                     class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     {{ __('edit') }}
                                 </button>
                                 <button 
                                     hx-delete="{{ route('subjects.destroy', $subject->id) }}"
                                     hx-target="#subjects-list"
+                                    hx-swap="innerHTML"
                                     hx-confirm="{{ __('confirm_delete_subject') }}"
                                     class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                                     {{ __('delete') }}

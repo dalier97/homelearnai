@@ -14,7 +14,6 @@ use App\Services\SupabaseClient;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session as SessionFacade;
 use Illuminate\View\View;
 
 class PlanningController extends Controller
@@ -27,8 +26,8 @@ class PlanningController extends Controller
 
     public function index(Request $request): View
     {
-        $userId = SessionFacade::get('user_id');
-        $accessToken = SessionFacade::get('supabase_token');
+        $userId = auth()->id();
+        $accessToken = session('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
         if ($accessToken) {
@@ -39,7 +38,7 @@ class PlanningController extends Controller
 
         // Default to first child or selected child
         $selectedChildId = $request->get('child_id', $children->first()?->id);
-        $selectedChild = $selectedChildId ? Child::find((string) $selectedChildId, $this->supabase) : null;
+        $selectedChild = $selectedChildId ? Child::find((int) $selectedChildId) : null;
 
         if (! $selectedChild) {
             return view('planning.index', [
@@ -64,7 +63,7 @@ class PlanningController extends Controller
         $catchUpSessions = CatchUpSession::pending($selectedChild->id, $this->supabase);
 
         // Get all topics for this child's subjects that don't have sessions yet
-        $subjects = Subject::forUser(SessionFacade::get('user_id'), $this->supabase);
+        $subjects = Subject::forUser((string) auth()->id(), $this->supabase);
         $availableTopics = collect([]);
 
         foreach ($subjects as $subject) {
@@ -110,14 +109,14 @@ class PlanningController extends Controller
         // Handle GET request - show form
         if ($request->isMethod('GET')) {
             $childId = $request->get('child_id');
-            $child = Child::find((string) $childId, $this->supabase);
+            $child = Child::find((int) $childId);
 
-            if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+            if (! $child || $child->user_id !== auth()->id()) {
                 abort(403);
             }
 
             // Get all topics for this user that don't have sessions yet for this child
-            $subjects = Subject::forUser(SessionFacade::get('user_id'), $this->supabase);
+            $subjects = Subject::forUser((string) auth()->id(), $this->supabase);
             $availableTopics = collect([]);
             $existingSessions = Session::forChild($childId, $this->supabase);
 
@@ -148,8 +147,8 @@ class PlanningController extends Controller
         ]);
 
         // Verify child belongs to the current user
-        $child = Child::find((string) $validated['child_id'], $this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        $child = Child::find((int) $validated['child_id']);
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -161,7 +160,7 @@ class PlanningController extends Controller
 
         // Verify topic belongs to user's subjects (through unit -> subject)
         $subject = $topic->subject($this->supabase);
-        if (! $subject || $subject->user_id !== SessionFacade::get('user_id')) {
+        if (! $subject || $subject->user_id !== auth()->id()) {
             abort(403, 'Topic does not belong to user');
         }
 
@@ -208,7 +207,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -261,7 +260,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -310,7 +309,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -350,7 +349,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -372,7 +371,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -398,7 +397,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -442,7 +441,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -462,8 +461,8 @@ class PlanningController extends Controller
             'max_sessions' => 'nullable|integer|min:1|max:10',
         ]);
 
-        $child = Child::find((string) $validated['child_id'], $this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        $child = Child::find((int) $validated['child_id']);
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -507,7 +506,7 @@ class PlanningController extends Controller
 
         // Verify catch-up session belongs to user's child
         $child = $catchUpSession->child($this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -531,7 +530,7 @@ class PlanningController extends Controller
 
         // Verify catch-up session belongs to user's child
         $child = $catchUpSession->child($this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -556,7 +555,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -576,8 +575,8 @@ class PlanningController extends Controller
             'child_id' => 'required|integer|exists:children,id',
         ]);
 
-        $child = Child::find((string) $validated['child_id'], $this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        $child = Child::find((int) $validated['child_id']);
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -600,8 +599,8 @@ class PlanningController extends Controller
             'child_id' => 'required|integer|exists:children,id',
         ]);
 
-        $child = Child::find((string) $validated['child_id'], $this->supabase);
-        if (! $child || $child->user_id !== SessionFacade::get('user_id')) {
+        $child = Child::find((int) $validated['child_id']);
+        if (! $child || $child->user_id !== auth()->id()) {
             abort(403);
         }
 

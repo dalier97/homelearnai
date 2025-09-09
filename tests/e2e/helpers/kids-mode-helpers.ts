@@ -96,9 +96,12 @@ export class KidsModeHelper {
   async enterPinViaKeypad(pin: string): Promise<void> {
     for (const digit of pin) {
       await this.page.click(`[data-digit="${digit}"]`);
-      // Small delay to simulate human interaction
-      await this.page.waitForTimeout(100);
+      // Small delay to simulate human interaction and allow DOM updates
+      await this.page.waitForTimeout(200);
     }
+    // Additional wait to ensure all DOM updates are complete and auto-submit triggers
+    // Auto-submit happens after 300ms when 4 digits are entered
+    await this.page.waitForTimeout(800);
   }
 
   /**
@@ -116,6 +119,8 @@ export class KidsModeHelper {
    */
   async clearPin(): Promise<void> {
     await this.page.click('[data-testid="clear-btn"]');
+    // Wait for DOM update
+    await this.page.waitForTimeout(200);
   }
 
   /**
@@ -123,6 +128,8 @@ export class KidsModeHelper {
    */
   async backspacePin(): Promise<void> {
     await this.page.click('[data-testid="backspace-btn"]');
+    // Wait for DOM update
+    await this.page.waitForTimeout(200);
   }
 
   /**
@@ -183,10 +190,18 @@ export class KidsModeHelper {
     console.log(`Forcing kids mode for child: ${childName} (ID: ${childId || 'auto-detect'})`);
     
     try {
-      // Use default child ID if none provided (skip complex detection)
+      // Auto-detect child ID if none provided
       if (!childId) {
-        childId = '1';
-        console.log('Using default child ID: 1 (optimized for speed)');
+        console.log('No child ID provided, attempting auto-detection...');
+        childId = await this.detectAvailableChildId();
+        if (!childId) {
+          console.log('Could not detect child ID, creating a new child...');
+          childId = await this.createTestChild(childName);
+        }
+        if (!childId) {
+          throw new Error('Failed to get or create a valid child ID');
+        }
+        console.log(`Using detected/created child ID: ${childId}`);
       }
       
       // Navigate to dashboard with fast load
@@ -244,15 +259,16 @@ export class KidsModeHelper {
       
     } catch (e) {
       console.log('Force kids mode failed:', e);
-      // Use session storage as absolute fallback
+      // Use session storage as absolute fallback with a safe fallback ID
+      const fallbackId = childId || '1';
       await this.page.evaluate((data) => {
         sessionStorage.setItem('kids_mode_active', 'true');
-        sessionStorage.setItem('kids_mode_child_id', data.childId || '1');
+        sessionStorage.setItem('kids_mode_child_id', data.childId);
         sessionStorage.setItem('kids_mode_child_name', data.childName);
-      }, { childId, childName });
+      }, { childId: fallbackId, childName });
       
       console.log('Using session storage fallback method');
-      return childId || '1';
+      return fallbackId;
     }
   }
 
@@ -450,11 +466,15 @@ export class KidsModeHelper {
       
       console.log('Registration form submitted, waiting for response...');
       
-      // Wait for either success (dashboard) or failure (stay on register page with errors)
+      // Wait for either success (dashboard OR onboarding) or failure (stay on register page with errors)
       await Promise.race([
         this.page.waitForURL('/dashboard', { timeout: 8000 }).then(() => {
           registrationSuccess = true;
           console.log('Registration successful - redirected to dashboard');
+        }),
+        this.page.waitForURL('/onboarding', { timeout: 8000 }).then(() => {
+          registrationSuccess = true;
+          console.log('Registration successful - redirected to onboarding');
         }),
         this.page.waitForSelector('.text-red-500, .alert-danger, .error', { timeout: 8000 }).then(() => {
           console.log('Registration failed - error messages detected');
@@ -484,10 +504,16 @@ export class KidsModeHelper {
         
         await this.page.click('button[type="submit"]');
         
-        console.log('Login form submitted, waiting for dashboard...');
+        console.log('Login form submitted, waiting for dashboard or onboarding...');
         
-        await this.page.waitForURL('/dashboard', { timeout: 10000 });
-        console.log('Login successful - redirected to dashboard');
+        // Wait for either dashboard or onboarding after login
+        await Promise.race([
+          this.page.waitForURL('/dashboard', { timeout: 10000 }),
+          this.page.waitForURL('/onboarding', { timeout: 10000 })
+        ]);
+        
+        const currentUrl = this.page.url();
+        console.log('Login successful - redirected to:', currentUrl);
         
       } catch (loginError) {
         console.log('Login fallback also failed:', loginError);
@@ -506,12 +532,18 @@ export class KidsModeHelper {
       }
     }
     
-    // Verify we're actually authenticated by checking for dashboard content
+    // Verify we're actually authenticated by checking current page content
     try {
-      await expect(this.page.getByText('Dashboard')).toBeVisible({ timeout: 5000 });
-      console.log('Authentication verified - dashboard is accessible');
+      const currentUrl = this.page.url();
+      if (currentUrl.includes('/onboarding')) {
+        await expect(this.page.getByText('Welcome to Homeschool Hub!')).toBeVisible({ timeout: 5000 });
+        console.log('Authentication verified - onboarding page is accessible');
+      } else {
+        await expect(this.page.getByText('Dashboard')).toBeVisible({ timeout: 5000 });
+        console.log('Authentication verified - dashboard is accessible');
+      }
     } catch {
-      console.log('Warning: Dashboard content not found, but continuing with test');
+      console.log('Warning: Authentication verification failed, but continuing with test');
     }
     
     // Create a child for kids mode testing
@@ -527,15 +559,22 @@ export class KidsModeHelper {
     console.log(`Creating test child: ${childName}, age: ${age}`);
     
     try {
+      // Check if user is on onboarding page first
+      const currentUrl = this.page.url();
+      if (currentUrl.includes('/onboarding')) {
+        console.log('User is on onboarding page, using onboarding flow to create child');
+        return await this.createChildViaOnboarding(childName, age);
+      }
+      
       // Navigate to children management
       await this.page.goto('/children', { waitUntil: 'networkidle' });
       await this.page.waitForTimeout(2000); // Increased wait time
       
-      // Look for add child button with multiple selectors
+      // Look for add child button with specific test IDs (prefer specific over ambiguous)
       const addChildBtnSelectors = [
-        'button:has-text("Add Child")',
+        'button[data-testid="header-add-child-btn"]',
+        'button[data-testid="empty-state-add-child-btn"]',
         'button[data-testid="add-child-btn"]',
-        'a:has-text("Add Child")',
         'button.add-child'
       ];
       
@@ -1053,6 +1092,99 @@ export class KidsModeHelper {
       console.log('UI activation successful - redirected to child page');
     } else {
       console.log('UI activation may not have redirected, but continuing');
+    }
+  }
+
+  /**
+   * Create a child via the onboarding flow
+   */
+  private async createChildViaOnboarding(childName: string, age: number): Promise<string | null> {
+    console.log(`Creating child via onboarding flow: ${childName}, age: ${age}`);
+    
+    try {
+      // Navigate to onboarding if not already there
+      if (!this.page.url().includes('/onboarding')) {
+        await this.page.goto('/onboarding', { waitUntil: 'networkidle' });
+      }
+      
+      // Click "Next →" to proceed to the children step
+      await this.page.click('button:has-text("Next →")');
+      await this.page.waitForTimeout(1000);
+      
+      // Look for "Add Child" button in onboarding (use specific test IDs)
+      let addChildBtn = this.page.getByTestId('header-add-child-btn');
+      if (await addChildBtn.count() === 0) {
+        addChildBtn = this.page.getByTestId('empty-state-add-child-btn');
+      }
+      if (await addChildBtn.count() === 0) {
+        addChildBtn = this.page.locator('button:has-text("Add Child")').first();
+      }
+      if (await addChildBtn.count() > 0) {
+        await addChildBtn.click();
+        console.log('Add child button clicked in onboarding');
+      }
+      
+      // Fill the child form
+      await this.page.fill('input[name="name"]', childName);
+      await this.page.selectOption('select[name="age"]', age.toString());
+      await this.page.selectOption('select[name="independence_level"]', '2'); // Default independence level
+      
+      // Submit the child form
+      await this.page.click('button[type="submit"]:has-text("Add Child"), button:has-text("Add")');
+      console.log('Child form submitted in onboarding');
+      
+      // Wait for child to be added
+      await this.page.waitForTimeout(2000);
+      
+      // Complete the onboarding by skipping subjects and clicking "Complete"
+      // Navigate through the remaining onboarding steps quickly
+      const nextBtn = this.page.locator('button:has-text("Next →")');
+      if (await nextBtn.count() > 0) {
+        await nextBtn.click();
+        await this.page.waitForTimeout(1000);
+      }
+      
+      // Skip subjects or complete onboarding
+      const skipBtn = this.page.locator('button:has-text("Skip Setup →")');
+      const completeBtn = this.page.locator('button:has-text("Complete")');
+      
+      if (await skipBtn.count() > 0) {
+        await skipBtn.click();
+        console.log('Skipped onboarding setup');
+      } else if (await completeBtn.count() > 0) {
+        await completeBtn.click();
+        console.log('Completed onboarding');
+      }
+      
+      // Wait for redirect to dashboard
+      await this.page.waitForURL('/dashboard', { timeout: 10000 });
+      console.log('Successfully completed onboarding and redirected to dashboard');
+      
+      // Now try to get the child ID from the dashboard or children page
+      await this.page.goto('/children', { waitUntil: 'networkidle' });
+      
+      // Look for schedule links to extract child ID
+      const scheduleLinks = this.page.locator('a[href*="/children/"]:has-text("View Schedule")');
+      const linkCount = await scheduleLinks.count();
+      
+      if (linkCount > 0) {
+        const firstLink = scheduleLinks.first();
+        const href = await firstLink.getAttribute('href');
+        if (href) {
+          const match = href.match(/\/children\/(\d+)/);
+          if (match) {
+            console.log(`Child ID extracted from schedule link: ${match[1]}`);
+            return match[1];
+          }
+        }
+      }
+      
+      console.log('Child created via onboarding but ID could not be determined');
+      return 'unknown';
+      
+    } catch (error) {
+      console.error('Failed to create child via onboarding:', error);
+      return null;
     }
   }
 }

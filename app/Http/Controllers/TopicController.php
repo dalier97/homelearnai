@@ -5,41 +5,33 @@ namespace App\Http\Controllers;
 use App\Models\Subject;
 use App\Models\Topic;
 use App\Models\Unit;
-use App\Services\SupabaseClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class TopicController extends Controller
 {
-    private SupabaseClient $supabase;
-
-    public function __construct(SupabaseClient $supabase)
-    {
-        $this->supabase = $supabase;
-    }
-
     /**
      * Display a listing of topics for a unit.
      */
     public function index(Request $request, int $subjectId, int $unitId)
     {
         try {
-            $userId = session('user_id');
+            $userId = auth()->id();
             if (! $userId) {
                 return redirect()->route('login')->with('error', 'Please log in to continue.');
             }
 
-            $subject = Subject::find((string) $subjectId, $this->supabase);
-            if (! $subject || $subject->user_id !== $userId) {
+            $subject = Subject::find($subjectId);
+            if (! $subject || $subject->user_id !== (string) $userId) {
                 return redirect()->route('subjects.index')->with('error', 'Subject not found.');
             }
 
-            $unit = Unit::find((string) $unitId, $this->supabase);
+            $unit = Unit::find($unitId);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return redirect()->route('subjects.show', $subjectId)->with('error', 'Unit not found.');
             }
 
-            $topics = Topic::forUnit($unitId, $this->supabase);
+            $topics = Topic::forUnit($unitId);
 
             if ($request->expectsJson() || $request->header('HX-Request')) {
                 return view('topics.partials.topics-list', compact('topics', 'unit', 'subject'));
@@ -63,17 +55,17 @@ class TopicController extends Controller
     public function create(Request $request, int $subjectId, int $unitId)
     {
         try {
-            $userId = session('user_id');
+            $userId = auth()->id();
             if (! $userId) {
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find((string) $subjectId, $this->supabase);
-            if (! $subject || $subject->user_id !== $userId) {
+            $subject = Subject::find($subjectId);
+            if (! $subject || $subject->user_id !== (string) $userId) {
                 return response('Subject not found', 404);
             }
 
-            $unit = Unit::find((string) $unitId, $this->supabase);
+            $unit = Unit::find($unitId);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return response('Unit not found', 404);
             }
@@ -96,17 +88,17 @@ class TopicController extends Controller
     public function store(Request $request, int $subjectId, int $unitId)
     {
         try {
-            $userId = session('user_id');
+            $userId = auth()->id();
             if (! $userId) {
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find((string) $subjectId, $this->supabase);
-            if (! $subject || $subject->user_id !== $userId) {
+            $subject = Subject::find($subjectId);
+            if (! $subject || $subject->user_id !== (string) $userId) {
                 return response('Subject not found', 404);
             }
 
-            $unit = Unit::find((string) $unitId, $this->supabase);
+            $unit = Unit::find($unitId);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return response('Unit not found', 404);
             }
@@ -119,7 +111,7 @@ class TopicController extends Controller
             ]);
 
             // Use 'name' field but store as 'title' in the model
-            $topic = new Topic([
+            $topic = Topic::create([
                 'unit_id' => $unitId,
                 'title' => $validated['name'], // Store name as title
                 'estimated_minutes' => $validated['estimated_minutes'],
@@ -127,18 +119,14 @@ class TopicController extends Controller
                 'prerequisites' => [], // Empty for now
             ]);
 
-            if ($topic->save($this->supabase)) {
-                if ($request->header('HX-Request')) {
-                    // Return updated topics list
-                    $topics = Topic::forUnit($unitId, $this->supabase);
+            if ($request->header('HX-Request')) {
+                // Return updated topics list
+                $topics = Topic::forUnit($unitId);
 
-                    return view('topics.partials.topics-list', compact('topics', 'unit', 'subject'));
-                }
-
-                return redirect()->route('units.show', [$subjectId, $unitId])->with('success', 'Topic created successfully.');
-            } else {
-                throw new \Exception('Failed to save topic');
+                return view('topics.partials.topics-list', compact('topics', 'unit', 'subject'));
             }
+
+            return redirect()->route('units.show', [$subjectId, $unitId])->with('success', 'Topic created successfully.');
         } catch (\Exception $e) {
             Log::error('Error creating topic: '.$e->getMessage());
 
@@ -156,31 +144,31 @@ class TopicController extends Controller
     public function show(Request $request, int $subjectId, int $unitId, int $id)
     {
         try {
-            $userId = session('user_id');
+            $userId = auth()->id();
             if (! $userId) {
                 return redirect()->route('login');
             }
 
-            $subject = Subject::find((string) $subjectId, $this->supabase);
-            if (! $subject || $subject->user_id !== $userId) {
+            $subject = Subject::find($subjectId);
+            if (! $subject || $subject->user_id !== (string) $userId) {
                 return redirect()->route('subjects.index')->with('error', 'Subject not found.');
             }
 
-            $unit = Unit::find((string) $unitId, $this->supabase);
+            $unit = Unit::find($unitId);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return redirect()->route('subjects.show', $subjectId)->with('error', 'Unit not found.');
             }
 
-            $topic = Topic::find((string) $id, $this->supabase);
+            $topic = Topic::find($id);
             if (! $topic || $topic->unit_id !== $unitId) {
                 return redirect()->route('units.show', [$subjectId, $unitId])->with('error', 'Topic not found.');
             }
 
             if ($request->header('HX-Request')) {
-                return view((string) 'topics.partials.topic-details', compact('topic', 'unit', 'subject'));
+                return view('topics.partials.topic-details', compact('topic', 'unit', 'subject'));
             }
 
-            return view((string) 'topics.show', compact('topic', 'unit', 'subject'));
+            return view('topics.show', compact('topic', 'unit', 'subject'));
         } catch (\Exception $e) {
             Log::error('Error fetching topic: '.$e->getMessage());
 
@@ -194,22 +182,22 @@ class TopicController extends Controller
     public function edit(Request $request, int $subjectId, int $unitId, int $id)
     {
         try {
-            $userId = session('user_id');
+            $userId = auth()->id();
             if (! $userId) {
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find((string) $subjectId, $this->supabase);
-            if (! $subject || $subject->user_id !== $userId) {
+            $subject = Subject::find($subjectId);
+            if (! $subject || $subject->user_id !== (string) $userId) {
                 return response('Subject not found', 404);
             }
 
-            $unit = Unit::find((string) $unitId, $this->supabase);
+            $unit = Unit::find($unitId);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return response('Unit not found', 404);
             }
 
-            $topic = Topic::find((string) $id, $this->supabase);
+            $topic = Topic::find($id);
             if (! $topic || $topic->unit_id !== $unitId) {
                 return response('Topic not found', 404);
             }
@@ -232,22 +220,22 @@ class TopicController extends Controller
     public function update(Request $request, int $subjectId, int $unitId, int $id)
     {
         try {
-            $userId = session('user_id');
+            $userId = auth()->id();
             if (! $userId) {
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find((string) $subjectId, $this->supabase);
-            if (! $subject || $subject->user_id !== $userId) {
+            $subject = Subject::find($subjectId);
+            if (! $subject || $subject->user_id !== (string) $userId) {
                 return response('Subject not found', 404);
             }
 
-            $unit = Unit::find((string) $unitId, $this->supabase);
+            $unit = Unit::find($unitId);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return response('Unit not found', 404);
             }
 
-            $topic = Topic::find((string) $id, $this->supabase);
+            $topic = Topic::find($id);
             if (! $topic || $topic->unit_id !== $unitId) {
                 return response('Topic not found', 404);
             }
@@ -260,22 +248,20 @@ class TopicController extends Controller
             ]);
 
             // Use 'name' field but store as 'title' in the model
-            $topic->title = $validated['name']; // Store name as title
-            $topic->estimated_minutes = $validated['estimated_minutes'];
-            $topic->required = $validated['required'] ?? true;
+            $topic->update([
+                'title' => $validated['name'], // Store name as title
+                'estimated_minutes' => $validated['estimated_minutes'],
+                'required' => $validated['required'] ?? true,
+            ]);
 
-            if ($topic->save($this->supabase)) {
-                if ($request->header('HX-Request')) {
-                    // Return updated topics list
-                    $topics = Topic::forUnit($unitId, $this->supabase);
+            if ($request->header('HX-Request')) {
+                // Return updated topics list
+                $topics = Topic::forUnit($unitId);
 
-                    return view('topics.partials.topics-list', compact('topics', 'unit', 'subject'));
-                }
-
-                return redirect()->route('units.show', [$subjectId, $unitId])->with('success', 'Topic updated successfully.');
-            } else {
-                throw new \Exception('Failed to update topic');
+                return view('topics.partials.topics-list', compact('topics', 'unit', 'subject'));
             }
+
+            return redirect()->route('units.show', [$subjectId, $unitId])->with('success', 'Topic updated successfully.');
         } catch (\Exception $e) {
             Log::error('Error updating topic: '.$e->getMessage());
 
@@ -293,22 +279,22 @@ class TopicController extends Controller
     public function destroy(Request $request, int $subjectId, int $unitId, int $id)
     {
         try {
-            $userId = session('user_id');
+            $userId = auth()->id();
             if (! $userId) {
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find((string) $subjectId, $this->supabase);
-            if (! $subject || $subject->user_id !== $userId) {
+            $subject = Subject::find($subjectId);
+            if (! $subject || $subject->user_id !== (string) $userId) {
                 return response('Subject not found', 404);
             }
 
-            $unit = Unit::find((string) $unitId, $this->supabase);
+            $unit = Unit::find($unitId);
             if (! $unit || $unit->subject_id !== $subjectId) {
                 return response('Unit not found', 404);
             }
 
-            $topic = Topic::find((string) $id, $this->supabase);
+            $topic = Topic::find($id);
             if (! $topic || $topic->unit_id !== $unitId) {
                 return response('Topic not found', 404);
             }
@@ -316,18 +302,16 @@ class TopicController extends Controller
             // TODO: Check if topic has sessions - prevent deletion if it has active sessions
             // For now, allow deletion
 
-            if ($topic->delete($this->supabase)) {
-                if ($request->header('HX-Request')) {
-                    // Return updated topics list
-                    $topics = Topic::forUnit($unitId, $this->supabase);
+            $topic->delete();
 
-                    return view('topics.partials.topics-list', compact('topics', 'unit', 'subject'));
-                }
+            if ($request->header('HX-Request')) {
+                // Return updated topics list
+                $topics = Topic::forUnit($unitId);
 
-                return redirect()->route('units.show', [$subjectId, $unitId])->with('success', 'Topic deleted successfully.');
-            } else {
-                throw new \Exception('Failed to delete topic');
+                return view('topics.partials.topics-list', compact('topics', 'unit', 'subject'));
             }
+
+            return redirect()->route('units.show', [$subjectId, $unitId])->with('success', 'Topic deleted successfully.');
         } catch (\Exception $e) {
             Log::error('Error deleting topic: '.$e->getMessage());
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\KidsModeController;
+use App\Models\User;
 use App\Services\SupabaseClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,7 +14,7 @@ class KidsModeControllerTest extends TestCase
 {
     private KidsModeController $controller;
 
-    private string $testUserId;
+    private User $testUser;
 
     private string $testAccessToken;
 
@@ -25,14 +26,14 @@ class KidsModeControllerTest extends TestCase
     {
         parent::setUp();
 
-        // Create test user data
-        $this->testUserId = 'test-user-'.uniqid();
+        // Create test user with Laravel's User factory
+        $this->testUser = User::factory()->create();
         $this->testAccessToken = 'test-token-'.uniqid();
 
         // Mock child data
         $this->testChild = [
             'id' => 1,
-            'user_id' => $this->testUserId,
+            'user_id' => $this->testUser->id,
             'name' => 'Test Child',
             'age' => 8,
             'independence_level' => 2,
@@ -40,8 +41,10 @@ class KidsModeControllerTest extends TestCase
             'updated_at' => now()->toISOString(),
         ];
 
-        // Set up session
-        Session::put('user_id', $this->testUserId);
+        // Authenticate the user using Laravel's auth system
+        $this->actingAs($this->testUser);
+
+        // Still need Supabase token for some operations during transition period
         Session::put('supabase_token', $this->testAccessToken);
 
         // Mock SupabaseClient
@@ -148,10 +151,10 @@ class KidsModeControllerTest extends TestCase
 
     public function test_authentication_middleware_is_applied()
     {
-        // Clear session to simulate unauthenticated user
-        Session::flush();
+        // Test unauthenticated user behavior using Laravel auth helpers
+        $this->app['auth']->logout();
 
-        // These routes should redirect to login (handled by SupabaseAuth middleware)
+        // These routes should redirect to login (handled by Laravel's auth middleware)
         $response = $this->post('/kids-mode/enter/1');
         $response->assertRedirect('/login');
 
@@ -174,11 +177,11 @@ class KidsModeControllerTest extends TestCase
 
     public function test_rate_limiting_key_format()
     {
-        $userId = 'test-user-123';
+        $userId = $this->testUser->id;
         $expectedKey = 'kids-mode-pin-attempts:'.$userId;
 
         // This tests the rate limiting key format used in the controller
-        $this->assertEquals('kids-mode-pin-attempts:test-user-123', $expectedKey);
+        $this->assertEquals('kids-mode-pin-attempts:'.$userId, $expectedKey);
     }
 
     public function test_pin_security_requirements()

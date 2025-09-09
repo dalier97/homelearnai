@@ -22,7 +22,7 @@ class IcsImportController extends Controller
      */
     public function index(Request $request): View
     {
-        $userId = Session::get('user_id');
+        $userId = auth()->id();
         $accessToken = Session::get('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
@@ -50,7 +50,7 @@ class IcsImportController extends Controller
             'child_id' => 'required|integer|exists:children,id',
         ]);
 
-        $userId = Session::get('user_id');
+        $userId = auth()->id();
         $accessToken = Session::get('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
@@ -59,7 +59,7 @@ class IcsImportController extends Controller
         }
 
         // Verify child belongs to user
-        $child = Child::find((string) $validated['child_id'], $this->supabase);
+        $child = Child::find($validated['child_id']);
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
@@ -98,7 +98,7 @@ class IcsImportController extends Controller
             return back()->withErrors(['confirm_import' => 'Please confirm the import']);
         }
 
-        $userId = Session::get('user_id');
+        $userId = auth()->id();
         $accessToken = Session::get('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
@@ -107,7 +107,7 @@ class IcsImportController extends Controller
         }
 
         // Verify child belongs to user
-        $child = Child::find((string) $validated['child_id'], $this->supabase);
+        $child = Child::find($validated['child_id']);
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
@@ -116,7 +116,7 @@ class IcsImportController extends Controller
             $result = $this->icsImportService->importIcsFile(
                 $request->file('ics_file'),
                 $validated['child_id'],
-                Session::get('user_id')
+                auth()->id()
             );
 
             // If HTMX request, return the calendar update
@@ -159,7 +159,7 @@ class IcsImportController extends Controller
             return back()->withErrors(['confirm_import' => 'Please confirm the import']);
         }
 
-        $userId = Session::get('user_id');
+        $userId = auth()->id();
         $accessToken = Session::get('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
@@ -168,7 +168,7 @@ class IcsImportController extends Controller
         }
 
         // Verify child belongs to user
-        $child = Child::find((string) $validated['child_id'], $this->supabase);
+        $child = Child::find($validated['child_id']);
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
@@ -177,7 +177,7 @@ class IcsImportController extends Controller
             $result = $this->icsImportService->importIcsFromUrl(
                 $validated['ics_url'],
                 $validated['child_id'],
-                Session::get('user_id')
+                auth()->id()
             );
 
             // If HTMX request, return the calendar update

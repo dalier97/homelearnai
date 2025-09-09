@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'kids-mode' => \App\Http\Middleware\KidsMode::class,
             'not-in-kids-mode' => \App\Http\Middleware\NotInKidsMode::class,
             'kids-mode-security' => \App\Http\Middleware\KidsModeSecurityHeaders::class,
+            'redirect-if-onboarding-completed' => \App\Http\Middleware\RedirectIfOnboardingCompleted::class,
         ]);
 
         // Register SetLocale middleware globally

@@ -27,7 +27,8 @@
                     hx-post="{{ route('subjects.store') }}"
                     hx-target="#subjects-list"
                     hx-swap="innerHTML"
-                    onsubmit="setTimeout(() => { document.getElementById('subject-modal').innerHTML = ''; document.getElementById('subject-modal').classList.add('hidden'); }, 100)"
+                    hx-on::after-request="console.log('Subject form submitted', event.detail); if(event.detail.xhr.status >= 200 && event.detail.xhr.status < 300) { setTimeout(() => { document.getElementById('subject-modal').innerHTML = ''; document.getElementById('subject-modal').classList.add('hidden'); }, 100); }"
+                    hx-on::response-error="console.error('Subject form error:', event.detail)"
                     class="space-y-4"
                 >
                     @csrf

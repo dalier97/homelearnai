@@ -2,151 +2,149 @@
 
 namespace App\Models;
 
-use App\Services\SupabaseClient;
-use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
-class Topic
+/**
+ * @property int $id
+ * @property int $unit_id
+ * @property string $title
+ * @property int $estimated_minutes
+ * @property array|null $prerequisites
+ * @property bool $required
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property-read \App\Models\Unit $unit
+ * @property-read \App\Models\Subject $subject
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \Illuminate\Database\Eloquent\Model> $sessions
+ */
+class Topic extends Model
 {
-    public ?int $id = null;
+    use HasFactory;
 
-    public int $unit_id;
+    /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'unit_id',
+        'title',
+        'estimated_minutes',
+        'prerequisites',
+        'required',
+    ];
 
-    public string $title;
+    /**
+     * The attributes that should be cast.
+     */
+    protected $casts = [
+        'unit_id' => 'integer',
+        'estimated_minutes' => 'integer',
+        'prerequisites' => 'array', // JSON array handling
+        'required' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
-    public int $estimated_minutes = 30;
+    /**
+     * The model's default values for attributes.
+     */
+    protected $attributes = [
+        'estimated_minutes' => 30,
+        'prerequisites' => '[]',
+        'required' => true,
+    ];
 
-    public array $prerequisites = [];
-
-    public bool $required = true;
-
-    public ?Carbon $created_at = null;
-
-    public ?Carbon $updated_at = null;
-
-    public function __construct(array $attributes = [])
+    /**
+     * Get the unit that owns the topic.
+     */
+    public function unit(): BelongsTo
     {
-        foreach ($attributes as $key => $value) {
-            if (property_exists($this, $key)) {
-                if (in_array($key, ['created_at', 'updated_at']) && $value) {
-                    $this->$key = Carbon::parse($value);
-                } elseif ($key === 'prerequisites' && is_string($value)) {
-                    // Handle PostgreSQL array format from Supabase
-                    $this->$key = $this->parsePostgreSQLArray($value);
-                } elseif ($key === 'prerequisites' && is_array($value)) {
-                    $this->$key = $value;
-                } else {
-                    $this->$key = $value;
-                }
-            }
-        }
-    }
-
-    public static function find(string $id, SupabaseClient $supabase): ?self
-    {
-        $data = $supabase->from('topics')
-            ->eq('id', $id)
-            ->single();
-
-        return $data ? new self($data) : null;
-    }
-
-    public static function where(string $column, mixed $value, SupabaseClient $supabase): Collection
-    {
-        return $supabase->from('topics')
-            ->eq($column, $value)
-            ->orderBy('required', 'desc')
-            ->orderBy('title', 'asc')
-            ->get()
-            ->map(fn ($item) => new self($item));
-    }
-
-    public static function forUnit(int $unitId, SupabaseClient $supabase): Collection
-    {
-        return self::where('unit_id', $unitId, $supabase);
-    }
-
-    public function save(SupabaseClient $supabase): bool
-    {
-        $data = [
-            'unit_id' => $this->unit_id,
-            'title' => $this->title,
-            'estimated_minutes' => $this->estimated_minutes,
-            'prerequisites' => $this->prerequisites,
-            'required' => $this->required,
-        ];
-
-        if ($this->id) {
-            // Update existing
-            $result = $supabase->from('topics')
-                ->eq('id', $this->id)
-                ->update($data);
-        } else {
-            // Create new
-            $result = $supabase->from('topics')->insert($data);
-            if ($result && isset($result[0]['id'])) {
-                $this->id = $result[0]['id'];
-                $this->created_at = Carbon::now();
-            }
-        }
-
-        return ! empty($result);
-    }
-
-    public function delete(SupabaseClient $supabase): bool
-    {
-        if (! $this->id) {
-            return false;
-        }
-
-        return $supabase->from('topics')
-            ->eq('id', $this->id)
-            ->delete();
+        return $this->belongsTo(Unit::class);
     }
 
     /**
-     * Get the unit this topic belongs to
+     * Get the sessions for this topic.
+     * Note: Session is still using Supabase pattern, so this relationship is not functional yet
      */
-    public function unit(SupabaseClient $supabase): ?Unit
+    public function sessions(): HasMany
     {
-        return Unit::find((string) $this->unit_id, $supabase);
+        // Cannot use hasMany with non-Eloquent Session model
+        throw new \BadMethodCallException('Session relationship not yet available - Session model is still using Supabase pattern');
     }
+
+    /**
+     * Scope to get topics for a specific unit
+     */
+    public function scopeForUnit($query, int $unitId)
+    {
+        return $query->where('unit_id', $unitId)
+            ->orderBy('required', 'desc')
+            ->orderBy('title', 'asc');
+    }
+
+    /**
+     * Compatibility methods for existing controllers
+     */
+    public static function forUnit(int $unitId, $supabase = null): Collection
+    {
+        return self::where('unit_id', $unitId)
+            ->orderBy('required', 'desc')
+            ->orderBy('title', 'asc')
+            ->get();
+    }
+
+    // Override find to support string IDs for compatibility
+    public static function find($id, $columns = ['*'])
+    {
+        return parent::find((int) $id, $columns);
+    }
+
+    // The save() and delete() methods are now handled by Eloquent automatically
 
     /**
      * Get the subject this topic belongs to (through unit)
      */
-    public function subject(SupabaseClient $supabase): ?Subject
+    public function subject()
     {
-        $unit = $this->unit($supabase);
+        return $this->hasOneThrough(Subject::class, Unit::class, 'id', 'id', 'unit_id', 'subject_id');
+    }
 
-        return $unit ? $unit->subject($supabase) : null;
+    /**
+     * Accessor method for backward compatibility
+     */
+    public function getSubjectAttribute(): ?Subject
+    {
+        return $this->unit->subject ?? null;
+    }
+
+    /**
+     * Compatibility method for controllers
+     */
+    public function subject_compat($supabase = null): ?Subject
+    {
+        return $this->subject();
     }
 
     /**
      * Get prerequisite topics
      */
-    public function getPrerequisiteTopics(SupabaseClient $supabase): Collection
+    public function getPrerequisiteTopics($supabase = null): Collection
     {
         if (empty($this->prerequisites)) {
             return collect([]);
         }
 
-        $topics = collect([]);
-        foreach ($this->prerequisites as $topicId) {
-            $topic = self::find((string) $topicId, $supabase);
-            if ($topic) {
-                $topics->push($topic);
-            }
-        }
-
-        return $topics;
+        return self::whereIn('id', $this->prerequisites)->get();
     }
 
     /**
      * Check if all prerequisites are met
      * Note: This is a simplified check - in a real app you'd track completion status
      */
-    public function hasPrerequisitesMet(SupabaseClient $supabase): bool
+    public function hasPrerequisitesMet($supabase = null): bool
     {
         // For now, return true - in a real app you'd check completion status
         return true;
@@ -169,23 +167,6 @@ class Topic
         }
 
         return "{$hours}h {$minutes}m";
-    }
-
-    /**
-     * Parse PostgreSQL array format like "{1,2,3}" to PHP array
-     */
-    private function parsePostgreSQLArray(string $value): array
-    {
-        if ($value === '{}' || empty($value)) {
-            return [];
-        }
-
-        $value = trim($value, '{}');
-        if (empty($value)) {
-            return [];
-        }
-
-        return array_map('intval', explode(',', $value));
     }
 
     /**

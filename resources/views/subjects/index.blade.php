@@ -13,6 +13,7 @@
                 hx-get="{{ route('subjects.create') }}?child_id={{ $selectedChild->id }}"
                 hx-target="#subject-modal"
                 hx-swap="innerHTML"
+                data-child-id="{{ $selectedChild->id }}"
                 class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg inline-flex items-center"
             >
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -24,8 +24,8 @@ test.describe('Authentication Flow', () => {
     await page.goto('/register');
     await elementHelper.waitForPageReady();
     
-    // Verify page title and form elements
-    await expect(page.locator('h2')).toContainText('Create your account', { timeout: 10000 });
+    // Verify Laravel logo is present (Laravel Breeze UI indicator)
+    await expect(page.locator('svg')).toBeVisible({ timeout: 10000 });
     
     // Check all form fields are present and interactable
     await elementHelper.waitForInteraction('input[name="name"]');
@@ -40,16 +40,20 @@ test.describe('Authentication Flow', () => {
     await elementHelper.waitForInteraction('input[name="password_confirmation"]');
     await expect(page.locator('input[name="password_confirmation"]')).toBeVisible();
     
+    // Check for Laravel Breeze register button
     await elementHelper.waitForInteraction('button[type="submit"]');
-    await expect(page.locator('button[type="submit"]')).toContainText('Create account');
+    await expect(page.locator('button[type="submit"]')).toContainText('Register');
+    
+    // Check "Already registered?" link is present
+    await expect(page.locator('a[href*="/login"]')).toContainText('Already registered?');
   });
 
   test('should display login form', async ({ page }) => {
     await page.goto('/login');
     await elementHelper.waitForPageReady();
     
-    // Verify page title and form elements
-    await expect(page.locator('h2')).toContainText('Sign in to Homeschool Hub', { timeout: 10000 });
+    // Verify Laravel logo is present (Laravel Breeze UI indicator)
+    await expect(page.locator('svg')).toBeVisible({ timeout: 10000 });
     
     // Check form fields are present and interactable
     await elementHelper.waitForInteraction('input[name="email"]');
@@ -58,14 +62,22 @@ test.describe('Authentication Flow', () => {
     await elementHelper.waitForInteraction('input[name="password"]');
     await expect(page.locator('input[name="password"]')).toBeVisible();
     
+    // Check for Laravel Breeze login button
     await elementHelper.waitForInteraction('button[type="submit"]');
-    await expect(page.locator('button[type="submit"]')).toContainText('Sign in');
+    await expect(page.locator('button[type="submit"]')).toContainText('Log in');
+    
+    // Check "Remember me" checkbox is present
+    await expect(page.locator('input[name="remember"]')).toBeVisible();
+    
+    // Check "Forgot your password?" link is present (if route exists)
+    const forgotPasswordLink = page.locator('a[href*="password.request"]');
+    if (await forgotPasswordLink.count() > 0) {
+      await expect(forgotPasswordLink).toContainText('Forgot your password?');
+    }
   });
 
   test('should register new user and create test data', async ({ page, browserName }) => {
-    // Skip this test on Firefox due to Supabase registration timeout issues
-    test.skip(browserName === 'firefox', 'Skipping flaky Supabase registration test on Firefox');
-    
+    // No longer need to skip Firefox for Laravel native auth
     const testUser = {
       name: 'Test User E2E',
       email: `test-${Date.now()}@example.com`,
@@ -84,21 +96,18 @@ test.describe('Authentication Flow', () => {
     // Submit registration with safe click
     await elementHelper.safeClick('button[type="submit"]');
     
-    // Wait for navigation and check result
+    // Wait for navigation and check result (Laravel should redirect to dashboard after registration)
     await elementHelper.waitForPageReady();
     
     const currentUrl = page.url();
     if (currentUrl.includes('/dashboard')) {
-      // Direct redirect to dashboard (email confirmation disabled)
-      await expect(page.locator('h1')).toContainText('Homeschool Hub', { timeout: 15000 });
-      await expect(page.locator('body')).toContainText('Parent Dashboard');
+      // Laravel Breeze redirects to dashboard after successful registration
+      await expect(page.locator('h1, h2, .text-xl')).toContainText('Dashboard', { timeout: 15000 });
     } else if (currentUrl.includes('/register')) {
-      // Check for success/error messages
-      const hasSuccessMessage = await page.locator('text=success').count() > 0;
-      const hasErrorMessage = await page.locator('text=error').count() > 0 || 
-                              await page.locator('.text-red-500').count() > 0;
+      // Check for Laravel validation errors
+      const hasErrors = await page.locator('.text-red-600, .text-sm.text-red-600').count() > 0;
       
-      if (!hasSuccessMessage && !hasErrorMessage) {
+      if (!hasErrors) {
         // Try to login with the credentials to verify registration worked
         await page.goto('/login');
         await elementHelper.waitForPageReady();
@@ -108,10 +117,12 @@ test.describe('Authentication Flow', () => {
         await elementHelper.safeClick('button[type="submit"]');
         
         await elementHelper.waitForPageReady();
-        if (page.url().includes('/dashboard')) {
-          await expect(page.locator('h1')).toContainText('Homeschool Hub', { timeout: 15000 });
-        }
+        // Verify successful login by checking for dashboard
+        await expect(page.locator('h1, h2, .text-xl')).toContainText('Dashboard', { timeout: 15000 });
       }
+    } else if (currentUrl.includes('/email/verify')) {
+      // Email verification required - this is a valid state for Laravel Breeze
+      await expect(page.locator('body')).toContainText('verify', { timeout: 10000 });
     }
   });
 
@@ -131,7 +142,9 @@ test.describe('Authentication Flow', () => {
     await page.goto('/register');
     await elementHelper.waitForPageReady();
     
-    await expect(page.locator('h2')).toContainText('Create your account', { timeout: 10000 });
+    // Verify registration page loaded (Laravel Breeze UI)
+    await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('button[type="submit"]')).toContainText('Register');
     
     // Check if there's a login link and navigate
     const loginLink = page.locator('a[href*="/login"]');
@@ -140,7 +153,10 @@ test.describe('Authentication Flow', () => {
       await elementHelper.waitForPageReady();
       await expect(page).toHaveURL('/login');
       
-      await expect(page.locator('h2')).toContainText('Sign in to Homeschool Hub', { timeout: 10000 });
+      // Verify login page loaded (Laravel Breeze UI)  
+      await expect(page.locator('input[name="email"]')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('input[name="password"]')).toBeVisible();
+      await expect(page.locator('button[type="submit"]')).toContainText('Log in');
     }
   });
 });

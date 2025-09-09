@@ -12,6 +12,7 @@
             hx-target="#child-form-modal"
             hx-swap="innerHTML"
             class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+            data-testid="empty-state-add-child-btn"
         >
             {{ __('add_child') }}
         </button>

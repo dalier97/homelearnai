@@ -11,7 +11,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Session as SessionFacade;
 use Illuminate\View\View;
 
 class ReviewController extends Controller
@@ -25,8 +24,8 @@ class ReviewController extends Controller
      */
     public function index(Request $request): View
     {
-        $userId = SessionFacade::get('user_id');
-        $accessToken = SessionFacade::get('supabase_token');
+        $userId = auth()->id();
+        $accessToken = session('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
         if ($accessToken) {
@@ -37,7 +36,7 @@ class ReviewController extends Controller
 
         // Default to first child or selected child
         $selectedChildId = $request->get('child_id', $children->first()?->id);
-        $selectedChild = $selectedChildId ? Child::find((string) $selectedChildId, $this->supabase) : null;
+        $selectedChild = $selectedChildId ? Child::find((int) $selectedChildId) : null;
 
         if (! $selectedChild) {
             return view('reviews.index', [
@@ -78,15 +77,15 @@ class ReviewController extends Controller
      */
     public function startSession(Request $request, int $childId): View|RedirectResponse
     {
-        $userId = SessionFacade::get('user_id');
-        $accessToken = SessionFacade::get('supabase_token');
+        $userId = auth()->id();
+        $accessToken = session('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
         if ($accessToken) {
             $this->supabase->setUserToken($accessToken);
         }
 
-        $child = Child::find((string) $childId, $this->supabase);
+        $child = Child::find((int) $childId);
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
@@ -112,8 +111,8 @@ class ReviewController extends Controller
             'result' => 'required|string|in:again,hard,good,easy',
         ]);
 
-        $userId = SessionFacade::get('user_id');
-        $accessToken = SessionFacade::get('supabase_token');
+        $userId = auth()->id();
+        $accessToken = session('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
         if ($accessToken) {
@@ -155,8 +154,8 @@ class ReviewController extends Controller
      */
     public function show(int $reviewId): View
     {
-        $userId = SessionFacade::get('user_id');
-        $accessToken = SessionFacade::get('supabase_token');
+        $userId = auth()->id();
+        $accessToken = session('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
         if ($accessToken) {
@@ -194,8 +193,8 @@ class ReviewController extends Controller
             'evidence_attachments.*' => 'file|max:10240', // 10MB max per file
         ]);
 
-        $userId = SessionFacade::get('user_id');
-        $accessToken = SessionFacade::get('supabase_token');
+        $userId = auth()->id();
+        $accessToken = session('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
         if ($accessToken) {
@@ -257,15 +256,15 @@ class ReviewController extends Controller
      */
     public function manageSlots(Request $request, int $childId): View
     {
-        $userId = SessionFacade::get('user_id');
-        $accessToken = SessionFacade::get('supabase_token');
+        $userId = auth()->id();
+        $accessToken = session('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
         if ($accessToken) {
             $this->supabase->setUserToken($accessToken);
         }
 
-        $child = Child::find((string) $childId, $this->supabase);
+        $child = Child::find((int) $childId);
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
@@ -313,8 +312,8 @@ class ReviewController extends Controller
                 return back()->withErrors(['end_time' => 'End time must be after start time.']);
             }
 
-            $userId = SessionFacade::get('user_id');
-            $accessToken = SessionFacade::get('supabase_token');
+            $userId = auth()->id();
+            $accessToken = session('supabase_token');
 
             // Ensure SupabaseClient has the user's access token for RLS
             if ($accessToken) {
@@ -323,7 +322,7 @@ class ReviewController extends Controller
 
             // Verify child belongs to the current user
             try {
-                $child = Child::find((string) $validated['child_id'], $this->supabase);
+                $child = Child::find((int) $validated['child_id']);
                 if (! $child || $child->user_id !== $userId) {
                     abort(403);
                 }
@@ -461,8 +460,8 @@ class ReviewController extends Controller
             'slot_type' => 'required|string|in:micro,standard',
         ]);
 
-        $userId = SessionFacade::get('user_id');
-        $accessToken = SessionFacade::get('supabase_token');
+        $userId = auth()->id();
+        $accessToken = session('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
         if ($accessToken) {
@@ -505,8 +504,8 @@ class ReviewController extends Controller
      */
     public function destroySlot(int $id): string
     {
-        $userId = SessionFacade::get('user_id');
-        $accessToken = SessionFacade::get('supabase_token');
+        $userId = auth()->id();
+        $accessToken = session('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
         if ($accessToken) {
@@ -540,8 +539,8 @@ class ReviewController extends Controller
      */
     public function toggleSlot(int $id): View
     {
-        $userId = SessionFacade::get('user_id');
-        $accessToken = SessionFacade::get('supabase_token');
+        $userId = auth()->id();
+        $accessToken = session('supabase_token');
 
         // Ensure SupabaseClient has the user's access token for RLS
         if ($accessToken) {

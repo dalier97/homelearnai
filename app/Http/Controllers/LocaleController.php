@@ -54,7 +54,7 @@ class LocaleController extends Controller
         ]);
 
         $locale = $request->input('locale');
-        $userId = session('user_id');
+        $userId = auth()->id();
         $isAuthenticated = ! empty($userId);
         $isAuthPage = $this->isAuthenticationPage($request);
 
