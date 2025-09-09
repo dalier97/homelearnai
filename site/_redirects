@@ -1,0 +1,6 @@
+# Redirect rules for Cloudflare Pages
+/github https://github.com/your-username/homelearnai 302
+/demo /index.html#demo 200
+/features /index.html#features 200
+/docs https://docs.homelearnai.com 302
+/get-started /index.html#get-started 200

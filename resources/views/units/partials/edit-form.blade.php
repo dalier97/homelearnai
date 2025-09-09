@@ -4,7 +4,7 @@
         <!-- Modal Header -->
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-medium text-gray-900">Edit Unit</h3>
-            <button type="button" @click="$el.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+            <button type="button" @click="$event.target.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -55,7 +55,7 @@
             <div class="flex justify-end space-x-3">
                 <button 
                     type="button" 
-                    @click="$el.closest('.fixed').remove()"
+                    @click="$event.target.closest('.fixed').remove()"
                     class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md">
                     Cancel
                 </button>

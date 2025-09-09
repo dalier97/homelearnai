@@ -111,7 +111,7 @@ class PlanningController extends Controller
             $childId = $request->get('child_id');
             $child = Child::find((int) $childId);
 
-            if (! $child || $child->user_id !== auth()->id()) {
+            if (! $child || $child->user_id != auth()->id()) {
                 abort(403);
             }
 
@@ -148,7 +148,7 @@ class PlanningController extends Controller
 
         // Verify child belongs to the current user
         $child = Child::find((int) $validated['child_id']);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -160,7 +160,7 @@ class PlanningController extends Controller
 
         // Verify topic belongs to user's subjects (through unit -> subject)
         $subject = $topic->subject($this->supabase);
-        if (! $subject || $subject->user_id !== auth()->id()) {
+        if (! $subject || $subject->user_id != auth()->id()) {
             abort(403, 'Topic does not belong to user');
         }
 
@@ -207,7 +207,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -260,7 +260,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -309,7 +309,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -349,7 +349,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -371,7 +371,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -397,7 +397,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -441,7 +441,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -462,7 +462,7 @@ class PlanningController extends Controller
         ]);
 
         $child = Child::find((int) $validated['child_id']);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -506,7 +506,7 @@ class PlanningController extends Controller
 
         // Verify catch-up session belongs to user's child
         $child = $catchUpSession->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -530,7 +530,7 @@ class PlanningController extends Controller
 
         // Verify catch-up session belongs to user's child
         $child = $catchUpSession->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -555,7 +555,7 @@ class PlanningController extends Controller
 
         // Verify session belongs to user's child
         $child = $session->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -576,7 +576,7 @@ class PlanningController extends Controller
         ]);
 
         $child = Child::find((int) $validated['child_id']);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -600,7 +600,7 @@ class PlanningController extends Controller
         ]);
 
         $child = Child::find((int) $validated['child_id']);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 

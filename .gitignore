@@ -28,3 +28,6 @@ test-results/
 playwright-report/
 auth-failure-debug.png
 .vow-*
+
+# Brand and business documents
+brand.md

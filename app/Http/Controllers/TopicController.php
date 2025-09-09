@@ -22,7 +22,7 @@ class TopicController extends Controller
             }
 
             $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            if (! $subject || $subject->user_id != $userId) {
                 return redirect()->route('subjects.index')->with('error', 'Subject not found.');
             }
 
@@ -61,7 +61,7 @@ class TopicController extends Controller
             }
 
             $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            if (! $subject || $subject->user_id != $userId) {
                 return response('Subject not found', 404);
             }
 
@@ -94,7 +94,7 @@ class TopicController extends Controller
             }
 
             $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            if (! $subject || $subject->user_id != $userId) {
                 return response('Subject not found', 404);
             }
 
@@ -150,7 +150,7 @@ class TopicController extends Controller
             }
 
             $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            if (! $subject || $subject->user_id != $userId) {
                 return redirect()->route('subjects.index')->with('error', 'Subject not found.');
             }
 
@@ -188,7 +188,7 @@ class TopicController extends Controller
             }
 
             $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            if (! $subject || $subject->user_id != $userId) {
                 return response('Subject not found', 404);
             }
 
@@ -226,7 +226,7 @@ class TopicController extends Controller
             }
 
             $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            if (! $subject || $subject->user_id != $userId) {
                 return response('Subject not found', 404);
             }
 
@@ -285,7 +285,7 @@ class TopicController extends Controller
             }
 
             $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            if (! $subject || $subject->user_id != $userId) {
                 return response('Subject not found', 404);
             }
 

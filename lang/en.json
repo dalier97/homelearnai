@@ -618,6 +618,8 @@
     "manage_childrens_profiles_homeschool_planning": "Manage your children's profiles for homeschool planning",
     "manage_curriculum_subjects_organize_units": "Manage your curriculum subjects and organize your learning units.",
     "get_started_creating_first_subject": "Get started by creating your first subject.",
+    "select_child_to_view_subjects": "Select a child to view their subjects",
+    "choose_child_from_selector_above": "Choose a child from the selector above to get started.",
     "Child added successfully!": "Child added successfully!",
     "Child updated successfully!": "Child updated successfully!",
     "Child deleted successfully!": "Child deleted successfully!",

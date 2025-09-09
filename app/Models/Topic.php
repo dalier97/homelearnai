@@ -99,7 +99,7 @@ class Topic extends Model
     // Override find to support string IDs for compatibility
     public static function find($id, $columns = ['*'])
     {
-        return parent::find((int) $id, $columns);
+        return static::query()->find((int) $id, $columns);
     }
 
     // The save() and delete() methods are now handled by Eloquent automatically

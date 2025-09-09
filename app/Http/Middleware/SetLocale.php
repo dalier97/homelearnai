@@ -196,27 +196,9 @@ class SetLocale
                 ]);
             }
         } else {
-            // 2. Check database for guest user's preference
-            try {
-                $guestId = $this->generateGuestId($request);
-
-                // Always read from database - no caching for multi-process compatibility
-                $guestPrefs = $this->supabase->from('guest_preferences')
-                    ->select('locale')
-                    ->eq('guest_id', $guestId)
-                    ->single();
-
-                if ($guestPrefs && ! empty($guestPrefs['locale'])) {
-                    $locale = $guestPrefs['locale'];
-
-                    return $locale;
-                }
-            } catch (\Exception $e) {
-                \Log::debug('Failed to fetch guest locale preference', [
-                    'guest_id' => $this->generateGuestId($request),
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            // 2. Skip guest preferences lookup (Supabase table not available in current setup)
+            // Guest users will fall back to session or default locale
+            \Log::debug('Skipping guest preferences lookup - using session/default locale');
         }
 
         // 3. Check session (safely, session might not be available in all contexts)

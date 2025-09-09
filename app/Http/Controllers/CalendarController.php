@@ -80,7 +80,7 @@ class CalendarController extends Controller
 
         // Verify child belongs to the current user
         $child = Child::find($validated['child_id']);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -129,7 +129,7 @@ class CalendarController extends Controller
 
         // Verify the time block belongs to user's child
         $child = $timeBlock->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -152,7 +152,7 @@ class CalendarController extends Controller
 
         // Verify the time block belongs to user's child
         $child = $timeBlock->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
@@ -211,7 +211,7 @@ class CalendarController extends Controller
 
         // Verify the time block belongs to user's child
         $child = $timeBlock->child($this->supabase);
-        if (! $child || $child->user_id !== auth()->id()) {
+        if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 

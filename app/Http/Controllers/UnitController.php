@@ -21,7 +21,7 @@ class UnitController extends Controller
             }
 
             $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            if (! $subject || $subject->user_id != $userId) {
                 return redirect()->route('subjects.index')->with('error', 'Subject not found.');
             }
 
@@ -48,24 +48,49 @@ class UnitController extends Controller
      */
     public function create(Request $request, int $subjectId)
     {
+        Log::info('UnitController::create - START', ['subject_id' => $subjectId]);
+
         try {
+            Log::info('UnitController::create - Getting user ID');
             $userId = auth()->id();
             if (! $userId) {
+                Log::warning('UnitController::create - No user authenticated');
+
                 return response('Unauthorized', 401);
             }
+            Log::info('UnitController::create - User authenticated', ['user_id' => $userId]);
 
-            $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            Log::info('UnitController::create - Finding subject', ['subject_id' => $subjectId]);
+            // Use the same approach as debug route that works
+            $subject = Subject::query()->find((int) $subjectId);
+            Log::info('UnitController::create - Subject query completed', ['found' => ! is_null($subject)]);
+            if (! $subject || $subject->user_id != $userId) {
+                Log::warning('UnitController::create - Subject not found or access denied', [
+                    'subject_found' => ! is_null($subject),
+                    'subject_user_id' => $subject?->user_id,
+                    'current_user_id' => $userId,
+                ]);
+
                 return response('Subject not found', 404);
             }
+            Log::info('UnitController::create - Subject found and authorized', ['subject_name' => $subject->name]);
 
+            Log::info('UnitController::create - Checking request type');
             if ($request->header('HX-Request')) {
+                Log::info('UnitController::create - Returning HTMX partial view');
+
                 return view('units.partials.create-form', compact('subject'));
             }
 
+            Log::info('UnitController::create - Returning full page view');
+
             return view('units.create', compact('subject'));
         } catch (\Exception $e) {
-            Log::error('Error loading unit creation form: '.$e->getMessage());
+            Log::error('Error loading unit creation form: '.$e->getMessage(), [
+                'subject_id' => $subjectId,
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
             return response('Unable to load form.', 500);
         }
@@ -76,16 +101,31 @@ class UnitController extends Controller
      */
     public function store(Request $request, int $subjectId)
     {
+        Log::info('UnitController::store - START', ['subject_id' => $subjectId]);
+
         try {
+            Log::info('UnitController::store - Getting user ID');
             $userId = auth()->id();
             if (! $userId) {
+                Log::warning('UnitController::store - No user authenticated');
+
                 return response('Unauthorized', 401);
             }
+            Log::info('UnitController::store - User authenticated', ['user_id' => $userId]);
 
-            $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            Log::info('UnitController::store - Finding subject', ['subject_id' => $subjectId]);
+            $subject = Subject::query()->find((int) $subjectId);
+            Log::info('UnitController::store - Subject query completed', ['found' => ! is_null($subject)]);
+            if (! $subject || $subject->user_id != $userId) {
+                Log::warning('UnitController::store - Subject not found or access denied', [
+                    'subject_found' => ! is_null($subject),
+                    'subject_user_id' => $subject?->user_id,
+                    'current_user_id' => $userId,
+                ]);
+
                 return response('Subject not found', 404);
             }
+            Log::info('UnitController::store - Subject found and authorized', ['subject_name' => $subject->name]);
 
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
@@ -105,6 +145,7 @@ class UnitController extends Controller
 
             if ($request->header('HX-Request')) {
                 // Return updated units list
+                Log::info('UnitController::store - Returning HTMX response');
                 $units = Unit::forSubject($subjectId);
                 Log::info('Returning units list for HTMX', ['units_count' => $units->count()]);
 
@@ -135,7 +176,7 @@ class UnitController extends Controller
             }
 
             $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            if (! $subject || $subject->user_id != $userId) {
                 return redirect()->route('subjects.index')->with('error', 'Subject not found.');
             }
 
@@ -170,7 +211,7 @@ class UnitController extends Controller
             }
 
             $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            if (! $subject || $subject->user_id != $userId) {
                 return response('Subject not found', 404);
             }
 
@@ -203,7 +244,7 @@ class UnitController extends Controller
             }
 
             $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            if (! $subject || $subject->user_id != $userId) {
                 return response('Subject not found', 404);
             }
 
@@ -256,7 +297,7 @@ class UnitController extends Controller
             }
 
             $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id !== (string) $userId) {
+            if (! $subject || $subject->user_id != $userId) {
                 return response('Subject not found', 404);
             }
 

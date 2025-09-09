@@ -26,7 +26,7 @@ class Subject extends Model
      * The attributes that should be cast.
      */
     protected $casts = [
-        'user_id' => 'integer',
+        'user_id' => 'string',
         'child_id' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -115,7 +115,7 @@ class Subject extends Model
     // Override find to support string IDs for compatibility
     public static function find($id, $columns = ['*'])
     {
-        return parent::find((int) $id, $columns);
+        return static::query()->find((int) $id, $columns);
     }
 
     /**

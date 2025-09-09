@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeLearnAI - AI-Powered Homeschool Planning</title>
+    <meta name="description" content="The first open source AI platform built by homeschoolers, for homeschoolers. Smart scheduling, spaced repetition reviews, and multi-child management.">
+    <meta name="keywords" content="homeschool, AI, open source, education, planning, spaced repetition, multi-child">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom colors matching brand -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-blue': '#3B82F6',
+                        'brand-green': '#10B981',
+                        'brand-warm': '#F59E0B',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Alpine.js for interactions -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .feature-card:hover { transform: translateY(-4px); }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-brand-blue to-brand-green rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">H</span>
+                    </div>
+                    <span class="text-xl font-bold text-gray-900">HomeLearnAI</span>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-gray-600 hover:text-brand-blue transition-colors">Features</a>
+                    <a href="#why-us" class="text-gray-600 hover:text-brand-blue transition-colors">Why Us</a>
+                    <a href="#open-source" class="text-gray-600 hover:text-brand-blue transition-colors">Open Source</a>
+                    <a href="#github" class="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors">View on GitHub</a>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="gradient-bg text-white py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+                    The AI That Grows 
+                    <span class="block text-brand-warm">With Your Family</span>
+                </h1>
+                
+                <p class="text-xl md:text-2xl mb-8 text-blue-100 leading-relaxed">
+                    The first open source AI platform built by homeschoolers, for homeschoolers. 
+                    Smart scheduling, spaced repetition reviews, and multi-child management.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    <a href="#features" class="bg-white text-brand-blue px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg">
+                        Explore Features
+                    </a>
+                    <a href="#github" class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-brand-blue transition-colors">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            View Source
+                        </span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Built for Real Homeschool Families</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Unlike generic education software, HomeLearnAI understands how homeschool families actually learn and grow together.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card p-8 bg-gray-50 rounded-xl border border-gray-200 transition-all duration-300">
+                    <div class="w-12 h-12 bg-brand-blue rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Multi-Child Management</h3>
+                    <p class="text-gray-600">
+                        Manage multiple children with different ages and independence levels. Each child gets personalized scheduling and content.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-card p-8 bg-gray-50 rounded-xl border border-gray-200 transition-all duration-300">
+                    <div class="w-12 h-12 bg-brand-green rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Spaced Repetition Reviews</h3>
+                    <p class="text-gray-600">
+                        AI-powered review scheduling that adapts to each child's learning pace, ensuring long-term retention of concepts.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-card p-8 bg-gray-50 rounded-xl border border-gray-200 transition-all duration-300">
+                    <div class="w-12 h-12 bg-brand-warm rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Smart Scheduling</h3>
+                    <p class="text-gray-600">
+                        Quality heuristics ensure age-appropriate lesson lengths and cognitive load balancing for optimal learning.
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-card p-8 bg-gray-50 rounded-xl border border-gray-200 transition-all duration-300">
+                    <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-4H5m8 12l-3-3m3 3l-3 3"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Flexible Workflow</h3>
+                    <p class="text-gray-600">
+                        Subjects → Units → Topics → Sessions. Organize curriculum the way your family thinks and learns.
+                    </p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="feature-card p-8 bg-gray-50 rounded-xl border border-gray-200 transition-all duration-300">
+                    <div class="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v5a2 2 0 002 2h4a2 2 0 002-2v-5M9 11h6"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Parent & Child Views</h3>
+                    <p class="text-gray-600">
+                        Different interfaces based on independence levels. Parents plan, kids focus on today's learning.
+                    </p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-card p-8 bg-gray-50 rounded-xl border border-gray-200 transition-all duration-300">
+                    <div class="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Calendar Integration</h3>
+                    <p class="text-gray-600">
+                        Import external activities via ICS files. Automatically detect conflicts and adjust schedules.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us Section -->
+    <section id="why-us" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Why HomeLearnAI?</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    We're not another school management system adapted for homes. We're built from the ground up for homeschool families.
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="space-y-8">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-8 h-8 bg-brand-blue rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">100% Open Source</h3>
+                                <p class="text-gray-600">Unlike our commercial competitors, you own your data and can modify the platform to fit your family's needs.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-4">
+                            <div class="w-8 h-8 bg-brand-green rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">Built by Homeschoolers</h3>
+                                <p class="text-gray-600">Created by families who actually homeschool. We understand your unique challenges and workflows.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-4">
+                            <div class="w-8 h-8 bg-brand-warm rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">Lightweight & Fast</h3>
+                                <p class="text-gray-600">Built with HTMX and Alpine.js - no heavy frameworks. Fast loading, minimal JavaScript, works on any device.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-4">
+                            <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">Privacy First</h3>
+                                <p class="text-gray-600">Self-host or use our service. Your family's educational data stays private and secure.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-200">
+                        <div class="text-center mb-6">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">vs. Competitors</h3>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-gray-600">Open Source</span>
+                                <span class="text-brand-green font-semibold">✓ Yes</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-gray-600">Spaced Repetition</span>
+                                <span class="text-brand-green font-semibold">✓ Built-in</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-gray-600">Multi-Child Focus</span>
+                                <span class="text-brand-green font-semibold">✓ Native</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-gray-600">Self-Hosting</span>
+                                <span class="text-brand-green font-semibold">✓ Supported</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2">
+                                <span class="text-gray-600">Monthly Cost</span>
+                                <span class="text-brand-green font-semibold">Free</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Open Source Section -->
+    <section id="open-source" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-4xl font-bold text-gray-900 mb-8">Open Source & Community-Driven</h2>
+            <p class="text-xl text-gray-600 mb-12 max-w-3xl mx-auto">
+                HomeLearnAI is completely open source. Join our community of homeschool families building better educational tools together.
+            </p>
+            
+            <div class="grid md:grid-cols-3 gap-8 mb-12">
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Fork & Contribute</h3>
+                    <p class="text-gray-600">View source code, report issues, and contribute features that matter to your family.</p>
+                </div>
+
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-brand-blue rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Community Support</h3>
+                    <p class="text-gray-600">Get help from other homeschool families using and improving the platform.</p>
+                </div>
+
+                <div class="p-6">
+                    <div class="w-16 h-16 bg-brand-green rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Your Data, Your Control</h3>
+                    <p class="text-gray-600">Self-host on your own server or use our hosted service. You decide where your data lives.</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#github" class="bg-gray-900 text-white px-8 py-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
+                    <span class="flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        View on GitHub
+                    </span>
+                </a>
+                <a href="#docs" class="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-lg font-semibold hover:border-gray-400 transition-colors">
+                    Read Documentation
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="py-20 gradient-bg text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-4xl font-bold mb-6">Ready to Transform Your Homeschool?</h2>
+            <p class="text-xl mb-8 text-blue-100 max-w-2xl mx-auto">
+                Join the growing community of families using AI to create better educational experiences at home.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#get-started" class="bg-white text-brand-blue px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg">
+                    Get Started Free
+                </a>
+                <a href="#demo" class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-brand-blue transition-colors">
+                    Request Demo
+                </a>
+            </div>
+
+            <div class="mt-12 text-sm text-blue-200">
+                <p>✓ 100% Open Source  ✓ Self-Hostable  ✓ No Vendor Lock-in</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-8 h-8 bg-gradient-to-br from-brand-blue to-brand-green rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold">H</span>
+                        </div>
+                        <span class="text-xl font-bold text-white">HomeLearnAI</span>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        The AI-powered platform built by homeschoolers, for homeschoolers.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-white font-semibold mb-4">Product</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-gray-400 hover:text-white transition-colors">Features</a></li>
+                        <li><a href="#pricing" class="text-gray-400 hover:text-white transition-colors">Pricing</a></li>
+                        <li><a href="#docs" class="text-gray-400 hover:text-white transition-colors">Documentation</a></li>
+                        <li><a href="#roadmap" class="text-gray-400 hover:text-white transition-colors">Roadmap</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-white font-semibold mb-4">Community</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#github" class="text-gray-400 hover:text-white transition-colors">GitHub</a></li>
+                        <li><a href="#discord" class="text-gray-400 hover:text-white transition-colors">Discord</a></li>
+                        <li><a href="#forum" class="text-gray-400 hover:text-white transition-colors">Forum</a></li>
+                        <li><a href="#contribute" class="text-gray-400 hover:text-white transition-colors">Contribute</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-white font-semibold mb-4">Support</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#help" class="text-gray-400 hover:text-white transition-colors">Help Center</a></li>
+                        <li><a href="#contact" class="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+                        <li><a href="#status" class="text-gray-400 hover:text-white transition-colors">System Status</a></li>
+                        <li><a href="#security" class="text-gray-400 hover:text-white transition-colors">Security</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-800 mt-12 pt-8 text-center">
+                <p class="text-gray-400">
+                    © 2024 HomeLearnAI. Open source and built with ❤️ by homeschool families.
+                </p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

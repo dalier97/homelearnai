@@ -43,6 +43,35 @@ Route::get('/locales', [LocaleController::class, 'getAvailableLocales'])->name('
 // Legacy locale routes for backward compatibility
 Route::post('/locale/session', [LocaleController::class, 'updateSessionLocale'])->name('locale.session');
 
+// Test route for debugging database issues
+Route::get('/debug/subject/{id}', function ($id) {
+    try {
+        \Log::info('Debug route: Testing database query', ['id' => $id]);
+
+        // Test 1: Raw database query
+        $raw = \DB::select('SELECT * FROM subjects WHERE id = ?', [$id]);
+        \Log::info('Debug route: Raw query result', ['result' => $raw]);
+
+        // Test 2: Query builder
+        $builder = \DB::table('subjects')->where('id', $id)->first();
+        \Log::info('Debug route: Query builder result', ['result' => $builder]);
+
+        // Test 3: Direct parent::find (bypassing custom find)
+        $parent = \App\Models\Subject::query()->find((int) $id);
+        \Log::info('Debug route: Parent find result', ['result' => $parent]);
+
+        return response()->json([
+            'raw' => $raw,
+            'builder' => $builder,
+            'parent' => $parent,
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Debug route error', ['exception' => $e->getMessage()]);
+
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
+
 // Protected routes - using Laravel native auth middleware
 Route::middleware('auth')->group(function () {
     // Legacy Supabase logout route (for transition period)

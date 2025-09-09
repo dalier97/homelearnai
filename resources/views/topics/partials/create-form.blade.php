@@ -4,7 +4,7 @@
         <!-- Modal Header -->
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-medium text-gray-900">Add New Topic</h3>
-            <button type="button" @click="$el.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+            <button type="button" @click="$event.target.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -16,7 +16,7 @@
               hx-target="#topics-list"
               hx-swap="innerHTML"
               hx-on::before-request="console.log('HTMX: Topic form submission starting...', event.detail)"
-              hx-on::after-request="console.log('HTMX: Topic form submission completed', event.detail); if(event.detail.xhr.status >= 200 && event.detail.xhr.status < 300) { setTimeout(() => { const modal = $el.closest('.fixed'); if(modal) { console.log('Removing topic modal...'); modal.remove(); } }, 100); }"
+              hx-on::after-request="console.log('HTMX: Topic form submission completed', event.detail); if(event.detail.xhr.status >= 200 && event.detail.xhr.status < 300) { setTimeout(() => { const modal = event.target.closest('.fixed'); if(modal) { console.log('Removing topic modal...'); modal.remove(); } }, 100); }"
               hx-on::response-error="console.error('HTMX: Topic form error occurred', event.detail)"
               hx-headers='{"X-CSRF-TOKEN": "{{ csrf_token() }}"}'>
             @csrf
@@ -77,7 +77,7 @@
             <div class="flex justify-end space-x-3">
                 <button 
                     type="button" 
-                    @click="$el.closest('.fixed').remove()"
+                    @click="$event.target.closest('.fixed').remove()"
                     class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md">
                     Cancel
                 </button>

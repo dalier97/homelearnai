@@ -250,7 +250,7 @@ class DashboardController extends Controller
         ]);
 
         $child = Child::findOrFail($validated['child_id']);
-        if ($child->user_id !== auth()->id()) {
+        if ($child->user_id != auth()->id()) {
             return response()->json(['error' => 'Access denied'], 403);
         }
 
@@ -282,7 +282,7 @@ class DashboardController extends Controller
         ]);
 
         $child = Child::findOrFail($childId);
-        if ($child->user_id !== auth()->id()) {
+        if ($child->user_id != auth()->id()) {
             return response()->json(['error' => 'Access denied'], 403);
         }
 
@@ -322,7 +322,7 @@ class DashboardController extends Controller
         ]);
 
         $child = Child::findOrFail($childId);
-        if ($child->user_id !== auth()->id()) {
+        if ($child->user_id != auth()->id()) {
             return response()->json(['error' => 'Access denied'], 403);
         }
 

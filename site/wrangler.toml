@@ -1,0 +1,6 @@
+name = "homelearnai"
+compatibility_date = "2024-01-15"
+
+[pages]
+compatibility_date = "2024-01-15"
+pages_build_output_dir = "."

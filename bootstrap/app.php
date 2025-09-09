@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // It must run AFTER session middleware to access session data
         $middleware->web(
             append: [
+                \App\Http\Middleware\LogRequests::class, // Add comprehensive logging
                 \App\Http\Middleware\SetLocale::class,
                 // Apply KidsMode middleware globally to all web routes
                 // It will only restrict when kids_mode_active is true in session

@@ -26,18 +26,15 @@ class SubjectController extends Controller
             $user = auth()->user();
             $children = $user->children()->orderBy('name')->get();
 
-            // Determine selected child
-            $selectedChildId = $request->get('child_id');
+            // Determine selected child - default to first child if none selected
+            /** @var \App\Models\Child|null $firstChild */
+            $firstChild = $children->first();
+            $selectedChildId = $request->get('child_id', $firstChild?->id);
             $selectedChild = null;
 
             if ($selectedChildId) {
                 /** @var \App\Models\Child|null $selectedChild */
                 $selectedChild = $children->firstWhere('id', (int) $selectedChildId);
-            } elseif ($children->count() === 1) {
-                // Auto-select if only one child
-                /** @var \App\Models\Child $selectedChild */
-                $selectedChild = $children->first();
-                $selectedChildId = $selectedChild->id;
             }
 
             // Get subjects for the selected child or show empty state
