@@ -46,11 +46,13 @@ test.describe('Debug Child ID Detection', () => {
     }
     
     // Create additional child
-    const addChildBtn = page.locator('button:has-text("Add Child")');
+    const addChildBtn = page.locator('[data-testid="header-add-child-btn"]');
     if (await addChildBtn.count() > 0) {
       console.log('DEBUG: Creating additional child...');
       await addChildBtn.click();
       
+      // Wait for Alpine.js modal to be visible
+      await page.waitForSelector('#child-form-modal [data-testid="modal-content"]', { timeout: 10000 });
       await page.waitForTimeout(1000);
       const nameInput = page.locator('input[name="name"]');
       if (await nameInput.isVisible()) {
