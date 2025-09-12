@@ -336,14 +336,6 @@ class DuplicateDetectionService
     /**
      * Normalize text for comparison
      */
-    /**
-     * Public test method to expose similarity calculation for debugging
-     */
-    public function testCalculateSimilarity(string $q1, string $a1, string $q2, string $a2): float
-    {
-        return $this->calculateSimilarity($q1, $a1, $q2, $a2);
-    }
-
     private function normalizeText(string $text): string
     {
         // Convert to lowercase
