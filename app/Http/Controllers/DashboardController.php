@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CatchUpSession;
 use App\Models\Child;
+use App\Models\Flashcard;
 use App\Models\Review;
 use App\Models\Session;
 use App\Models\User;
@@ -63,10 +64,13 @@ class DashboardController extends Controller
 
                 if (! $childDashboard) {
                     $todaySessions = $this->getTodaySessionsForChild($child->id);
-                    // TODO: Convert to Eloquent when Review model is converted
-                    $reviewQueue = collect(); // Review::getReviewQueue($child->id)->take(10);
+                    // Get review queue using Eloquent Review model
+                    $reviewQueue = Review::getReviewQueue($child->id)->take(10);
                     // TODO: Convert to Eloquent when CatchUpSession model is converted
                     $catchUpSessions = collect(); // CatchUpSession::pending($child->id)->take(5);
+
+                    // Get flashcard statistics for this child
+                    $flashcardStats = $this->getFlashcardStats($child->id);
 
                     $childDashboard = [
                         'child' => $child,
@@ -75,6 +79,7 @@ class DashboardController extends Controller
                         'catch_up_count' => $catchUpSessions->count(),
                         'capacity_status' => $this->getCapacityStatus($child->id),
                         'weekly_progress' => $this->getWeeklyProgress($child->id),
+                        'flashcard_stats' => $flashcardStats,
                     ];
 
                     $this->cache->cacheChildDashboard($child->id, $childDashboard);
@@ -99,16 +104,23 @@ class DashboardController extends Controller
     /**
      * Child Today View - Simple interface for daily tasks
      */
-    public function childToday(Request $request, $childId)
+    public function childToday(Request $request, $child_id = null)
     {
         $child = $request->attributes->get('child');
+
+        // If child not found in request attributes, try to find by ID
+        if (! $child) {
+            $child = Child::find($child_id);
+            if (! $child) {
+                abort(404, 'Child not found');
+            }
+        }
 
         // Get today's sessions (max 3 as per requirements)
         $todaySessions = $this->getTodaySessionsForChild($child->id)->take(3);
 
         // Get review queue (5-10 items max)
-        // TODO: Convert to Eloquent when Review model is converted
-        $reviewQueue = collect(); // Review::getReviewQueue($child->id)->take(10);
+        $reviewQueue = Review::getReviewQueue($child->id)->take(10);
 
         // Get upcoming sessions for the week (for level 3+ independence)
         $weekSessions = [];
@@ -334,6 +346,47 @@ class DashboardController extends Controller
             'message' => 'Independence level updated',
             'child' => $child->toArray(),
         ]);
+    }
+
+    /**
+     * Get flashcard statistics for a child
+     */
+    private function getFlashcardStats(int $childId): array
+    {
+        // Get all flashcards for this child's units
+        $child = Child::find($childId);
+        if (! $child) {
+            return [
+                'total_flashcards' => 0,
+                'active_flashcards' => 0,
+                'due_reviews' => 0,
+                'new_reviews' => 0,
+            ];
+        }
+
+        // Get flashcard counts by joining through subjects and units
+        $flashcardCounts = Flashcard::whereHas('unit.subject', function ($query) use ($child) {
+            $query->where('child_id', $child->id);
+        })->selectRaw('
+            COUNT(*) as total_flashcards,
+            COUNT(CASE WHEN is_active = true THEN 1 END) as active_flashcards
+        ')->first();
+
+        // Get review counts
+        $reviewCounts = Review::where('child_id', $childId)
+            ->selectRaw("
+                COUNT(CASE WHEN status = 'new' THEN 1 END) as new_reviews,
+                COUNT(CASE WHEN status = 'learning' OR status = 'review' THEN 1 END) as learning_reviews,
+                COUNT(CASE WHEN due_date <= CURRENT_DATE AND status != 'new' THEN 1 END) as due_reviews
+            ")->first();
+
+        return [
+            'total_flashcards' => $flashcardCounts->total_flashcards ?? 0,
+            'active_flashcards' => $flashcardCounts->active_flashcards ?? 0,
+            'due_reviews' => $reviewCounts->due_reviews ?? 0,
+            'new_reviews' => $reviewCounts->new_reviews ?? 0,
+            'learning_reviews' => $reviewCounts->learning_reviews ?? 0,
+        ];
     }
 
     /**

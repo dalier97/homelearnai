@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Child;
+use App\Models\Flashcard;
 use App\Models\Review;
 use App\Models\ReviewSlot;
 use App\Models\Session;
-use App\Services\SupabaseClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,24 +15,13 @@ use Illuminate\View\View;
 
 class ReviewController extends Controller
 {
-    public function __construct(
-        private SupabaseClient $supabase
-    ) {}
-
     /**
      * Show review dashboard
      */
     public function index(Request $request): View
     {
         $userId = auth()->id();
-        $accessToken = session('supabase_token');
-
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
-
-        $children = Child::forUser($userId, $this->supabase);
+        $children = Child::where('user_id', $userId)->orderBy('name')->get();
 
         // Default to first child or selected child
         $selectedChildId = $request->get('child_id', $children->first()?->id);
@@ -49,16 +38,16 @@ class ReviewController extends Controller
         }
 
         // Get review queue for today
-        $reviewQueue = Review::getReviewQueue($selectedChild->id, $this->supabase);
+        $reviewQueue = Review::getReviewQueue($selectedChild->id);
 
         // Get review statistics
         $reviewStats = $this->getReviewStats($selectedChild->id);
 
         // Get today's review slots
-        $todaySlots = ReviewSlot::getTodaySlots($selectedChild->id, $this->supabase);
+        $todaySlots = ReviewSlot::getTodaySlots($selectedChild->id);
 
         // Get all slots for showing next scheduled review
-        $allSlots = ReviewSlot::forChild($selectedChild->id, $this->supabase);
+        $allSlots = ReviewSlot::forChild($selectedChild->id);
 
         // If HTMX request, return partial
         if ($request->header('HX-Request')) {
@@ -78,19 +67,13 @@ class ReviewController extends Controller
     public function startSession(Request $request, int $childId): View|RedirectResponse
     {
         $userId = auth()->id();
-        $accessToken = session('supabase_token');
-
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
 
         $child = Child::find((int) $childId);
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
 
-        $reviewQueue = Review::getReviewQueue($childId, $this->supabase);
+        $reviewQueue = Review::getReviewQueue($childId);
 
         if ($reviewQueue->isEmpty()) {
             return redirect()->route('reviews.index', ['child_id' => $childId])
@@ -112,41 +95,211 @@ class ReviewController extends Controller
         ]);
 
         $userId = auth()->id();
-        $accessToken = session('supabase_token');
 
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
-
-        $review = Review::find((string) $reviewId, $this->supabase);
+        $review = Review::find($reviewId);
         if (! $review) {
             abort(404);
         }
 
         // Verify review belongs to user's child
-        $child = $review->child($this->supabase);
+        $child = $review->child;
+        /** @var \App\Models\Child $child */
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
 
-        $result = $review->processResult($validated['result'], $this->supabase);
+        $result = $review->processResult($validated['result']);
 
         // Get next review in queue
-        $reviewQueue = Review::getReviewQueue($child->id, $this->supabase);
+        $reviewQueue = Review::getReviewQueue($child->id);
         $nextReview = $reviewQueue->skip(1)->first(); // Skip the current one we just processed
+
+        // Prepare next review data
+        $nextReviewData = null;
+        if ($nextReview) {
+            $nextReviewData = [
+                'id' => $nextReview->id,
+                'status' => $nextReview->status,
+                'repetitions' => $nextReview->repetitions,
+                'is_flashcard_review' => $nextReview->isFlashcardReview(),
+                'is_topic_review' => $nextReview->isTopicReview(),
+            ];
+
+            if ($nextReview->isFlashcardReview()) {
+                $flashcard = $nextReview->flashcard();
+                $nextReviewData['flashcard_title'] = $flashcard ? $flashcard->question : 'Unknown Flashcard';
+                $nextReviewData['card_type'] = $flashcard ? $flashcard->card_type : 'basic';
+                $nextReviewData['unit_name'] = $flashcard && $flashcard->unit ? $flashcard->unit->name : 'Unknown Unit';
+            } else {
+                $nextReviewData['topic_title'] = $nextReview->topic->title;
+            }
+        }
 
         return response()->json([
             'success' => true,
             'result' => $result,
-            'next_review' => $nextReview ? [
+            'next_review' => $nextReviewData,
+            'session_complete' => $nextReview === null,
+            'review_type' => $review->isFlashcardReview() ? 'flashcard' : 'topic',
+        ]);
+    }
+
+    /**
+     * Process flashcard review result with answer validation
+     */
+    public function processFlashcardResult(Request $request, int $reviewId): JsonResponse
+    {
+        $validated = $request->validate([
+            'result' => 'required|string|in:again,hard,good,easy',
+            'user_answer' => 'nullable|string',
+            'selected_choices' => 'nullable|array',
+            'cloze_answers' => 'nullable|array',
+            'is_correct' => 'nullable|boolean',
+        ]);
+
+        $userId = auth()->id();
+
+        $review = Review::find($reviewId);
+        if (! $review || ! $review->isFlashcardReview()) {
+            abort(404, 'Flashcard review not found');
+        }
+
+        // Verify review belongs to user's child
+        $child = $review->child;
+        /** @var \App\Models\Child $child */
+        if (! $child || $child->user_id !== $userId) {
+            abort(403);
+        }
+
+        $flashcard = $review->flashcard();
+        /** @var \App\Models\Flashcard $flashcard */
+        if (! $flashcard) {
+            abort(404, 'Associated flashcard not found');
+        }
+
+        // Validate the answer based on card type
+        $answerValidation = $this->validateFlashcardAnswer($flashcard, $validated);
+
+        // Adjust result based on answer correctness if not explicitly provided
+        if (! isset($validated['is_correct']) && isset($answerValidation['is_correct'])) {
+            $validated['is_correct'] = $answerValidation['is_correct'];
+
+            // Auto-adjust rating for incorrect answers
+            if (! $answerValidation['is_correct'] && in_array($validated['result'], ['good', 'easy'])) {
+                $validated['result'] = 'again'; // Force retry for incorrect answers rated as good/easy
+            }
+        }
+
+        // Process the review with SRS algorithm
+        $result = $review->processResult($validated['result']);
+
+        // Add answer validation info to result
+        $result['answer_validation'] = $answerValidation;
+
+        // Get next review in queue
+        $reviewQueue = Review::getReviewQueue($child->id);
+        $nextReview = $reviewQueue->skip(1)->first();
+
+        // Prepare next review data
+        $nextReviewData = null;
+        if ($nextReview) {
+            $nextReviewData = [
                 'id' => $nextReview->id,
-                'topic_title' => $nextReview->topic($this->supabase)?->title,
                 'status' => $nextReview->status,
                 'repetitions' => $nextReview->repetitions,
-            ] : null,
+                'is_flashcard_review' => $nextReview->isFlashcardReview(),
+                'is_topic_review' => $nextReview->isTopicReview(),
+            ];
+
+            if ($nextReview->isFlashcardReview()) {
+                $nextFlashcard = $nextReview->flashcard();
+                $nextReviewData['flashcard_title'] = $nextFlashcard ? $nextFlashcard->question : 'Unknown Flashcard';
+                $nextReviewData['card_type'] = $nextFlashcard ? $nextFlashcard->card_type : 'basic';
+                $nextReviewData['unit_name'] = $nextFlashcard && $nextFlashcard->unit ? $nextFlashcard->unit->name : 'Unknown Unit';
+            } else {
+                $nextReviewData['topic_title'] = $nextReview->topic->title;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'result' => $result,
+            'next_review' => $nextReviewData,
             'session_complete' => $nextReview === null,
+            'review_type' => 'flashcard',
         ]);
+    }
+
+    /**
+     * Validate flashcard answer based on card type
+     */
+    private function validateFlashcardAnswer(Flashcard $flashcard, array $input): array
+    {
+        $validation = [
+            'is_correct' => false,
+            'correct_answer' => $flashcard->answer,
+            'user_answer' => null,
+            'feedback' => '',
+        ];
+
+        switch ($flashcard->card_type) {
+            case 'multiple_choice':
+            case 'true_false':
+                if (isset($input['selected_choices']) && is_array($input['selected_choices'])) {
+                    $selectedChoices = $input['selected_choices'];
+                    $correctChoices = $flashcard->correct_choices ?? [];
+
+                    // Check if selected choices match correct choices
+                    $validation['is_correct'] =
+                        count($selectedChoices) === count($correctChoices) &&
+                        count(array_diff($selectedChoices, $correctChoices)) === 0;
+
+                    $validation['user_answer'] = $selectedChoices;
+                }
+                break;
+
+            case 'typed_answer':
+                if (isset($input['user_answer'])) {
+                    $userAnswer = trim($input['user_answer']);
+                    $correctAnswer = trim($flashcard->answer);
+
+                    // Case-insensitive comparison
+                    $validation['is_correct'] =
+                        strtolower($userAnswer) === strtolower($correctAnswer);
+
+                    $validation['user_answer'] = $userAnswer;
+                }
+                break;
+
+            case 'cloze':
+                if (isset($input['cloze_answers']) && is_array($input['cloze_answers'])) {
+                    $userAnswers = $input['cloze_answers'];
+                    $correctAnswers = $flashcard->cloze_answers ?? [];
+
+                    $allCorrect = true;
+                    foreach ($correctAnswers as $index => $correctAnswer) {
+                        $userAnswer = isset($userAnswers[$index]) ? trim($userAnswers[$index]) : '';
+                        if (strtolower($userAnswer) !== strtolower(trim($correctAnswer))) {
+                            $allCorrect = false;
+                            break;
+                        }
+                    }
+
+                    $validation['is_correct'] = $allCorrect;
+                    $validation['user_answer'] = $userAnswers;
+                }
+                break;
+
+            case 'basic':
+            case 'image_occlusion':
+            default:
+                // For basic cards and image occlusion, rely on user self-assessment
+                $validation['is_correct'] = $input['is_correct'] ?? null;
+                $validation['user_answer'] = $input['user_answer'] ?? 'self-assessed';
+                break;
+        }
+
+        return $validation;
     }
 
     /**
@@ -155,26 +308,21 @@ class ReviewController extends Controller
     public function show(int $reviewId): View
     {
         $userId = auth()->id();
-        $accessToken = session('supabase_token');
 
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
-
-        $review = Review::find((string) $reviewId, $this->supabase);
+        $review = Review::find($reviewId);
         if (! $review) {
             abort(404);
         }
 
         // Verify review belongs to user's child
-        $child = $review->child($this->supabase);
+        $child = $review->child;
+        /** @var \App\Models\Child $child */
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
 
-        $session = $review->session($this->supabase);
-        $topic = $review->topic($this->supabase);
+        $session = $review->session;
+        $topic = $review->topic;
 
         return view('reviews.partials.review-card', compact('review', 'session', 'topic', 'child'));
     }
@@ -194,20 +342,14 @@ class ReviewController extends Controller
         ]);
 
         $userId = auth()->id();
-        $accessToken = session('supabase_token');
 
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
-
-        $session = Session::find((string) $sessionId, $this->supabase);
+        $session = Session::find($sessionId);
         if (! $session) {
             abort(404);
         }
 
         // Verify session belongs to user's child
-        $child = $session->child($this->supabase);
+        $child = $session->child;
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
@@ -237,8 +379,7 @@ class ReviewController extends Controller
             $validated['evidence_notes'] ?? null,
             ! empty($photoUrls) ? $photoUrls : null,
             $voiceMemoUrl,
-            ! empty($attachmentUrls) ? $attachmentUrls : null,
-            $this->supabase
+            ! empty($attachmentUrls) ? $attachmentUrls : null
         );
 
         // Return success response for HTMX
@@ -257,19 +398,13 @@ class ReviewController extends Controller
     public function manageSlots(Request $request, int $childId): View
     {
         $userId = auth()->id();
-        $accessToken = session('supabase_token');
-
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
 
         $child = Child::find((int) $childId);
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
 
-        $reviewSlots = ReviewSlot::forChild($childId, $this->supabase);
+        $reviewSlots = ReviewSlot::forChild($childId);
         $weeklySlots = [];
 
         // Organize slots by day of week
@@ -313,12 +448,6 @@ class ReviewController extends Controller
             }
 
             $userId = auth()->id();
-            $accessToken = session('supabase_token');
-
-            // Ensure SupabaseClient has the user's access token for RLS
-            if ($accessToken) {
-                $this->supabase->setUserToken($accessToken);
-            }
 
             // Verify child belongs to the current user
             try {
@@ -341,7 +470,7 @@ class ReviewController extends Controller
 
             // Check for overlapping slots
             try {
-                $existingSlots = ReviewSlot::forChildAndDay($validated['child_id'], $validated['day_of_week'], $this->supabase);
+                $existingSlots = ReviewSlot::forChildAndDay($validated['child_id'], $validated['day_of_week']);
                 $newStartTime = $validated['start_time'].':00';
                 $newEndTime = $validated['end_time'].':00';
 
@@ -381,7 +510,7 @@ class ReviewController extends Controller
             ]);
 
             try {
-                $success = $reviewSlot->save($this->supabase);
+                $success = $reviewSlot->save();
 
                 if (! $success) {
                     if ($request->header('HX-Request')) {
@@ -412,7 +541,7 @@ class ReviewController extends Controller
                 // Get fresh weekly slots for HTMX response
                 $weeklySlots = [];
                 foreach (range(1, 7) as $day) {
-                    $weeklySlots[$day] = ReviewSlot::forChildAndDay($validated['child_id'], $day, $this->supabase);
+                    $weeklySlots[$day] = ReviewSlot::forChildAndDay($validated['child_id'], $day);
                 }
 
                 return response()->view('reviews.partials.slots-manager', [
@@ -461,20 +590,15 @@ class ReviewController extends Controller
         ]);
 
         $userId = auth()->id();
-        $accessToken = session('supabase_token');
 
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
-
-        $reviewSlot = ReviewSlot::find((string) $id, $this->supabase);
+        $reviewSlot = ReviewSlot::find($id);
         if (! $reviewSlot) {
             abort(404);
         }
 
         // Verify slot belongs to user's child
-        $child = $reviewSlot->child($this->supabase);
+        $child = $reviewSlot->child;
+        /** @var \App\Models\Child $child */
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
@@ -487,10 +611,10 @@ class ReviewController extends Controller
             }
         }
 
-        $reviewSlot->save($this->supabase);
+        $reviewSlot->save();
 
         // Return updated slots for the specific day
-        $slotsForDay = ReviewSlot::forChildAndDay($reviewSlot->child_id, $validated['day_of_week'], $this->supabase);
+        $slotsForDay = ReviewSlot::forChildAndDay($reviewSlot->child_id, $validated['day_of_week']);
 
         return view('reviews.partials.day-slots', [
             'day' => $validated['day_of_week'],
@@ -505,20 +629,15 @@ class ReviewController extends Controller
     public function destroySlot(int $id): string
     {
         $userId = auth()->id();
-        $accessToken = session('supabase_token');
 
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
-
-        $reviewSlot = ReviewSlot::find((string) $id, $this->supabase);
+        $reviewSlot = ReviewSlot::find($id);
         if (! $reviewSlot) {
             abort(404);
         }
 
         // Verify slot belongs to user's child
-        $child = $reviewSlot->child($this->supabase);
+        $child = $reviewSlot->child;
+        /** @var \App\Models\Child $child */
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
@@ -526,7 +645,7 @@ class ReviewController extends Controller
         $day = $reviewSlot->day_of_week;
         $childId = $reviewSlot->child_id;
 
-        $reviewSlot->delete($this->supabase);
+        $reviewSlot->delete();
 
         // Return empty response for HTMX to remove element
         response()->noContent()->header('HX-Trigger', 'reviewSlotDeleted')->send();
@@ -540,28 +659,23 @@ class ReviewController extends Controller
     public function toggleSlot(int $id): View
     {
         $userId = auth()->id();
-        $accessToken = session('supabase_token');
 
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
-
-        $reviewSlot = ReviewSlot::find((string) $id, $this->supabase);
+        $reviewSlot = ReviewSlot::find($id);
         if (! $reviewSlot) {
             abort(404);
         }
 
         // Verify slot belongs to user's child
-        $child = $reviewSlot->child($this->supabase);
+        $child = $reviewSlot->child;
+        /** @var \App\Models\Child $child */
         if (! $child || $child->user_id !== $userId) {
             abort(403);
         }
 
-        $reviewSlot->toggleActive($this->supabase);
+        $reviewSlot->toggleActive();
 
         // Return updated slots for the specific day
-        $slotsForDay = ReviewSlot::forChildAndDay($reviewSlot->child_id, $reviewSlot->day_of_week, $this->supabase);
+        $slotsForDay = ReviewSlot::forChildAndDay($reviewSlot->child_id, $reviewSlot->day_of_week);
 
         return view('reviews.partials.day-slots', [
             'day' => $reviewSlot->day_of_week,
@@ -575,9 +689,9 @@ class ReviewController extends Controller
      */
     private function getReviewStats(int $childId): array
     {
-        $allReviews = Review::forChild($childId, $this->supabase);
-        $dueReviews = Review::getDueReviews($childId, $this->supabase, 100);
-        $newReviews = Review::getNewReviews($childId, $this->supabase, 100);
+        $allReviews = Review::forChild($childId);
+        $dueReviews = Review::getDueReviews($childId, 100);
+        $newReviews = Review::getNewReviews($childId, 100);
 
         $statusCounts = $allReviews->groupBy('status')->map->count();
 

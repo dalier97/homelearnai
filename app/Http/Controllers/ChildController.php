@@ -41,8 +41,21 @@ class ChildController extends Controller
             'independence_level' => 'integer|min:1|max:4',
         ]);
 
+        // Log the creation attempt
+        \Log::info('ChildController::store - Attempting to create child', [
+            'user_id' => Auth::id(),
+            'data' => $validated,
+            'is_htmx' => $request->header('HX-Request') ? true : false,
+        ]);
+
         // Create child using Eloquent with authenticated user
         $child = Auth::user()->children()->create($validated);
+        /** @var \App\Models\Child $child */
+        \Log::info('ChildController::store - Child created', [
+            'child_id' => $child->id,
+            'child_name' => $child->name,
+            'user_id' => Auth::id(),
+        ]);
 
         // Clear user cache to ensure dashboard shows the new child
         $userId = Auth::id();
@@ -52,6 +65,11 @@ class ChildController extends Controller
         // For HTMX requests, return the complete updated children list
         if ($request->header('HX-Request')) {
             $children = Auth::user()->children()->orderBy('name')->get();
+
+            \Log::info('ChildController::store - Returning updated children list', [
+                'children_count' => $children->count(),
+                'children_names' => $children->pluck('name')->toArray(),
+            ]);
 
             return view('children.partials.list', compact('children'))
                 ->with('htmx_trigger', 'childCreated');
@@ -75,8 +93,8 @@ class ChildController extends Controller
             $timeBlocksByDay[$day] = $timeBlocks->where('day_of_week', $day);
         }
 
-        // Get subjects for this user (placeholder until Subject model is converted)
-        $subjects = collect();
+        // Get subjects for this child
+        $subjects = $child->subjects;
 
         return view('children.show', compact('child', 'timeBlocksByDay', 'subjects'));
     }

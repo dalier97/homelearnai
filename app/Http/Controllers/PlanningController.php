@@ -10,7 +10,6 @@ use App\Models\Topic;
 use App\Models\Unit;
 use App\Services\QualityHeuristicsService;
 use App\Services\SchedulingEngine;
-use App\Services\SupabaseClient;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +18,6 @@ use Illuminate\View\View;
 class PlanningController extends Controller
 {
     public function __construct(
-        private SupabaseClient $supabase,
         private SchedulingEngine $schedulingEngine,
         private QualityHeuristicsService $qualityHeuristics
     ) {}
@@ -27,14 +25,7 @@ class PlanningController extends Controller
     public function index(Request $request): View
     {
         $userId = auth()->id();
-        $accessToken = session('supabase_token');
-
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
-
-        $children = Child::forUser($userId, $this->supabase);
+        $children = Child::where('user_id', $userId)->orderBy('name')->get();
 
         // Default to first child or selected child
         $selectedChildId = $request->get('child_id', $children->first()?->id);
@@ -51,7 +42,7 @@ class PlanningController extends Controller
         }
 
         // Get all sessions for selected child organized by status
-        $allSessions = Session::forChild($selectedChild->id, $this->supabase);
+        $allSessions = Session::forChild($selectedChild->id);
         $sessionsByStatus = [
             'backlog' => $allSessions->where('status', 'backlog'),
             'planned' => $allSessions->where('status', 'planned'),
@@ -60,17 +51,20 @@ class PlanningController extends Controller
         ];
 
         // Get catch-up sessions for selected child
-        $catchUpSessions = CatchUpSession::pending($selectedChild->id, $this->supabase);
+        $catchUpSessions = CatchUpSession::pending($selectedChild->id);
 
         // Get all topics for this child's subjects that don't have sessions yet
-        $subjects = Subject::forUser((string) auth()->id(), $this->supabase);
+        $subjects = Subject::where('user_id', $userId)->orderBy('name')->get();
         $availableTopics = collect([]);
 
         foreach ($subjects as $subject) {
-            $units = $subject->units($this->supabase);
+            /** @var \App\Models\Subject $subject */
+            $units = $subject->units;
             foreach ($units as $unit) {
-                $topics = $unit->topics($this->supabase);
+                /** @var \App\Models\Unit $unit */
+                $topics = $unit->topics;
                 foreach ($topics as $topic) {
+                    /** @var \App\Models\Topic $topic */
                     // Check if topic already has sessions for this child
                     $existingSession = $allSessions->where('topic_id', $topic->id)->first();
                     if (! $existingSession) {
@@ -116,15 +110,18 @@ class PlanningController extends Controller
             }
 
             // Get all topics for this user that don't have sessions yet for this child
-            $subjects = Subject::forUser((string) auth()->id(), $this->supabase);
+            $subjects = Subject::where('user_id', auth()->id())->orderBy('name')->get();
             $availableTopics = collect([]);
-            $existingSessions = Session::forChild($childId, $this->supabase);
+            $existingSessions = Session::forChild($childId);
 
             foreach ($subjects as $subject) {
-                $units = $subject->units($this->supabase);
+                /** @var \App\Models\Subject $subject */
+                $units = $subject->units;
                 foreach ($units as $unit) {
-                    $topics = $unit->topics($this->supabase);
+                    /** @var \App\Models\Unit $unit */
+                    $topics = $unit->topics;
                     foreach ($topics as $topic) {
+                        /** @var \App\Models\Topic $topic */
                         $existingSession = $existingSessions->where('topic_id', $topic->id)->first();
                         if (! $existingSession) {
                             $availableTopics->push($topic);
@@ -148,24 +145,25 @@ class PlanningController extends Controller
 
         // Verify child belongs to the current user
         $child = Child::find((int) $validated['child_id']);
+        /** @var \App\Models\Child $child */
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
         // Get topic and use its estimated minutes if not provided
-        $topic = Topic::find((string) $validated['topic_id'], $this->supabase);
+        $topic = Topic::find($validated['topic_id']);
         if (! $topic) {
             abort(404, 'Topic not found');
         }
 
         // Verify topic belongs to user's subjects (through unit -> subject)
-        $subject = $topic->subject($this->supabase);
+        $subject = $topic->subject;
         if (! $subject || $subject->user_id != auth()->id()) {
             abort(403, 'Topic does not belong to user');
         }
 
         // Check if session already exists for this topic and child
-        $existingSession = Session::forChild($validated['child_id'], $this->supabase)
+        $existingSession = Session::forChild($validated['child_id'])
             ->where('topic_id', $validated['topic_id'])
             ->first();
 
@@ -181,10 +179,10 @@ class PlanningController extends Controller
             'status' => 'backlog',
         ]);
 
-        $session->save($this->supabase);
+        $session->save();
 
         // Return updated backlog column
-        $sessions = Session::forChildAndStatus($validated['child_id'], 'backlog', $this->supabase);
+        $sessions = Session::forChildAndStatus($validated['child_id'], 'backlog');
 
         return view('planning.partials.column', [
             'status' => 'backlog',
@@ -200,23 +198,24 @@ class PlanningController extends Controller
             'status' => 'required|string|in:backlog,planned,scheduled,done',
         ]);
 
-        $session = Session::find((string) $id, $this->supabase);
+        $session = Session::find($id);
         if (! $session) {
             abort(404);
         }
 
         // Verify session belongs to user's child
-        $child = $session->child($this->supabase);
+        $child = $session->child;
+        /** @var \App\Models\Child $child */
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
         $oldStatus = $session->status;
-        $session->updateStatus($validated['status'], $this->supabase);
+        $session->updateStatus($validated['status']);
 
         // Return updated columns for both old and new status
-        $oldSessions = Session::forChildAndStatus($child->id, $oldStatus, $this->supabase);
-        $newSessions = Session::forChildAndStatus($child->id, $validated['status'], $this->supabase);
+        $oldSessions = Session::forChildAndStatus($child->id, $oldStatus);
+        $newSessions = Session::forChildAndStatus($child->id, $validated['status']);
 
         $statusTitles = [
             'backlog' => 'Backlog',
@@ -253,13 +252,14 @@ class PlanningController extends Controller
             'scheduled_date' => 'nullable|date|after_or_equal:today',
         ]);
 
-        $session = Session::find((string) $id, $this->supabase);
+        $session = Session::find($id);
         if (! $session) {
             abort(404);
         }
 
         // Verify session belongs to user's child
-        $child = $session->child($this->supabase);
+        $child = $session->child;
+        /** @var \App\Models\Child $child */
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
@@ -271,13 +271,12 @@ class PlanningController extends Controller
             $validated['scheduled_day_of_week'],
             $validated['scheduled_start_time'].':00',
             $validated['scheduled_end_time'].':00',
-            $this->supabase,
             $scheduledDate
         );
 
         // Return updated columns and capacity meter
-        $plannedSessions = Session::forChildAndStatus($child->id, 'planned', $this->supabase);
-        $scheduledSessions = Session::forChildAndStatus($child->id, 'scheduled', $this->supabase);
+        $plannedSessions = Session::forChildAndStatus($child->id, 'planned');
+        $scheduledSessions = Session::forChildAndStatus($child->id, 'scheduled');
         $capacityData = $this->calculateWeeklyCapacity($child);
 
         $response = '';
@@ -302,22 +301,23 @@ class PlanningController extends Controller
 
     public function unscheduleSession(int $id): \Illuminate\Http\Response
     {
-        $session = Session::find((string) $id, $this->supabase);
+        $session = Session::find($id);
         if (! $session) {
             abort(404);
         }
 
         // Verify session belongs to user's child
-        $child = $session->child($this->supabase);
+        $child = $session->child;
+        /** @var \App\Models\Child $child */
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
-        $session->unschedule($this->supabase);
+        $session->unschedule();
 
         // Return updated columns and capacity meter
-        $plannedSessions = Session::forChildAndStatus($child->id, 'planned', $this->supabase);
-        $scheduledSessions = Session::forChildAndStatus($child->id, 'scheduled', $this->supabase);
+        $plannedSessions = Session::forChildAndStatus($child->id, 'planned');
+        $scheduledSessions = Session::forChildAndStatus($child->id, 'scheduled');
         $capacityData = $this->calculateWeeklyCapacity($child);
 
         $response = '';
@@ -342,19 +342,19 @@ class PlanningController extends Controller
 
     public function deleteSession(int $id): string
     {
-        $session = Session::find((string) $id, $this->supabase);
+        $session = Session::find($id);
         if (! $session) {
             abort(404);
         }
 
         // Verify session belongs to user's child
-        $child = $session->child($this->supabase);
+        $child = $session->child;
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
         $status = $session->status;
-        $session->delete($this->supabase);
+        $session->delete();
 
         // Return empty response for HTMX to remove element
         response()->noContent()->header('HX-Trigger', 'sessionDeleted')->send();
@@ -364,13 +364,13 @@ class PlanningController extends Controller
 
     public function showSkipDayModal(Request $request, int $id): View
     {
-        $session = Session::find((string) $id, $this->supabase);
+        $session = Session::find($id);
         if (! $session) {
             abort(404);
         }
 
         // Verify session belongs to user's child
-        $child = $session->child($this->supabase);
+        $child = $session->child;
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
@@ -390,13 +390,14 @@ class PlanningController extends Controller
             'reason' => 'nullable|string|max:255',
         ]);
 
-        $session = Session::find((string) $id, $this->supabase);
+        $session = Session::find($id);
         if (! $session) {
             abort(404);
         }
 
         // Verify session belongs to user's child
-        $child = $session->child($this->supabase);
+        $child = $session->child;
+        /** @var \App\Models\Child $child */
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
@@ -406,8 +407,8 @@ class PlanningController extends Controller
         $result = $this->schedulingEngine->skipSessionDay($session, $skipDate, $validated['reason']);
 
         // Get updated data
-        $scheduledSessions = Session::forChildAndStatus($child->id, 'scheduled', $this->supabase);
-        $catchUpSessions = CatchUpSession::pending($child->id, $this->supabase);
+        $scheduledSessions = Session::forChildAndStatus($child->id, 'scheduled');
+        $catchUpSessions = CatchUpSession::pending($child->id);
         $capacityData = $this->calculateWeeklyCapacity($child);
 
         $response = '';
@@ -434,18 +435,18 @@ class PlanningController extends Controller
             'commitment_type' => 'required|string|in:fixed,preferred,flexible',
         ]);
 
-        $session = Session::find((string) $id, $this->supabase);
+        $session = Session::find($id);
         if (! $session) {
             abort(404);
         }
 
         // Verify session belongs to user's child
-        $child = $session->child($this->supabase);
+        $child = $session->child;
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
-        $session->updateCommitmentType($validated['commitment_type'], $this->supabase);
+        $session->updateCommitmentType($validated['commitment_type']);
 
         // Return updated session card
         return view('planning.partials.session-card', [
@@ -462,6 +463,7 @@ class PlanningController extends Controller
         ]);
 
         $child = Child::find((int) $validated['child_id']);
+        /** @var \App\Models\Child $child */
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
@@ -471,8 +473,8 @@ class PlanningController extends Controller
         $redistributed = $this->schedulingEngine->redistributeCatchUpSessions($child, $maxSessions);
 
         // Get updated data
-        $scheduledSessions = Session::forChildAndStatus($child->id, 'scheduled', $this->supabase);
-        $catchUpSessions = CatchUpSession::pending($child->id, $this->supabase);
+        $scheduledSessions = Session::forChildAndStatus($child->id, 'scheduled');
+        $catchUpSessions = CatchUpSession::pending($child->id);
         $capacityData = $this->calculateWeeklyCapacity($child);
 
         $response = '';
@@ -499,21 +501,21 @@ class PlanningController extends Controller
             'priority' => 'required|integer|min:1|max:5',
         ]);
 
-        $catchUpSession = CatchUpSession::find((string) $id, $this->supabase);
+        $catchUpSession = CatchUpSession::find($id);
         if (! $catchUpSession) {
             abort(404);
         }
 
         // Verify catch-up session belongs to user's child
-        $child = $catchUpSession->child($this->supabase);
+        $child = $catchUpSession->child;
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
-        $catchUpSession->updatePriority($validated['priority'], $this->supabase);
+        $catchUpSession->updatePriority($validated['priority']);
 
         // Return updated catch-up sessions
-        $catchUpSessions = CatchUpSession::pending($child->id, $this->supabase);
+        $catchUpSessions = CatchUpSession::pending($child->id);
 
         return view('planning.partials.catch-up-column', [
             'catchUpSessions' => $catchUpSessions,
@@ -523,18 +525,18 @@ class PlanningController extends Controller
 
     public function deleteCatchUpSession(int $id): string
     {
-        $catchUpSession = CatchUpSession::find((string) $id, $this->supabase);
+        $catchUpSession = CatchUpSession::find($id);
         if (! $catchUpSession) {
             abort(404);
         }
 
         // Verify catch-up session belongs to user's child
-        $child = $catchUpSession->child($this->supabase);
+        $child = $catchUpSession->child;
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
 
-        $catchUpSession->delete($this->supabase);
+        $catchUpSession->delete();
 
         // Return empty response for HTMX to remove element
         response()->noContent()->header('HX-Trigger', 'catchUpSessionDeleted')->send();
@@ -548,13 +550,13 @@ class PlanningController extends Controller
             'original_date' => 'required|date',
         ]);
 
-        $session = Session::find((string) $id, $this->supabase);
+        $session = Session::find($id);
         if (! $session) {
             abort(404);
         }
 
         // Verify session belongs to user's child
-        $child = $session->child($this->supabase);
+        $child = $session->child;
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
@@ -616,8 +618,8 @@ class PlanningController extends Controller
 
     private function calculateWeeklyCapacity(Child $child): array
     {
-        $timeBlocks = $child->timeBlocks($this->supabase);
-        $scheduledSessions = Session::forChildAndStatus($child->id, 'scheduled', $this->supabase);
+        $timeBlocks = $child->timeBlocks;
+        $scheduledSessions = Session::forChildAndStatus($child->id, 'scheduled');
 
         $capacityData = [];
 
