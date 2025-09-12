@@ -97,6 +97,14 @@ class Unit extends Model
     }
 
     /**
+     * Get the flashcards for this unit.
+     */
+    public function flashcards(): HasMany
+    {
+        return $this->hasMany(Flashcard::class);
+    }
+
+    /**
      * Scope to get units for a specific subject
      */
     public function scopeForSubject($query, int $subjectId)

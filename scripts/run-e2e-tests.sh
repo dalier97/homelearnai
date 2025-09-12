@@ -40,14 +40,14 @@ echo "⏳ Clearing port 18001..."
 lsof -ti:18001 2>/dev/null | xargs kill -9 2>/dev/null || true
 sleep 1
 
-# Quick Supabase check (no detailed API test)
-echo "⏳ Checking Supabase..."
-if ! supabase status >/dev/null 2>&1; then
-    echo "❌ ERROR: Supabase not running. Start with: supabase start"
+# Check PostgreSQL connection instead of Supabase
+echo "⏳ Checking PostgreSQL..."
+if ! PGPASSWORD=12345 psql -h 127.0.0.1 -p 5432 -U laravel -d learning_app_test -c "SELECT 1" >/dev/null 2>&1; then
+    echo "❌ ERROR: Cannot connect to PostgreSQL test database"
     exit 1
 fi
 
-echo "✅ Supabase available"
+echo "✅ PostgreSQL available"
 
 echo ""
 echo "🗄️  Setting up test database..."
@@ -61,8 +61,8 @@ echo "📋 Database ready (using existing state)"
 echo ""
 echo "🚀 Starting Laravel server..."
 
-# Start server with fast startup
-APP_ENV=testing DB_CONNECTION=pgsql SESSION_DRIVER=file CACHE_STORE=array php artisan serve --host=127.0.0.1 --port=18001 >/dev/null 2>&1 &
+# Start server with fast startup and PostgreSQL credentials
+APP_ENV=testing DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5432 DB_DATABASE=learning_app_test DB_USERNAME=laravel DB_PASSWORD=12345 SESSION_DRIVER=file CACHE_STORE=array php artisan serve --host=127.0.0.1 --port=18001 >/dev/null 2>&1 &
 LARAVEL_PID=$!
 
 echo "⏳ Waiting for server startup..."

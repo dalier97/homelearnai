@@ -1,8 +1,10 @@
-{{-- Individual Review Card for Session --}}
+{{-- Individual Review Card for Session or Flashcard --}}
 @php
-    $topic = $review->topic(app(App\Services\SupabaseClient::class));
-    $session = $review->session(app(App\Services\SupabaseClient::class));
+    $topic = $review->topic;
+    $session = $review->session;
+    $flashcard = $review->flashcard;
     $kidsMode = session('kids_mode_active', false);
+    $isFlashcardReview = $review->isFlashcardReview();
 @endphp
 
 <div class="space-y-6" data-review-id="{{ $review->id }}">
@@ -11,7 +13,12 @@
         <!-- Kids Mode Header - Fun and Engaging -->
         <div class="text-center bg-gradient-to-r from-purple-400 to-pink-500 rounded-3xl p-8 text-white">
             <div class="text-6xl mb-4 animate-bounce">🌟</div>
-            <h3 class="text-3xl font-bold mb-3 drop-shadow-lg">{{ $topic?->title ?? __('Mystery Challenge!') }}</h3>
+            @if($isFlashcardReview && $flashcard)
+                <h3 class="text-3xl font-bold mb-3 drop-shadow-lg">{{ __('Flashcard Challenge!') }}</h3>
+                <p class="text-lg opacity-90">{{ $flashcard->unit->name ?? __('Study Cards') }}</p>
+            @else
+                <h3 class="text-3xl font-bold mb-3 drop-shadow-lg">{{ $topic?->title ?? __('Mystery Challenge!') }}</h3>
+            @endif
             <div class="flex justify-center space-x-2 mb-4">
                 @for($i = 1; $i <= 5; $i++)
                     <div class="w-6 h-6 rounded-full @if($i <= $review->repetitions + 1) bg-yellow-300 @else bg-white/30 @endif flex items-center justify-center">
@@ -31,7 +38,12 @@
     @else
         <!-- Regular Mode Header -->
         <div class="text-center">
-            <h3 class="text-xl font-bold text-gray-900 mb-2">{{ $topic?->title ?? __('unknown_topic') }}</h3>
+            @if($isFlashcardReview && $flashcard)
+                <h3 class="text-xl font-bold text-gray-900 mb-2">{{ __('Flashcard Review') }}</h3>
+                <p class="text-sm text-gray-600 mb-2">{{ $flashcard->unit->name ?? __('Study Cards') }} - {{ ucfirst($flashcard->card_type) }}</p>
+            @else
+                <h3 class="text-xl font-bold text-gray-900 mb-2">{{ $topic?->title ?? __('unknown_topic') }}</h3>
+            @endif
             <div class="flex items-center justify-center space-x-4 text-sm text-gray-600">
                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ $review->getStatusColor() }}">
                     {{ ucfirst($review->status) }}
@@ -45,38 +57,43 @@
         </div>
     @endif
 
-    {{-- Topic Content/Question --}}
-    @if($kidsMode)
-        <!-- Kids Mode Content - Fun and Visual -->
-        <div class="review-question bg-gradient-to-r from-blue-100 to-green-100 rounded-3xl p-8 border-4 border-purple-300">
-            <div class="text-center mb-6">
-                <div class="text-4xl mb-3">🧠</div>
-                <h4 class="text-2xl font-bold text-purple-800 mb-4">{{ __('Brain Challenge Time!') }}</h4>
-            </div>
-            <div class="prose max-w-none text-center">
-                @if($topic?->content)
-                    <div class="text-lg font-semibold text-gray-800 bg-white rounded-2xl p-6 shadow-lg">
-                        {!! nl2br(e($topic->content)) !!}
-                    </div>
-                @else
-                    <div class="text-lg font-semibold text-purple-700 bg-white rounded-2xl p-6 shadow-lg">
-                        <p>{{ __('What do you remember about this topic?') }}</p>
-                        <div class="text-4xl mt-3">🤔</div>
-                    </div>
-                @endif
-            </div>
-        </div>
+    {{-- Content/Question Section --}}
+    @if($isFlashcardReview && $flashcard)
+        @include('reviews.partials.flashcard-content', ['flashcard' => $flashcard, 'kidsMode' => $kidsMode])
     @else
-        <!-- Regular Mode Content -->
-        <div class="review-question bg-gray-50 rounded-lg p-6">
-            <div class="prose max-w-none">
-                @if($topic?->content)
-                    {!! nl2br(e($topic->content)) !!}
-                @else
-                    <p class="text-gray-600 italic">{{ __('review_this_topic_and_assess_your_understanding') }}</p>
-                @endif
+        {{-- Topic Content/Question --}}
+        @if($kidsMode)
+            <!-- Kids Mode Content - Fun and Visual -->
+            <div class="review-question bg-gradient-to-r from-blue-100 to-green-100 rounded-3xl p-8 border-4 border-purple-300">
+                <div class="text-center mb-6">
+                    <div class="text-4xl mb-3">🧠</div>
+                    <h4 class="text-2xl font-bold text-purple-800 mb-4">{{ __('Brain Challenge Time!') }}</h4>
+                </div>
+                <div class="prose max-w-none text-center">
+                    @if($topic?->content)
+                        <div class="text-lg font-semibold text-gray-800 bg-white rounded-2xl p-6 shadow-lg">
+                            {!! nl2br(e($topic->content)) !!}
+                        </div>
+                    @else
+                        <div class="text-lg font-semibold text-purple-700 bg-white rounded-2xl p-6 shadow-lg">
+                            <p>{{ __('What do you remember about this topic?') }}</p>
+                            <div class="text-4xl mt-3">🤔</div>
+                        </div>
+                    @endif
+                </div>
             </div>
-        </div>
+        @else
+            <!-- Regular Mode Content -->
+            <div class="review-question bg-gray-50 rounded-lg p-6">
+                <div class="prose max-w-none">
+                    @if($topic?->content)
+                        {!! nl2br(e($topic->content)) !!}
+                    @else
+                        <p class="text-gray-600 italic">{{ __('review_this_topic_and_assess_your_understanding') }}</p>
+                    @endif
+                </div>
+            </div>
+        @endif
     @endif
         
         @if($session?->notes)
@@ -136,27 +153,73 @@
     </div>
 
     {{-- Instructions --}}
-    @if($kidsMode)
-        <!-- Kids Mode Instructions - Fun and Simple -->
-        <div class="text-center">
-            <div class="bg-gradient-to-r from-yellow-200 to-orange-200 rounded-3xl p-6 mb-6">
-                <div class="text-5xl mb-3">💭</div>
-                <p class="text-xl font-bold text-purple-800 mb-4">{{ __('Think about what you remember!') }}</p>
-                <button onclick="showAnswer(this)" 
-                        class="show-answer-btn bg-gradient-to-r from-green-400 to-blue-500 text-white px-8 py-4 rounded-full text-xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-110 transition-all duration-300">
-                    <span class="text-2xl mr-2">👀</span>
-                    {{ __('Show Answer!') }}
-                </button>
+    @if(!$isFlashcardReview)
+        @if($kidsMode)
+            <!-- Kids Mode Instructions - Fun and Simple -->
+            <div class="text-center">
+                <div class="bg-gradient-to-r from-yellow-200 to-orange-200 rounded-3xl p-6 mb-6">
+                    <div class="text-5xl mb-3">💭</div>
+                    <p class="text-xl font-bold text-purple-800 mb-4">{{ __('Think about what you remember!') }}</p>
+                    <button onclick="showAnswer(this)" 
+                            class="show-answer-btn bg-gradient-to-r from-green-400 to-blue-500 text-white px-8 py-4 rounded-full text-xl font-bold shadow-xl hover:shadow-2xl transform hover:scale-110 transition-all duration-300">
+                        <span class="text-2xl mr-2">👀</span>
+                        {{ __('Show Answer!') }}
+                    </button>
+                </div>
+                <div class="answer-section" style="display: none;">
+                    <div class="bg-gradient-to-r from-pink-200 to-purple-200 rounded-3xl p-6 mb-6">
+                        <div class="text-4xl mb-3">🌟</div>
+                        <p class="text-xl font-bold text-purple-800 mb-4">{{ __('How did you do?') }}</p>
+                        <p class="text-lg text-purple-700">{{ __('Pick the star that shows how well you remembered!') }}</p>
+                    </div>
+                </div>
             </div>
-            <div class="answer-section" style="display: none;">
-                <div class="bg-gradient-to-r from-pink-200 to-purple-200 rounded-3xl p-6 mb-6">
+        @else
+            <!-- Regular Mode Instructions and Buttons -->
+            <div class="text-center text-sm text-gray-600">
+                <p class="mb-4">{{ __('think_about_how_well_you_remember_this_topic_then_reveal_the_answer') }}</p>
+                <button onclick="showAnswer(this)" 
+                        class="show-answer-btn mb-4 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    {{ __('show_answer') }}
+                </button>
+                <div class="answer-section" style="display: none;">
+                    <p class="mb-2 text-green-700 font-medium">{{ __('now_rate_your_recall') }}</p>
+                    <div class="flex justify-center space-x-4 text-xs">
+                        <span><kbd class="px-1 py-0.5 bg-gray-200 rounded">1</kbd> {{ __('again') }}</span>
+                        <span><kbd class="px-1 py-0.5 bg-gray-200 rounded">2</kbd> {{ __('hard') }}</span>
+                        <span><kbd class="px-1 py-0.5 bg-gray-200 rounded">3</kbd> {{ __('good') }}</span>
+                        <span><kbd class="px-1 py-0.5 bg-gray-200 rounded">4</kbd> {{ __('easy') }}</span>
+                    </div>
+                </div>
+            </div>
+        @endif
+    @else
+        {{-- Flashcard Review Instructions --}}
+        @if($kidsMode)
+            <!-- Kids Mode Flashcard Instructions -->
+            <div class="text-center">
+                <div class="bg-gradient-to-r from-pink-200 to-purple-200 rounded-3xl p-6 mb-6" id="flashcard-instructions">
                     <div class="text-4xl mb-3">🌟</div>
                     <p class="text-xl font-bold text-purple-800 mb-4">{{ __('How did you do?') }}</p>
                     <p class="text-lg text-purple-700">{{ __('Pick the star that shows how well you remembered!') }}</p>
                 </div>
             </div>
-        </div>
+        @else
+            <!-- Regular Mode Flashcard Instructions -->
+            <div class="text-center text-sm text-gray-600" id="flashcard-instructions">
+                <p class="mb-2 text-green-700 font-medium">{{ __('Rate your performance on this flashcard') }}</p>
+                <div class="flex justify-center space-x-4 text-xs">
+                    <span><kbd class="px-1 py-0.5 bg-gray-200 rounded">1</kbd> {{ __('again') }}</span>
+                    <span><kbd class="px-1 py-0.5 bg-gray-200 rounded">2</kbd> {{ __('hard') }}</span>
+                    <span><kbd class="px-1 py-0.5 bg-gray-200 rounded">3</kbd> {{ __('good') }}</span>
+                    <span><kbd class="px-1 py-0.5 bg-gray-200 rounded">4</kbd> {{ __('easy') }}</span>
+                </div>
+            </div>
+        @endif
+    @endif
 
+    {{-- Action Buttons Section --}}
+    @if($kidsMode)
         {{-- Kids Mode Action Buttons - Large and Colorful --}}
         <div class="grid grid-cols-2 gap-6">
             <button onclick="processReviewResult({{ $review->id }}, 'again')" 
@@ -188,24 +251,6 @@
             </button>
         </div>
     @else
-        <!-- Regular Mode Instructions and Buttons -->
-        <div class="text-center text-sm text-gray-600">
-            <p class="mb-4">{{ __('think_about_how_well_you_remember_this_topic_then_reveal_the_answer') }}</p>
-            <button onclick="showAnswer(this)" 
-                    class="show-answer-btn mb-4 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                {{ __('show_answer') }}
-            </button>
-            <div class="answer-section" style="display: none;">
-                <p class="mb-2 text-green-700 font-medium">{{ __('now_rate_your_recall') }}</p>
-                <div class="flex justify-center space-x-4 text-xs">
-                    <span><kbd class="px-1 py-0.5 bg-gray-200 rounded">1</kbd> {{ __('again') }}</span>
-                    <span><kbd class="px-1 py-0.5 bg-gray-200 rounded">2</kbd> {{ __('hard') }}</span>
-                    <span><kbd class="px-1 py-0.5 bg-gray-200 rounded">3</kbd> {{ __('good') }}</span>
-                    <span><kbd class="px-1 py-0.5 bg-gray-200 rounded">4</kbd> {{ __('easy') }}</span>
-                </div>
-            </div>
-        </div>
-
         {{-- Regular Mode Action Buttons --}}
         <div class="grid grid-cols-4 gap-3">
             <button onclick="processReviewResult({{ $review->id }}, 'again')" 

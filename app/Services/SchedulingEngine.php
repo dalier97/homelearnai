@@ -9,9 +9,7 @@ use Carbon\Carbon;
 
 class SchedulingEngine
 {
-    public function __construct(
-        private SupabaseClient $supabase
-    ) {}
+    public function __construct() {}
 
     /**
      * Skip a session for a specific day and create catch-up suggestions
@@ -19,7 +17,7 @@ class SchedulingEngine
     public function skipSessionDay(Session $session, Carbon $originalDate, ?string $reason = null): array
     {
         // Create catch-up session
-        $catchUpSession = $session->skipDay($originalDate, $reason, $this->supabase);
+        $catchUpSession = $session->skipDay($originalDate, $reason);
 
         // Get suggestions for redistributing the session
         $suggestions = $this->generateRescheduleSuggestions($session, $originalDate);
@@ -36,7 +34,7 @@ class SchedulingEngine
      */
     public function generateRescheduleSuggestions(Session $session, Carbon $originalDate): array
     {
-        $child = $session->child($this->supabase);
+        $child = $session->child;
         if (! $child) {
             return [];
         }
@@ -52,7 +50,7 @@ class SchedulingEngine
             $dayOfWeek = $date->dayOfWeekIso; // 1=Monday, 7=Sunday
 
             // Get existing sessions for this day
-            $existingSessions = Session::forChildAndDay($child->id, $dayOfWeek, $this->supabase);
+            $existingSessions = Session::forChildAndDay($child->id, $dayOfWeek);
 
             // Calculate available capacity
             $totalScheduledMinutes = $existingSessions->sum('estimated_minutes');
@@ -171,14 +169,14 @@ class SchedulingEngine
 
         // Get sessions to reschedule
         if (empty($sessionIds)) {
-            $sessions = Session::forChild($child->id, $this->supabase)
+            $sessions = Session::forChild($child->id)
                 ->where('commitment_type', 'flexible')
                 ->where('status', 'scheduled');
         } else {
             // Fetch sessions by IDs individually
             $sessions = collect();
             foreach ($sessionIds as $sessionId) {
-                $session = Session::find((string) $sessionId, $this->supabase);
+                $session = Session::find($sessionId);
                 if ($session) {
                     $sessions->push($session);
                 }
@@ -199,7 +197,6 @@ class SchedulingEngine
                     $bestSuggestion['day_of_week'],
                     $bestSuggestion['start_time'],
                     $bestSuggestion['end_time'],
-                    $this->supabase,
                     Carbon::parse($bestSuggestion['date'])
                 );
 
@@ -220,14 +217,14 @@ class SchedulingEngine
     public function redistributeCatchUpSessions(Child $child, int $maxSessions = 5): array
     {
         // Get pending catch-up sessions, prioritized
-        $catchUpSessions = CatchUpSession::pending($child->id, $this->supabase);
+        $catchUpSessions = CatchUpSession::pending($child->id);
         $redistributed = [];
 
         // Process high-priority items first
         $prioritized = $catchUpSessions->sortBy('priority')->take($maxSessions);
 
         foreach ($prioritized as $catchUpSession) {
-            $originalSession = $catchUpSession->originalSession($this->supabase);
+            $originalSession = $catchUpSession->originalSession;
             if (! $originalSession) {
                 continue;
             }
@@ -253,12 +250,11 @@ class SchedulingEngine
                     $bestSuggestion['day_of_week'],
                     $bestSuggestion['start_time'],
                     $bestSuggestion['end_time'],
-                    $this->supabase,
                     Carbon::parse($bestSuggestion['date'])
                 );
 
                 // Mark catch-up as reassigned
-                $catchUpSession->reassignToSession($newSession->id, $this->supabase);
+                $catchUpSession->reassignToSession($newSession->id);
 
                 $redistributed[] = [
                     'catch_up_session' => $catchUpSession,
@@ -281,7 +277,7 @@ class SchedulingEngine
 
         // Analyze each day of the week
         for ($dayOfWeek = 1; $dayOfWeek <= 7; $dayOfWeek++) {
-            $sessions = Session::forChildAndDay($child->id, $dayOfWeek, $this->supabase);
+            $sessions = Session::forChildAndDay($child->id, $dayOfWeek);
             $totalMinutes = $sessions->sum('estimated_minutes');
             $sessionCount = $sessions->count();
 

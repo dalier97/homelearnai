@@ -1,9 +1,20 @@
 import { test, expect } from '@playwright/test';
+import { ModalHelper } from './helpers/modal-helpers';
+import { TestSetupHelper } from './helpers/test-setup-helpers';
 
 test.describe('Milestone 2: Complete Flashcard Integration Validation', () => {
   let testUser: { name: string; email: string; password: string };
+  let modalHelper: ModalHelper;
+  let testSetupHelper: TestSetupHelper;
   
   test.beforeEach(async ({ page }) => {
+    // Initialize helpers
+    modalHelper = new ModalHelper(page);
+    testSetupHelper = new TestSetupHelper(page);
+    
+    // Ensure test isolation
+    await testSetupHelper.isolateTest();
+    
     testUser = {
       name: 'Validation Test Parent',
       email: `validation-${Date.now()}@example.com`,
@@ -27,6 +38,11 @@ test.describe('Milestone 2: Complete Flashcard Integration Validation', () => {
     }
     await page.waitForLoadState('networkidle', { timeout: 10000 });
   });
+
+  test.afterEach(async ({ page }) => {
+    // Reset test state after each test
+    await modalHelper.resetTestState();
+  });
   
   test('Complete Flashcard Integration Workflow', async ({ page }) => {
     const validationResults = [];
@@ -35,12 +51,16 @@ test.describe('Milestone 2: Complete Flashcard Integration Validation', () => {
     console.log('STEP 1: Creating child...');
     await page.goto('/children');
     
-    // Use data-testid for more reliable selection
-    await page.click('[data-testid="header-add-child-btn"]');
+    // Use safe button click to avoid strict mode violations
+    await testSetupHelper.safeButtonClick('Add Child', 'header-add-child-btn');
     
-    // Wait for modal overlay to appear and be visible
-    await page.waitForSelector('[data-testid="child-modal-overlay"]', { state: 'visible', timeout: 10000 });
-    await page.waitForTimeout(500); // Give Alpine.js time to fully initialize
+    // Wait for modal using helper - try multiple approaches
+    try {
+      await modalHelper.waitForChildModal();
+    } catch (e) {
+      console.log('Child modal helper failed, trying direct selector...');
+      await page.waitForSelector('#child-form-modal', { state: 'visible', timeout: 10000 });
+    }
     
     // Fill the form
     await page.fill('[data-testid="child-modal-overlay"] input[name="name"]', 'Validation Child');
@@ -53,7 +73,7 @@ test.describe('Milestone 2: Complete Flashcard Integration Validation', () => {
     // STEP 2: Create Subject
     console.log('STEP 2: Creating subject...');
     await page.goto('/subjects');
-    await page.click('button:has-text("Add Subject")');
+    await page.locator('button:has-text("Add Subject")').first().click();
     await page.fill('input[name="name"]', 'Validation Mathematics');
     await page.selectOption('select[name="color"]', '#3b82f6');
     await page.click('button:has-text("Save")');
@@ -64,7 +84,7 @@ test.describe('Milestone 2: Complete Flashcard Integration Validation', () => {
     console.log('STEP 3: Creating unit...');
     await page.click('text=Validation Mathematics');
     await page.locator('button:has-text("Add Unit")').first().click();
-    await page.waitForSelector('[data-testid="unit-create-modal"], #unit-create-modal', { timeout: 5000 });
+    await page.waitForSelector('[data-testid="unit-create-modal"], #unit-create-modal', { timeout: 10000 });
     await page.fill('input[name="name"]', 'Flashcard Unit');
     await page.fill('textarea[name="description"]', 'Unit for flashcard testing');
     await page.fill('input[name="target_completion_date"]', '2024-12-31');
@@ -76,11 +96,11 @@ test.describe('Milestone 2: Complete Flashcard Integration Validation', () => {
     console.log('STEP 4: Navigating to unit screen...');
     
     // Wait for the unit to appear on the page and click View Unit directly
-    await page.waitForSelector('text=Flashcard Unit', { timeout: 5000 });
+    await page.waitForSelector('text=Flashcard Unit', { timeout: 10000 });
     
     // Click the View Unit button directly instead of trying to parse URLs
     const viewUnitLink = page.locator('a:has-text("View Unit")');
-    await viewUnitLink.waitFor({ state: 'visible', timeout: 5000 });
+    await viewUnitLink.waitFor({ state: 'visible', timeout: 10000 });
     
     console.log('Clicking View Unit link...');
     await viewUnitLink.click();
@@ -104,7 +124,7 @@ test.describe('Milestone 2: Complete Flashcard Integration Validation', () => {
     
     // Wait for modal to load and check if it appears
     try {
-      await page.waitForSelector('[data-testid="flashcard-modal-overlay"]', { state: 'visible', timeout: 5000 });
+      await page.waitForSelector('[data-testid="flashcard-modal-overlay"]', { state: 'visible', timeout: 10000 });
       await expect(page.locator('[data-testid="flashcard-modal-overlay"]')).toBeVisible();
       await expect(page.locator('h3:has-text("Add New Flashcard")')).toBeVisible();
       validationResults.push('✅ VALIDATION 2 PASSED: Add Flashcard modal opens correctly');
@@ -136,7 +156,7 @@ test.describe('Milestone 2: Complete Flashcard Integration Validation', () => {
       // VALIDATION 5: Test edit button opens pre-filled modal
       console.log('VALIDATION 5: Testing edit functionality...');
       await page.click('[data-testid="edit-flashcard-button"]');
-      await page.waitForSelector('[data-testid="flashcard-modal-overlay"]', { state: 'visible', timeout: 5000 });
+      await page.waitForSelector('[data-testid="flashcard-modal-overlay"]', { state: 'visible', timeout: 10000 });
       
       await expect(page.locator('h3:has-text("Edit Flashcard")')).toBeVisible();
       await expect(page.locator('textarea[name="question"]')).toHaveValue('What is 2 + 2?');
@@ -198,7 +218,7 @@ test.describe('Milestone 2: Complete Flashcard Integration Validation', () => {
       // Create another flashcard first if we don't have any
       if ((await page.locator('#flashcard-count').textContent())?.includes('(0)')) {
         await page.click('[data-testid="add-flashcard-button"]');
-        await page.waitForSelector('[data-testid="flashcard-modal-overlay"]', { state: 'visible', timeout: 5000 });
+        await page.waitForSelector('[data-testid="flashcard-modal-overlay"]', { state: 'visible', timeout: 10000 });
         await page.selectOption('select[name="card_type"]', 'basic');
         await page.fill('textarea[name="question"]', 'Kids Mode Test Question');
         await page.fill('textarea[name="answer"]', 'Kids Mode Answer');

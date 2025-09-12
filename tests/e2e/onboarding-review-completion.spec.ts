@@ -36,7 +36,7 @@ test.describe('Onboarding Review and Completion', () => {
         }
         
         // Wait for onboarding page to load
-        await page.waitForURL('/onboarding', { timeout: 5000 });
+        await page.waitForURL('/onboarding', { timeout: 10000 });
         await expect(page.getByTestId('step-1')).toBeVisible();
     });
 
@@ -171,7 +171,7 @@ test.describe('Onboarding Review and Completion', () => {
         await expect(page.locator('text=🎉 Setup complete! Welcome to your homeschool hub!')).toBeVisible({ timeout: 10000 });
         
         // Should redirect to dashboard
-        await expect(page).toHaveURL(/.*dashboard/, { timeout: 15000 });
+        await expect(page).toHaveURL(/.*dashboard/, { timeout: 10000 });
         
         // Verify dashboard loads and shows the created child
         await expect(page.getByRole('heading', { name: 'Test Child' })).toBeVisible({ timeout: 10000 });
@@ -192,7 +192,7 @@ test.describe('Onboarding Review and Completion', () => {
         await page.click('[data-testid="complete-onboarding-button"]');
         
         // Wait for redirect to dashboard
-        await expect(page).toHaveURL(/.*dashboard/, { timeout: 15000 });
+        await expect(page).toHaveURL(/.*dashboard/, { timeout: 10000 });
         
         // Try to navigate to onboarding directly
         await page.goto('/onboarding');

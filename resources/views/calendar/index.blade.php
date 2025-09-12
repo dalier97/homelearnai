@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 <div class="space-y-6">
     <!-- Header -->
     <div class="bg-white rounded-lg shadow-sm p-6">
@@ -25,7 +26,7 @@
                         <option value="">{{ __('all_children') }}</option>
                         @foreach($children as $child)
                             <option value="{{ $child->id }}" {{ $selectedChild && $selectedChild->id === $child->id ? 'selected' : '' }}>
-                                {{ $child->name }} ({{ $child->age }}y)
+                                {{ $child->name }} ({{ $child->grade }})
                             </option>
                         @endforeach
                     </select>
@@ -55,7 +56,7 @@
             </div>
             <div>
                 <p class="font-medium text-blue-900">{{ $selectedChild->name }}</p>
-                <p class="text-sm text-blue-600">{{ __('age_years', ['age' => $selectedChild->age]) }} • {{ ucfirst(str_replace('_', ' ', $selectedChild->getAgeGroup())) }}</p>
+                <p class="text-sm text-blue-600">{{ __('grade_level', ['grade' => $selectedChild->grade]) }} • {{ ucfirst(str_replace('_', ' ', $selectedChild->getGradeGroup())) }}</p>
             </div>
         </div>
         @endif
@@ -73,6 +74,7 @@
 <!-- Toast Notification Area -->
 <div id="toast-area" class="fixed top-4 right-4 z-50"></div>
 
+</div>
 @endsection
 
 @push('scripts')

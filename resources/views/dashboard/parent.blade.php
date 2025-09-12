@@ -1,6 +1,94 @@
 @extends('layouts.app')
 
 @section('content')
+<script>
+// Define flashcard preview functions immediately
+window.showFlashcardPreviewOptions = function(childName, childId) {
+    console.log('showFlashcardPreviewOptions called with:', childName, childId);
+    
+    const nameElement = document.getElementById('preview-child-name');
+    const modalElement = document.getElementById('flashcard-preview-modal');
+    
+    if (!nameElement) {
+        console.error('preview-child-name element not found');
+        return;
+    }
+    if (!modalElement) {
+        console.error('flashcard-preview-modal element not found');
+        return;
+    }
+    
+    nameElement.textContent = childName;
+    modalElement.classList.remove('hidden');
+    
+    // Load units with flashcards for this child - use setTimeout to ensure DOM is ready
+    setTimeout(() => {
+        console.log('Calling loadChildUnitsForPreview after timeout');
+        loadChildUnitsForPreview(childId);
+    }, 100);
+}
+
+window.closeFlashcardPreviewModal = function(event) {
+    if (event && event.target !== event.currentTarget && !event.target.closest('button[onclick="closeFlashcardPreviewModal()"]')) {
+        return;
+    }
+    const modalElement = document.getElementById('flashcard-preview-modal');
+    if (modalElement) {
+        modalElement.classList.add('hidden');
+    }
+}
+
+// Move loadChildUnitsForPreview to global scope
+window.loadChildUnitsForPreview = async function(childId) {
+    console.log('loadChildUnitsForPreview called with childId:', childId);
+    
+    try {
+        const unitsContainer = document.getElementById('preview-units-list');
+        console.log('Found units container:', unitsContainer);
+        
+        if (!unitsContainer) {
+            console.error('preview-units-list element not found');
+            return;
+        }
+        
+        // For now, just show the manual instructions since API doesn't exist yet
+        unitsContainer.innerHTML = `
+            <div class="space-y-3">
+                <p class="text-sm text-gray-600 mb-4">
+                    Choose a unit to preview its flashcards:
+                </p>
+                <div class="bg-blue-50 border border-blue-200 rounded p-4">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span class="font-medium text-blue-800">How to Preview Flashcards</span>
+                    </div>
+                    <ol class="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                        <li>Go to any subject page</li>
+                        <li>Click on a unit that has flashcards</li>
+                        <li>Look for the purple "Preview" button</li>
+                        <li>Click Preview to try the flashcards</li>
+                    </ol>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <a href="/subjects" 
+                       class="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-center font-medium transition-colors">
+                        Browse Subjects & Units
+                    </a>
+                    <button onclick="closeFlashcardPreviewModal()" 
+                            class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error in loadChildUnitsForPreview:', error);
+    }
+}
+</script>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 <div class="space-y-6">
     <!-- Header -->
     <div class="bg-white rounded-lg shadow-sm p-6">
@@ -38,7 +126,7 @@
                     <div>
                         <h3 class="text-lg font-semibold text-gray-900">{{ $child->name }}</h3>
                         <div class="flex items-center space-x-2 text-sm text-gray-600">
-                            <span>{{ __('Age :age', ['age' => $child->age]) }}</span>
+                            <span>{{ $child->grade }} {{ __('Grade') }}</span>
                             <span class="text-gray-400">•</span>
                             <span class="px-2 py-1 bg-{{ $data['capacity_status']['status']['color'] }}-100 text-{{ $data['capacity_status']['status']['color'] }}-700 rounded text-xs">
                                 {{ $data['capacity_status']['status']['label'] }}
@@ -47,8 +135,9 @@
                     </div>
                     <div class="flex space-x-2">
                         <!-- Child Today View -->
-                        <a href="{{ route('dashboard.child-today', $child->id) }}" 
-                           class="text-blue-600 hover:text-blue-800 p-2 rounded" title="{{ __('Child View') }}">
+                        <a href="{{ route('dashboard.child.today', $child->id) }}" 
+                           class="text-blue-600 hover:text-blue-800 p-2 rounded" title="{{ __('Child View') }}"
+                           data-testid="child-view-link">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -112,7 +201,7 @@
                     </button>
 
                     <!-- Reviews -->
-                    <a href="{{ route('reviews.session', $child->id) }}" 
+                    <a href="{{ route('reviews.index', ['child_id' => $child->id]) }}" 
                        class="flex items-center justify-center space-x-1 bg-blue-100 text-blue-700 px-3 py-2 rounded hover:bg-blue-200 text-sm">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
@@ -120,6 +209,35 @@
                         <span>{{ trans_choice(':count Review|:count Reviews', $data['review_queue_count'], ['count' => $data['review_queue_count']]) }}</span>
                     </a>
                 </div>
+
+                <!-- Flashcard Statistics -->
+                @if(isset($data['flashcard_stats']) && $data['flashcard_stats']['total_flashcards'] > 0)
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div class="bg-purple-50 p-3 rounded text-center">
+                            <div class="text-lg font-semibold text-purple-700">{{ $data['flashcard_stats']['active_flashcards'] }}</div>
+                            <div class="text-xs text-purple-600">{{ __('Active Flashcards') }}</div>
+                        </div>
+                        <div class="bg-orange-50 p-3 rounded text-center">
+                            <div class="text-lg font-semibold text-orange-700">{{ $data['flashcard_stats']['due_reviews'] + $data['flashcard_stats']['new_reviews'] }}</div>
+                            <div class="text-xs text-orange-600">{{ __('Cards to Review') }}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Flashcards Link -->
+                    @if($data['flashcard_stats']['active_flashcards'] > 0)
+                        <div class="text-center mb-3">
+                            <button type="button"
+                               onclick="showFlashcardPreviewOptions('{{ $child->name }}', {{ $child->id }})"
+                               class="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center justify-center space-x-1 bg-transparent border-0 cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                <span>{{ __('Preview Flashcards') }}</span>
+                            </button>
+                        </div>
+                    @endif
+                @endif
 
                 <!-- Kids Mode Button -->
                 @if($pin_is_set)
@@ -219,6 +337,57 @@
 
 <!-- Modals -->
 <div id="child-settings-modal"></div>
+
+<!-- Flashcard Preview Options Modal -->
+<div id="flashcard-preview-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-50" onclick="closeFlashcardPreviewModal(event)">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full" onclick="event.stopPropagation()">
+            <div class="bg-purple-100 px-6 py-4 border-b border-purple-200 rounded-t-lg">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-purple-800 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        {{ __('Preview Flashcards') }}
+                    </h3>
+                    <button onclick="closeFlashcardPreviewModal()" class="text-purple-500 hover:text-purple-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-4">
+                    <p class="text-gray-700 mb-2">
+                        {{ __('Preview flashcards for') }} <strong id="preview-child-name"></strong>
+                    </p>
+                    <div class="bg-purple-50 border border-purple-200 rounded p-3 mb-4">
+                        <div class="flex items-start space-x-2">
+                            <svg class="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <div class="text-sm text-purple-700">
+                                <strong>{{ __('Preview Mode:') }}</strong> {{ __('No learning progress will be recorded. This is just for you to explore the flashcards.') }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Units List will be populated here -->
+                <div id="preview-units-list">
+                    <div class="text-center py-4">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                        <p class="text-gray-500 mt-2 text-sm">{{ __('Loading units with flashcards...') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
 
 @endsection
 
@@ -328,5 +497,16 @@ document.addEventListener('DOMContentLoaded', () => {
         window.translations.entering_kids_mode = '{{ __('entering_kids_mode', [], 'Entering Kids Mode...') }}';
         window.translations.ask_parent_for_help = '{{ __('Ask a parent to help exit Kids Mode') }}';
     }
+</script>
+
+<script>
+// Removed duplicate function - it's now defined globally above
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeFlashcardPreviewModal();
+    }
+});
 </script>
 @endpush

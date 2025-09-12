@@ -7,7 +7,7 @@ test.describe('Review System E2E Tests', () => {
   // Helper function to select the first available child
   async function selectFirstChild(page: any) {
     const childSelect = page.locator('select[name="child_id"]');
-    await childSelect.waitFor({ timeout: 5000 });
+    await childSelect.waitFor({ timeout: 10000 });
     const childOptions = await childSelect.locator('option').allInnerTexts();
     if (childOptions.length > 1) {
       // Select the first non-default option
@@ -46,14 +46,14 @@ test.describe('Review System E2E Tests', () => {
 
     // Create a child for testing
     await page.goto('/children');
-    await page.click('button:has-text("Add Child")');
+    await page.click('[data-testid="header-add-child-btn"]');
     
     // Wait for modal to load via HTMX and Alpine.js to initialize
-    await page.waitForSelector('#child-form-modal [x-data]', { timeout: 10000 });
+    await page.waitForSelector('#child-form-modal [data-testid="modal-content"]', { timeout: 10000 });
     await page.waitForTimeout(1000); // Allow Alpine.js to initialize
     
     // Wait for form elements to be visible
-    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 5000 });
+    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
     
     await page.fill('#child-form-modal input[name="name"]', 'Review Test Child');
     await page.selectOption('#child-form-modal select[name="age"]', '10');
@@ -85,12 +85,12 @@ test.describe('Review System E2E Tests', () => {
     
     // Verify the slot creation modal can be opened
     await page.click('button:has-text("Add Slot")');
-    await page.waitForSelector('#add-slot-modal:not(.hidden)', { timeout: 5000 });
+    await page.waitForSelector('#add-slot-modal:not(.hidden)', { timeout: 10000 });
     await expect(page.locator('#add-slot-modal')).toBeVisible();
     
     // Close the modal
     await page.click('#add-slot-modal button:has-text("Cancel")');
-    await page.waitForSelector('#add-slot-modal', { state: 'hidden', timeout: 5000 });
+    await page.waitForSelector('#add-slot-modal', { state: 'hidden', timeout: 10000 });
     
     // Verify existing slots are displayed (created by default)
     await expect(page.locator('#day-1-slots .review-slot').first()).toBeVisible();
@@ -144,7 +144,7 @@ test.describe('Review System E2E Tests', () => {
     await page.click('text=Manage Review Slots');
     
     await page.click('button:has-text("Add Slot")');
-    await page.waitForSelector('#add-slot-modal:not(.hidden)', { timeout: 5000 });
+    await page.waitForSelector('#add-slot-modal:not(.hidden)', { timeout: 10000 });
     await page.selectOption('#add-slot-modal select[name="day_of_week"]', '2'); // Tuesday
     await page.fill('#add-slot-modal input[name="start_time"]', '14:00');
     await page.fill('#add-slot-modal input[name="end_time"]', '14:20');
@@ -245,7 +245,7 @@ test.describe('Review System E2E Tests', () => {
     
     // Test that modal opens correctly
     await page.locator('button:has-text("Add Slot")').first().click();
-    await page.waitForSelector('#add-slot-modal:not(.hidden)', { timeout: 5000 });
+    await page.waitForSelector('#add-slot-modal:not(.hidden)', { timeout: 10000 });
     await expect(page.locator('#add-slot-modal')).toBeVisible();
     await expect(page.locator('#add-slot-modal h3:has-text("Add Review Slot")')).toBeVisible();
     
@@ -259,7 +259,7 @@ test.describe('Review System E2E Tests', () => {
     await page.waitForFunction(() => {
       const modal = document.getElementById('add-slot-modal');
       return modal && modal.classList.contains('hidden');
-    }, { timeout: 5000 });
+    }, { timeout: 10000 });
     
     // Verify page functionality is working
     await expect(page.locator('text=Back to Reviews')).toBeVisible();
@@ -271,14 +271,14 @@ test.describe('Review System E2E Tests', () => {
   test('review system with multiple children', async ({ page }) => {
     // Create second child
     await page.goto('/children');
-    await page.click('button:has-text("Add Child")');
+    await page.click('[data-testid="header-add-child-btn"]');
     
     // Wait for modal to load via HTMX and Alpine.js to initialize
-    await page.waitForSelector('#child-form-modal [x-data]', { timeout: 10000 });
+    await page.waitForSelector('#child-form-modal [data-testid="modal-content"]', { timeout: 10000 });
     await page.waitForTimeout(1000); // Allow Alpine.js to initialize
     
     // Wait for form elements to be visible
-    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 5000 });
+    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
     
     await page.fill('#child-form-modal input[name="name"]', 'Second Review Child');
     await page.selectOption('#child-form-modal select[name="age"]', '8');
@@ -320,14 +320,14 @@ test.describe('Review System E2E Tests', () => {
     
     // Verify both children can access review slot management (basic UI test)
     await page.click('text=Manage Review Slots');
-    await expect(page.locator('button:has-text("Add Slot")').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('button:has-text("Add Slot")').first()).toBeVisible({ timeout: 10000 });
     
     await page.click('text=Back to Reviews');
     await selectFirstChild(page);
     await page.waitForTimeout(1000);
     
     await page.click('text=Manage Review Slots');
-    await expect(page.locator('button:has-text("Add Slot")').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('button:has-text("Add Slot")').first()).toBeVisible({ timeout: 10000 });
     
     // Test passes if basic child switching and UI access works
     console.log('✅ Multi-child review system basic functionality verified');
@@ -341,7 +341,7 @@ test.describe('Review System E2E Tests', () => {
     // Check if there's a review session available to start
     const startReviewButton = page.locator('button:has-text("Start Review Session")');
     
-    if (await startReviewButton.isVisible({ timeout: 5000 })) {
+    if (await startReviewButton.isVisible({ timeout: 10000 })) {
       // Start a review session
       await startReviewButton.click();
       

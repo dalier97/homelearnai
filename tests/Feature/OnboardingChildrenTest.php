@@ -41,7 +41,7 @@ class OnboardingChildrenTest extends TestCase
             'children' => [
                 [
                     'name' => '', // Empty name
-                    'age' => '', // Empty age
+                    'grade' => '', // Empty grade
                     'independence_level' => '',
                 ],
             ],
@@ -50,13 +50,13 @@ class OnboardingChildrenTest extends TestCase
         $response->assertStatus(422);
         $response->assertJsonValidationErrors([
             'children.0.name',
-            'children.0.age',
+            'children.0.grade',
             'children.0.independence_level',
         ]);
     }
 
     /** @test */
-    public function onboarding_children_endpoint_validates_age_range()
+    public function onboarding_children_endpoint_validates_grade_options()
     {
         // Mock authenticated user session
         $this->session([
@@ -64,33 +64,33 @@ class OnboardingChildrenTest extends TestCase
             'supabase_token' => 'test-token',
         ]);
 
-        // Test invalid age values
+        // Test invalid grade values
         $response = $this->postJson('/onboarding/children', [
             'children' => [
                 [
                     'name' => 'Test Child',
-                    'age' => 2, // Too young
+                    'grade' => 'Invalid', // Invalid grade
                     'independence_level' => 1,
                 ],
             ],
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['children.0.age']);
+        $response->assertJsonValidationErrors(['children.0.grade']);
 
-        // Test age too old
+        // Test another invalid grade
         $response = $this->postJson('/onboarding/children', [
             'children' => [
                 [
                     'name' => 'Test Child',
-                    'age' => 26, // Too old
+                    'grade' => '13th', // Invalid grade
                     'independence_level' => 1,
                 ],
             ],
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['children.0.age']);
+        $response->assertJsonValidationErrors(['children.0.grade']);
     }
 
     /** @test */
@@ -107,7 +107,7 @@ class OnboardingChildrenTest extends TestCase
             'children' => [
                 [
                     'name' => 'Test Child',
-                    'age' => 8,
+                    'grade' => '3rd',
                     'independence_level' => 5, // Invalid level
                 ],
             ],
@@ -131,7 +131,7 @@ class OnboardingChildrenTest extends TestCase
         for ($i = 1; $i <= 6; $i++) {
             $children[] = [
                 'name' => "Child $i",
-                'age' => 8,
+                'grade' => '3rd',
                 'independence_level' => 1,
             ];
         }
@@ -152,7 +152,7 @@ class OnboardingChildrenTest extends TestCase
             'children' => [
                 [
                     'name' => 'Test Child',
-                    'age' => 8,
+                    'grade' => '3rd',
                     'independence_level' => 1,
                 ],
             ],
@@ -205,7 +205,7 @@ class OnboardingChildrenTest extends TestCase
 
         // Check for children form fields
         $response->assertSee('child-name-', false);
-        $response->assertSee('child-age-', false);
+        $response->assertSee('child-grade-', false);
         $response->assertSee('child-independence-', false);
     }
 }

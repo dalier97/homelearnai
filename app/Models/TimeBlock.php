@@ -2,33 +2,47 @@
 
 namespace App\Models;
 
-use App\Services\SupabaseClient;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 
-class TimeBlock
+/**
+ * @property int $id
+ * @property int $child_id
+ * @property int $day_of_week
+ * @property string $start_time
+ * @property string $end_time
+ * @property string $label
+ * @property bool $is_imported
+ * @property string $commitment_type
+ * @property string|null $source_uid
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Child $child
+ */
+class TimeBlock extends Model
 {
-    public ?int $id = null;
+    protected $fillable = [
+        'child_id',
+        'day_of_week',
+        'start_time',
+        'end_time',
+        'label',
+        'is_imported',
+        'commitment_type',
+        'source_uid',
+    ];
 
-    public int $child_id;
+    protected $casts = [
+        'day_of_week' => 'integer',
+        'is_imported' => 'boolean',
+    ];
 
-    public int $day_of_week; // 1=Monday, 7=Sunday
-
-    public string $start_time;
-
-    public string $end_time;
-
-    public string $label;
-
-    public bool $is_imported = false;
-
-    public string $commitment_type = 'preferred'; // fixed, preferred, flexible
-
-    public ?string $source_uid = null;
-
-    public ?Carbon $created_at = null;
-
-    public ?Carbon $updated_at = null;
+    protected $attributes = [
+        'is_imported' => false,
+        'commitment_type' => 'preferred',
+    ];
 
     // Day name mapping
     private static array $dayNames = [
@@ -41,101 +55,41 @@ class TimeBlock
         7 => 'Sunday',
     ];
 
-    public function __construct(array $attributes = [])
+    /**
+     * Eloquent relationships
+     */
+    public function child(): BelongsTo
     {
-        foreach ($attributes as $key => $value) {
-            if (property_exists($this, $key)) {
-                if (in_array($key, ['created_at', 'updated_at']) && $value) {
-                    $this->$key = Carbon::parse($value);
-                } else {
-                    $this->$key = $value;
-                }
-            }
-        }
-    }
-
-    public static function find(string $id, SupabaseClient $supabase): ?self
-    {
-        $data = $supabase->from('time_blocks')
-            ->eq('id', $id)
-            ->single();
-
-        return $data ? new self($data) : null;
-    }
-
-    public static function where(string $column, mixed $value, SupabaseClient $supabase): Collection
-    {
-        return $supabase->from('time_blocks')
-            ->eq($column, $value)
-            ->orderBy('day_of_week', 'asc')
-            ->orderBy('start_time', 'asc')
-            ->get()
-            ->map(fn ($item) => new self($item));
-    }
-
-    public static function forChild(int $childId, SupabaseClient $supabase): Collection
-    {
-        return self::where('child_id', $childId, $supabase);
-    }
-
-    public static function forChildAndDay(int $childId, int $dayOfWeek, SupabaseClient $supabase): Collection
-    {
-        return $supabase->from('time_blocks')
-            ->eq('child_id', $childId)
-            ->eq('day_of_week', $dayOfWeek)
-            ->orderBy('start_time', 'asc')
-            ->get()
-            ->map(fn ($item) => new self($item));
-    }
-
-    public function save(SupabaseClient $supabase): bool
-    {
-        $data = [
-            'child_id' => $this->child_id,
-            'day_of_week' => $this->day_of_week,
-            'start_time' => $this->start_time,
-            'end_time' => $this->end_time,
-            'label' => $this->label,
-            'is_imported' => $this->is_imported,
-            'commitment_type' => $this->commitment_type,
-            'source_uid' => $this->source_uid,
-        ];
-
-        if ($this->id) {
-            // Update existing
-            $result = $supabase->from('time_blocks')
-                ->eq('id', $this->id)
-                ->update($data);
-        } else {
-            // Create new
-            $result = $supabase->from('time_blocks')->insert($data);
-            if ($result && isset($result[0]['id'])) {
-                $this->id = $result[0]['id'];
-                $this->created_at = Carbon::now();
-            }
-        }
-
-        return ! empty($result);
-    }
-
-    public function delete(SupabaseClient $supabase): bool
-    {
-        if (! $this->id) {
-            return false;
-        }
-
-        return $supabase->from('time_blocks')
-            ->eq('id', $this->id)
-            ->delete();
+        return $this->belongsTo(Child::class);
     }
 
     /**
-     * Get the child this time block belongs to
+     * Scopes and query methods
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\TimeBlock>
      */
-    public function child(?SupabaseClient $supabase = null): ?Child
+    public static function forChild(int $childId): Collection
     {
-        return Child::find($this->child_id);
+        return self::where('child_id', $childId)
+            ->orderBy('day_of_week', 'asc')
+            ->orderBy('start_time', 'asc')
+            ->get();
     }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\TimeBlock>
+     */
+    public static function forChildAndDay(int $childId, int $dayOfWeek): Collection
+    {
+        return self::where('child_id', $childId)
+            ->where('day_of_week', $dayOfWeek)
+            ->orderBy('start_time', 'asc')
+            ->get();
+    }
+
+    // Note: save() and delete() methods are now handled by Eloquent automatically
+
+    // Relationship defined above using Eloquent belongsTo()
 
     /**
      * Get day name

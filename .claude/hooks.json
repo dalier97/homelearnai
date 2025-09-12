@@ -48,6 +48,32 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "name": "Pre-commit Quality Gate",
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/pre-commit-check.sh",
+            "timeout": 60000
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "name": "Pre-commit Quality Gate (Subagent)",
+        "matcher": "*", 
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/pre-commit-check.sh",
+            "timeout": 60000
+          }
+        ]
+      }
     ]
   }
 }

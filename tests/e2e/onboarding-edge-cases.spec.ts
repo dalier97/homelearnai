@@ -163,7 +163,7 @@ test.describe('Onboarding Edge Cases', () => {
     
     // Step 2 -> 3
     await page.getByTestId('next-button').click();
-    await expect(page.getByTestId('form-success')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('form-success')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('step-3')).toBeVisible({ timeout: 10000 });
     
     // Add a custom subject
@@ -349,7 +349,7 @@ test.describe('Onboarding Edge Cases', () => {
     
     // Submit children form
     await page.getByTestId('next-button').click();
-    await expect(page.getByTestId('form-success')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('form-success')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('step-3')).toBeVisible({ timeout: 10000 });
     
     // Verify all special character names appear correctly
@@ -374,7 +374,7 @@ test.describe('Onboarding Edge Cases', () => {
     
     // Complete onboarding and verify data persistence
     await page.getByTestId('complete-onboarding-button').click();
-    await page.waitForURL('/dashboard', { timeout: 15000 });
+    await page.waitForURL('/dashboard', { timeout: 10000 });
     
     // Verify special characters survived the full process
     await expect(page.locator('text=José María')).toBeVisible();
@@ -497,7 +497,7 @@ test.describe('Onboarding Edge Cases', () => {
     await page.getByTestId('next-button').click();
     
     // Should show server error message
-    await expect(page.getByTestId('form-error')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('form-error')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=server error')).toBeVisible();
     
     // User should still be on step 2 and able to retry

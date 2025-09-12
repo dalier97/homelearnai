@@ -35,7 +35,7 @@ class KidsModeControllerTest extends TestCase
             'id' => 1,
             'user_id' => $this->testUser->id,
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'independence_level' => 2,
             'created_at' => now()->toISOString(),
             'updated_at' => now()->toISOString(),

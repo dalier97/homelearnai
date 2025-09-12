@@ -74,7 +74,7 @@ test.describe('i18n Enhancements - Kids UI Inheritance & Pre-Auth Cookies', () =
     // Try to switch language if switcher is available
     const languageSwitcher = page.locator('[data-testid="language-switcher"], button:has-text("🇬🇧"), button:has-text("English")').first();
     
-    if (await languageSwitcher.isVisible({ timeout: 5000 })) {
+    if (await languageSwitcher.isVisible({ timeout: 10000 })) {
       await languageSwitcher.click();
       await page.waitForTimeout(100);
       
@@ -159,7 +159,7 @@ test.describe('i18n Enhancements - Kids UI Inheritance & Pre-Auth Cookies', () =
       
     } catch (error) {
       // Registration might require email confirmation
-      await page.waitForURL('**/login**', { timeout: 5000 });
+      await page.waitForURL('**/login**', { timeout: 10000 });
       console.log('ℹ️ Registration requires email confirmation - testing login flow instead');
       
       // Try login with the same credentials

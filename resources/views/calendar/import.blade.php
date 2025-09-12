@@ -31,7 +31,7 @@
                             <option value="">{{ __('choose_child_ellipsis') }}</option>
                             @foreach($children as $child)
                                 <option value="{{ $child->id }}" {{ $child->id == $selectedChildId ? 'selected' : '' }}>
-                                    {{ $child->name }} ({{ __('age_years', ['age' => $child->age]) }})
+                                    {{ $child->name }} ({{ $child->grade }} {{ __('Grade') }})
                                 </option>
                             @endforeach
                         </select>

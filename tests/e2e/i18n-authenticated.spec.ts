@@ -169,13 +169,13 @@ test.describe('i18n for Authenticated Users', () => {
     }
     
     // Check English text is visible
-    await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 10000 });
     
     // Switch to Russian
     await changeLanguage(page, 'ru');
     
     // Check Russian text appears (Parent Dashboard in Russian is "Панель родителя")
-    await expect(page.locator('text=Панель родителя').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=Панель родителя').first()).toBeVisible({ timeout: 10000 });
     
     // Check that English text is no longer visible
     const dashboardText = await page.locator('h1, h2, h3, h4, h5, h6').filter({ hasText: /^Dashboard$/ }).count();

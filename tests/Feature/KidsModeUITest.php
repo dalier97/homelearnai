@@ -87,7 +87,7 @@ class KidsModeUITest extends TestCase
         $child = (object) [
             'id' => 1,
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'independence_level' => 2,
         ];
 
@@ -120,7 +120,7 @@ class KidsModeUITest extends TestCase
         $child = (object) [
             'id' => 1,
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'independence_level' => 2,
         ];
 
@@ -153,7 +153,7 @@ class KidsModeUITest extends TestCase
         $child = (object) [
             'id' => 1,
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'independence_level' => 2,
         ];
 
@@ -185,7 +185,7 @@ class KidsModeUITest extends TestCase
         $child = (object) [
             'id' => 1,
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'independence_level' => 2,
         ];
 
@@ -257,7 +257,7 @@ class KidsModeUITest extends TestCase
         $child = (object) [
             'id' => 1,
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'independence_level' => 2,
         ];
 
@@ -289,7 +289,7 @@ class KidsModeUITest extends TestCase
         $child = (object) [
             'id' => 1,
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'independence_level' => 3, // High enough for weekly view normally
         ];
 

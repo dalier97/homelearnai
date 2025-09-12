@@ -52,7 +52,49 @@ class TopicController extends Controller
     /**
      * Show the form for creating a new topic.
      */
-    public function create(Request $request, int $subjectId, int $unitId)
+    public function create(Request $request, string $subject, string $unit)
+    {
+        try {
+            $subjectId = (int) $subject;
+            $unitId = (int) $unit;
+
+            $userId = auth()->id();
+            if (! $userId) {
+                return response('Unauthorized', 401);
+            }
+
+            $subjectModel = Subject::find($subjectId);
+            if (! $subjectModel || $subjectModel->user_id != $userId) {
+                return response('Subject not found', 404);
+            }
+
+            $unitModel = Unit::find($unitId);
+            if (! $unitModel || $unitModel->subject_id !== $subjectId) {
+                return response('Unit not found', 404);
+            }
+
+            if ($request->header('HX-Request')) {
+                return view('topics.partials.create-form', [
+                    'unit' => $unitModel,
+                    'subject' => $subjectModel,
+                ]);
+            }
+
+            return view('topics.create', [
+                'unit' => $unitModel,
+                'subject' => $subjectModel,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error loading topic creation form: '.$e->getMessage());
+
+            return response('Unable to load form.', 500);
+        }
+    }
+
+    /**
+     * Store a newly created topic in storage (unit-specific route).
+     */
+    public function storeForUnit(Request $request, int $unitId)
     {
         try {
             $userId = auth()->id();
@@ -60,25 +102,48 @@ class TopicController extends Controller
                 return response('Unauthorized', 401);
             }
 
-            $subject = Subject::find($subjectId);
-            if (! $subject || $subject->user_id != $userId) {
-                return response('Subject not found', 404);
-            }
-
             $unit = Unit::find($unitId);
-            if (! $unit || $unit->subject_id !== $subjectId) {
+            if (! $unit) {
                 return response('Unit not found', 404);
             }
 
-            if ($request->header('HX-Request')) {
-                return view('topics.partials.create-form', compact('unit', 'subject'));
+            $subject = Subject::find($unit->subject_id);
+            if (! $subject || $subject->user_id != $userId) {
+                return response('Access denied', 403);
             }
 
-            return view('topics.create', compact('unit', 'subject'));
-        } catch (\Exception $e) {
-            Log::error('Error loading topic creation form: '.$e->getMessage());
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'estimated_minutes' => 'required|integer|min:5|max:480',
+                'required' => 'boolean',
+            ]);
 
-            return response('Unable to load form.', 500);
+            // Use 'name' field but store as 'title' in the model
+            $topic = Topic::create([
+                'unit_id' => $unitId,
+                'title' => $validated['name'], // Store name as title
+                'estimated_minutes' => $validated['estimated_minutes'],
+                'required' => $validated['required'] ?? true,
+                'prerequisites' => [], // Empty for now
+            ]);
+
+            if ($request->header('HX-Request')) {
+                // Return updated topics list
+                $topics = Topic::forUnit($unitId);
+
+                return view('topics.partials.topics-list', compact('topics', 'unit', 'subject'));
+            }
+
+            return redirect()->route('subjects.units.show', [$subject->id, $unitId])->with('success', 'Topic created successfully.');
+        } catch (\Exception $e) {
+            Log::error('Error creating topic for unit: '.$e->getMessage());
+
+            if ($request->header('HX-Request')) {
+                return response('<div class="text-red-500">'.__('Error creating topic. Please try again.').'</div>', 500);
+            }
+
+            return back()->withErrors(['error' => 'Unable to create topic. Please try again.']);
         }
     }
 
@@ -126,7 +191,7 @@ class TopicController extends Controller
                 return view('topics.partials.topics-list', compact('topics', 'unit', 'subject'));
             }
 
-            return redirect()->route('units.show', [$subjectId, $unitId])->with('success', 'Topic created successfully.');
+            return redirect()->route('subjects.units.show', [$subjectId, $unitId])->with('success', 'Topic created successfully.');
         } catch (\Exception $e) {
             Log::error('Error creating topic: '.$e->getMessage());
 
@@ -161,7 +226,7 @@ class TopicController extends Controller
 
             $topic = Topic::find($id);
             if (! $topic || $topic->unit_id !== $unitId) {
-                return redirect()->route('units.show', [$subjectId, $unitId])->with('error', 'Topic not found.');
+                return redirect()->route('subjects.units.show', [$subjectId, $unitId])->with('error', 'Topic not found.');
             }
 
             if ($request->header('HX-Request')) {
@@ -172,7 +237,7 @@ class TopicController extends Controller
         } catch (\Exception $e) {
             Log::error('Error fetching topic: '.$e->getMessage());
 
-            return redirect()->route('units.show', [$subjectId, $unitId])->with('error', 'Unable to load topic. Please try again.');
+            return redirect()->route('subjects.units.show', [$subjectId, $unitId])->with('error', 'Unable to load topic. Please try again.');
         }
     }
 
@@ -261,7 +326,7 @@ class TopicController extends Controller
                 return view('topics.partials.topics-list', compact('topics', 'unit', 'subject'));
             }
 
-            return redirect()->route('units.show', [$subjectId, $unitId])->with('success', 'Topic updated successfully.');
+            return redirect()->route('subjects.units.show', [$subjectId, $unitId])->with('success', 'Topic updated successfully.');
         } catch (\Exception $e) {
             Log::error('Error updating topic: '.$e->getMessage());
 
@@ -311,7 +376,7 @@ class TopicController extends Controller
                 return view('topics.partials.topics-list', compact('topics', 'unit', 'subject'));
             }
 
-            return redirect()->route('units.show', [$subjectId, $unitId])->with('success', 'Topic deleted successfully.');
+            return redirect()->route('subjects.units.show', [$subjectId, $unitId])->with('success', 'Topic deleted successfully.');
         } catch (\Exception $e) {
             Log::error('Error deleting topic: '.$e->getMessage());
 

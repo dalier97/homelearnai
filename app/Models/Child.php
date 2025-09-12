@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 /**
  * @property int $id
  * @property string $name
- * @property int $age
+ * @property string $grade
  * @property int $user_id
  * @property int $independence_level
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -28,7 +28,7 @@ class Child extends Model
      */
     protected $fillable = [
         'name',
-        'age',
+        'grade',
         'user_id',
         'independence_level',
     ];
@@ -37,7 +37,7 @@ class Child extends Model
      * The attributes that should be cast.
      */
     protected $casts = [
-        'age' => 'integer',
+        'grade' => 'string',
         'independence_level' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -68,16 +68,10 @@ class Child extends Model
 
     /**
      * Get time blocks for this child.
-     * Note: TimeBlock is still using Supabase pattern, so this provides compatibility
      */
-    public function timeBlocks(?SupabaseClient $supabase = null): Collection
+    public function timeBlocks(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        if (! $supabase) {
-            // Return empty collection if no SupabaseClient provided
-            return collect();
-        }
-
-        return TimeBlock::where('child_id', $this->id, $supabase);
+        return $this->hasMany(TimeBlock::class);
     }
 
     /**
@@ -119,21 +113,60 @@ class Child extends Model
     }
 
     /**
-     * Get age group for appropriate content selection
+     * Get grade group for appropriate content selection
      */
-    public function getAgeGroup(): string
+    public function getGradeGroup(): string
     {
-        if ($this->age <= 5) {
+        return match ($this->grade) {
+            'PK', 'PreK', 'K', 'Kindergarten' => 'preschool',
+            '1st', '2nd', '3rd', '4th', '5th' => 'elementary',
+            '6th', '7th', '8th' => 'middle_school',
+            '9th', '10th', '11th', '12th' => 'high_school',
+            default => $this->getGradeGroupByPattern(),
+        };
+    }
+
+    /**
+     * Get grade group by pattern matching for flexibility
+     */
+    private function getGradeGroupByPattern(): string
+    {
+        $grade = strtolower($this->grade);
+
+        if (str_contains($grade, 'pre') || str_contains($grade, 'pk') || $grade === 'k') {
             return 'preschool';
-        } elseif ($this->age <= 8) {
-            return 'elementary_early';
-        } elseif ($this->age <= 11) {
-            return 'elementary_late';
-        } elseif ($this->age <= 14) {
+        } elseif (str_contains($grade, '1') || str_contains($grade, '2') || str_contains($grade, '3') || str_contains($grade, '4') || str_contains($grade, '5')) {
+            return 'elementary';
+        } elseif (str_contains($grade, '6') || str_contains($grade, '7') || str_contains($grade, '8')) {
             return 'middle_school';
-        } else {
+        } elseif (str_contains($grade, '9') || str_contains($grade, '10') || str_contains($grade, '11') || str_contains($grade, '12')) {
             return 'high_school';
         }
+
+        return 'elementary'; // default fallback
+    }
+
+    /**
+     * Get available grade options
+     */
+    public static function getGradeOptions(): array
+    {
+        return [
+            'PreK' => 'Pre-Kindergarten',
+            'K' => 'Kindergarten',
+            '1st' => '1st Grade',
+            '2nd' => '2nd Grade',
+            '3rd' => '3rd Grade',
+            '4th' => '4th Grade',
+            '5th' => '5th Grade',
+            '6th' => '6th Grade',
+            '7th' => '7th Grade',
+            '8th' => '8th Grade',
+            '9th' => '9th Grade (Freshman)',
+            '10th' => '10th Grade (Sophomore)',
+            '11th' => '11th Grade (Junior)',
+            '12th' => '12th Grade (Senior)',
+        ];
     }
 
     /**
@@ -192,7 +225,7 @@ class Child extends Model
         $array['can_move_sessions_in_week'] = $this->canMoveSessionsInWeek();
         $array['can_propose_weekly_plans'] = $this->canProposeWeeklyPlans();
         $array['is_view_only_mode'] = $this->isViewOnlyMode();
-        $array['age_group'] = $this->getAgeGroup();
+        $array['grade_group'] = $this->getGradeGroup();
 
         // Format timestamps
         if ($this->created_at) {

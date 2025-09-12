@@ -287,14 +287,14 @@
                 @else
                     <div class="space-y-3">
                         @foreach($reviewQueue->take(5) as $review)
-                            @php
-                                $topic = $review->topic(app(App\Services\SupabaseClient::class));
-                                $session = $review->session(app(App\Services\SupabaseClient::class));
-                            @endphp
                             <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-medium text-gray-900 truncate">
-                                        {{ $topic?->name ?? __('unknown_topic') }}
+                                        @if($review->isFlashcardReview())
+                                            {{ $review->flashcard?->question ?? __('Unknown Flashcard') }}
+                                        @else
+                                            {{ $review->topic?->title ?? __('Unknown Topic') }}
+                                        @endif
                                     </p>
                                     <div class="flex items-center mt-1 space-x-2">
                                         <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full {{ $review->getStatusColor() }}">
@@ -513,15 +513,16 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200">
                         @forelse($reviewQueue->take(5) as $review)
-                            @php
-                                $topic = $review->topic(app(App\Services\SupabaseClient::class));
-                            @endphp
                             <tr>
                                 <td class="px-3 py-2 text-sm text-gray-600">
                                     {{ $review->last_reviewed_at?->translatedFormat('M j') ?? __('never') }}
                                 </td>
                                 <td class="px-3 py-2 text-sm font-medium text-gray-900">
-                                    {{ $topic?->name ?? __('unknown_topic') }}
+                                    @if($review->isFlashcardReview())
+                                        {{ $review->flashcard?->question ?? __('Unknown Flashcard') }}
+                                    @else
+                                        {{ $review->topic?->title ?? __('Unknown Topic') }}
+                                    @endif
                                 </td>
                                 <td class="px-3 py-2">
                                     <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full {{ $review->getStatusColor() }}">

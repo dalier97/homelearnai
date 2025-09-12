@@ -9,7 +9,7 @@
                 <p class="text-gray-600 mt-2">{{ $subject->name }} → {{ $unit->title }}</p>
             </div>
             <div>
-                <a href="{{ route('topics.index', ['unit' => $unit->id]) }}" 
+                <a href="{{ route('subjects.units.show', ['subject' => $subject->id, 'unit' => $unit->id]) }}" 
                    class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors">
                     {{ __('Back') }}
                 </a>

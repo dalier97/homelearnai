@@ -1,17 +1,17 @@
 <div x-data="{ open: true }" 
-     x-show="open"
-     x-transition
-     class="fixed inset-0 z-50 overflow-y-auto">
+     data-testid="child-modal-overlay"
+     class="fixed inset-0 z-50 overflow-y-auto"
+     style="display: block !important;">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center">
         <!-- Backdrop -->
-        <div @click="open = false" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div @click="$el.closest('[data-testid=child-modal-overlay]').remove()" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
 
         <!-- Modal -->
         <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative z-10" data-testid="modal-content">
             <form hx-post="{{ isset($child->id) ? route('children.update', $child->id) : route('children.store') }}"
                   hx-target="{{ isset($child->id) ? '#child-' . $child->id : '#children-list' }}"
                   hx-swap="{{ isset($child->id) ? 'outerHTML' : 'innerHTML' }}"
-                  @submit="open = false">
+                  hx-on::after-request="if(event.detail.xhr.status === 200) { $el.closest('[data-testid=child-modal-overlay]').remove(); }">
                 @if(isset($child->id))
                     @method('PUT')
                 @endif
@@ -22,7 +22,7 @@
                         <h3 class="text-lg font-medium text-gray-900">
                             {{ isset($child->id) ? __('edit_child') : __('add_new_child') }}
                         </h3>
-                        <button @click="open = false" type="button" class="text-gray-400 hover:text-gray-500">
+                        <button @click="$el.closest('[data-testid=child-modal-overlay]').remove()" type="button" class="text-gray-400 hover:text-gray-500">
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
@@ -46,28 +46,28 @@
                             @enderror
                         </div>
 
-                        <!-- Age -->
+                        <!-- Grade -->
                         <div>
-                            <label for="age" class="block text-sm font-medium text-gray-700">{{ __('age') }}</label>
+                            <label for="grade" class="block text-sm font-medium text-gray-700">{{ __('grade') }}</label>
                             <select 
-                                name="age" 
-                                id="age"
+                                name="grade" 
+                                id="grade"
                                 required
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">{{ __('select_age') }}</option>
-                                @for($i = 3; $i <= 25; $i++)
-                                    <option value="{{ $i }}" {{ (old('age', $child->age ?? '') == $i) ? 'selected' : '' }}>
-                                        {{ __('years_old', ['age' => $i]) }}
+                                <option value="">{{ __('select_grade') }}</option>
+                                @foreach(\App\Models\Child::getGradeOptions() as $gradeValue => $gradeLabel)
+                                    <option value="{{ $gradeValue }}" {{ (old('grade', $child->grade ?? '') == $gradeValue) ? 'selected' : '' }}>
+                                        {{ $gradeLabel }}
                                     </option>
-                                @endfor
+                                @endforeach
                             </select>
-                            @error('age')
+                            @error('grade')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        <!-- Age Group Info -->
-                        @if(isset($child->age))
+                        <!-- Grade Group Info -->
+                        @if(isset($child->grade))
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
                             <div class="flex">
                                 <svg class="w-5 h-5 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -75,10 +75,10 @@
                                 </svg>
                                 <div class="text-sm">
                                     <p class="text-blue-800 font-medium">
-                                        {{ __('age_group', ['group' => ucfirst(str_replace('_', ' ', $child->getAgeGroup()))]) }}
+                                        {{ __('grade_group', ['group' => ucfirst(str_replace('_', ' ', $child->getGradeGroup()))]) }}
                                     </p>
                                     <p class="text-blue-600 mt-1">
-                                        {{ __('this_will_help_us_suggest_ageappropriate_curriculum_and_learning_activities') }}
+                                        {{ __('this_will_help_us_suggest_gradeappropriate_curriculum_and_learning_activities') }}
                                     </p>
                                 </div>
                             </div>
@@ -120,7 +120,7 @@
 
                 <div class="bg-gray-50 px-6 py-3 flex justify-end space-x-3">
                     <button 
-                        @click="open = false"
+                        @click="$el.closest('[data-testid=child-modal-overlay]').remove()"
                         type="button" 
                         class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                         {{ __('cancel') }}

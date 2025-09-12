@@ -26,7 +26,7 @@
                 <p class="mb-6 text-sm text-gray-600">{{ __('quick_start_description') }}</p>
                 <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                     <p class="text-sm text-blue-700">
-                        {{ __('creating_subjects_for') }} <strong>{{ $child->name }}</strong> ({{ __('age') }} {{ $child->age }})
+                        {{ __('creating_subjects_for') }} <strong>{{ $child->name }}</strong> ({{ __('grade') }} {{ $child->grade }})
                     </p>
                 </div>
 

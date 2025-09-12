@@ -44,7 +44,7 @@
 
                 <!-- Subject Stats -->
                 <div class="text-sm text-gray-600 mb-4">
-                    <p>{{ __('units_count', ['count' => $subject->getUnitCount($supabase ?? app(App\Services\SupabaseClient::class))]) }}</p>
+                    <p>{{ __('units_count', ['count' => $subject->units()->count()]) }}</p>
                     <p class="text-xs text-gray-500">{{ __('created_date', ['date' => $subject->created_at?->translatedFormat('M j, Y') ?? __('recently')]) }}</p>
                 </div>
 

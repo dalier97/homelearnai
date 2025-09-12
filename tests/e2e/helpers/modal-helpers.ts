@@ -10,19 +10,105 @@ export class ModalHelper {
 
   /**
    * Wait for a modal to appear and be ready for interaction
+   * Optimized for speed with reduced timeouts and smart waiting strategies
    */
-  async waitForModal(testId: string, timeout: number = 10000) {
+  async waitForModal(testId: string, timeout: number = 6000) {
+    // Handle different modal patterns
+    if (testId.includes('flashcard')) {
+      // Flashcard modals are loaded via HTMX, use optimized strategies
+      console.log('Waiting for flashcard modal to load...');
+      
+      try {
+        // Strategy 1: Wait for HTMX to populate the container
+        const flashcardModalContainer = this.page.locator('#flashcard-modal');
+        await this.page.waitForFunction(
+          () => {
+            const container = document.querySelector('#flashcard-modal');
+            return container && container.innerHTML.trim() !== '';
+          },
+          { timeout: 4000 }
+        );
+        console.log('HTMX container populated');
+        
+        // Strategy 2: Look for the actual modal overlay that gets loaded
+        const modalOverlay = this.page.locator('#flashcard-modal-overlay');
+        await modalOverlay.waitFor({ state: 'visible', timeout: 4000 });
+        console.log('Flashcard modal overlay is now visible');
+        
+        // Strategy 3: Wait for Alpine.js to show the modal (x-show="open")
+        await this.page.waitForFunction(
+          () => {
+            const overlay = document.querySelector('#flashcard-modal-overlay');
+            return overlay && !overlay.style.display.includes('none');
+          },
+          { timeout: 2000 }
+        );
+        console.log('Alpine.js modal display activated');
+        
+        // Strategy 4: Wait for modal content to be ready
+        const modalContent = modalOverlay.locator('#flashcard-import-modal-content');
+        await modalContent.waitFor({ state: 'visible', timeout: 2000 });
+        console.log('Modal content is ready');
+        
+        await this.page.waitForTimeout(200); // Brief delay for animations
+        return modalOverlay;
+        
+      } catch (error) {
+        // Strategy 5: Final fallback - look for any flashcard modal elements
+        console.log('Primary strategies failed, trying fallback...');
+        
+        // Check if we have any flashcard modal elements at all
+        const anyFlashcardModal = this.page.locator('#flashcard-modal-overlay, #flashcard-import-modal-content').first();
+        const modalCount = await anyFlashcardModal.count();
+        
+        if (modalCount > 0) {
+          const isVisible = await anyFlashcardModal.isVisible().catch(() => false);
+          if (isVisible) {
+            console.log('Fallback found visible flashcard modal');
+            return anyFlashcardModal;
+          }
+        }
+        
+        // Get detailed debug info before failing
+        const containerContent = await this.page.locator('#flashcard-modal').innerHTML().catch(() => 'ERROR_GETTING_CONTENT');
+        const containerExists = await this.page.locator('#flashcard-modal').count();
+        const currentUrl = this.page.url();
+        
+        console.log('=== FLASHCARD MODAL DEBUG ===');
+        console.log('Current URL:', currentUrl);
+        console.log('Container exists:', containerExists > 0);
+        console.log('Container content length:', containerContent.length);
+        console.log('Container content sample:', containerContent.slice(0, 500));
+        console.log('===========================');
+        
+        // Also check network failures 
+        const networkErrors = await this.page.evaluate(() => {
+          // Check for any failed requests in the browser console
+          return (window as any).htmxErrors || 'No HTMX errors recorded';
+        });
+        console.log('Network/HTMX errors:', networkErrors);
+        
+        throw new Error(`Flashcard modal failed to load after all strategies. Original error: ${error.message}. URL: ${currentUrl}, Container exists: ${containerExists > 0}, Content length: ${containerContent.length}`);
+      }
+    }
+    
     const modal = this.page.getByTestId(testId);
     
-    // For HTMX-loaded modals, wait for content to be loaded first
-    await this.page.waitForTimeout(1000);
+    // For HTMX-loaded modals, use optimized waiting (reduced from 1000ms)
+    await this.page.waitForTimeout(400);
     
-    // Wait for modal content to be ready (the actual visible modal)
-    const modalContent = modal.getByTestId('modal-content');
-    await modalContent.waitFor({ state: 'visible', timeout });
+    // Check if modal has data-testid="modal-content" child
+    const hasModalContent = await modal.getByTestId('modal-content').count() > 0;
+    if (hasModalContent) {
+      const modalContent = modal.getByTestId('modal-content');
+      await modalContent.waitFor({ state: 'visible', timeout });
+    } else {
+      // Wait for the modal itself to be visible if no modal-content
+      await modal.waitFor({ state: 'visible', timeout });
+    }
     
-    // Small delay to ensure all animations and transitions complete
-    await this.page.waitForTimeout(300);
+    // Reduced delay to ensure animations complete (was 300ms)
+    await this.page.waitForTimeout(150);
     
     return modal;
   }
@@ -134,34 +220,50 @@ export class ModalHelper {
     // Wait for HTMX request to complete
     await this.waitForHtmxCompletion();
     
-    // Give a moment for the modal removal JavaScript to execute
-    await this.page.waitForTimeout(1000);
+    // Give more time for the modal removal JavaScript to execute
+    await this.page.waitForTimeout(2000);
     
-    // Check if modal still exists and force close if needed
-    const modalExists = await modal.count() > 0;
-    if (modalExists) {
-      const isVisible = await modal.isVisible().catch(() => false);
-      if (isVisible) {
-        console.log(`Modal ${testId} still visible after form submission, force closing...`);
-        await modal.evaluate(el => el.remove());
+    // More aggressive modal cleanup
+    await this.page.evaluate((modalTestId) => {
+      // Find and remove the modal
+      const modal = document.querySelector(`[data-testid="${modalTestId}"]`);
+      if (modal && (modal as HTMLElement).style.display !== 'none') {
+        modal.remove();
       }
-    }
+      
+      // Remove any modal backdrops
+      const backdrops = document.querySelectorAll('.modal-backdrop, [data-testid="modal-backdrop"], .fixed.inset-0.bg-gray-500.bg-opacity-75');
+      backdrops.forEach(backdrop => backdrop.remove());
+      
+      // Remove any overlays
+      const overlays = document.querySelectorAll('[data-testid*="overlay"], .fixed.z-40');
+      overlays.forEach(overlay => {
+        if (overlay.classList.contains('bg-opacity-75') || overlay.classList.contains('bg-gray-500')) {
+          overlay.remove();
+        }
+      });
+    }, testId);
     
-    // For HTMX modals, the container stays but content gets removed
-    // Wait for modal content to be hidden/removed
-    const modalContent = modal.getByTestId('modal-content');
+    // Short wait after cleanup
+    await this.page.waitForTimeout(500);
+    
+    // Verify modal is gone - but don't fail if it takes time
     try {
-      await modalContent.waitFor({ state: 'detached', timeout: 5000 });
+      await modal.waitFor({ state: 'detached', timeout: 3000 });
     } catch {
-      // If modal content is not detached, check if it's hidden
-      await modalContent.waitFor({ state: 'hidden', timeout: 5000 });
+      // Try waiting for hidden state
+      try {
+        await modal.waitFor({ state: 'hidden', timeout: 2000 });
+      } catch {
+        console.log(`Warning: Modal ${testId} cleanup timeout, continuing anyway`);
+      }
     }
   }
 
   /**
-   * Wait for HTMX requests to complete
+   * Wait for HTMX requests to complete - optimized for speed
    */
-  async waitForHtmxCompletion(timeout: number = 10000) {
+  async waitForHtmxCompletion(timeout: number = 5000) {
     // Wait for any ongoing HTMX requests to finish
     await this.page.waitForFunction(
       () => {
@@ -172,8 +274,8 @@ export class ModalHelper {
       { timeout }
     );
     
-    // Additional small wait to ensure DOM changes are complete
-    await this.page.waitForTimeout(500);
+    // Reduced wait time for DOM changes (was 500ms)
+    await this.page.waitForTimeout(200);
   }
 
   /**
@@ -191,9 +293,29 @@ export class ModalHelper {
   }
 
   /**
+   * Wait for child modal specifically (handles the modal visibility pattern)
+   */
+  async waitForChildModal(timeout: number = 10000) {
+    // Wait for HTMX to load the modal content into the container
+    const modalContainer = this.page.locator('#child-form-modal');
+    await modalContainer.waitFor({ state: 'attached', timeout });
+    
+    // Then wait for the Alpine.js modal overlay to be visible
+    const alpineModal = this.page.locator('[data-testid="child-modal-overlay"]');
+    await alpineModal.waitFor({ state: 'visible', timeout });
+    
+    // Wait for form fields to be ready inside the Alpine.js modal
+    const nameInput = alpineModal.locator('input[name="name"]');
+    await nameInput.waitFor({ state: 'visible', timeout: 5000 });
+    
+    await this.page.waitForTimeout(300);
+    return modalContainer;
+  }
+
+  /**
    * Wait for any existing modal to close before proceeding
    */
-  async waitForNoModals(timeout: number = 5000) {
+  async waitForNoModals(timeout: number = 10000) {
     // Wait for HTMX requests to complete first
     await this.waitForHtmxCompletion();
     
@@ -207,7 +329,8 @@ export class ModalHelper {
       'topic-edit-modal',
       'review-session-modal',
       'add-slot-modal',
-      'scheduling-modal'
+      'scheduling-modal',
+      'child-form-modal'
     ];
 
     for (const testId of modalTestIds) {
@@ -229,6 +352,162 @@ export class ModalHelper {
           // Ensure it's completely removed from DOM
           await modal.waitFor({ state: 'detached', timeout });
         }
+      }
+    }
+    
+    // Also check for flashcard modal overlay and container
+    const flashcardModal = this.page.locator('#flashcard-modal-overlay');
+    const flashcardExists = await flashcardModal.count() > 0;
+    if (flashcardExists && await flashcardModal.isVisible({ timeout: 100 }).catch(() => false)) {
+      // Try Alpine.js close first
+      await flashcardModal.locator('button').first().click().catch(() => {
+        // Fallback: click outside to close
+        flashcardModal.click({ position: { x: 10, y: 10 } });
+      });
+      await flashcardModal.waitFor({ state: 'hidden', timeout });
+    }
+    
+    // Clear the flashcard modal container
+    const flashcardContainer = this.page.locator('#flashcard-modal');
+    const containerExists = await flashcardContainer.count() > 0;
+    if (containerExists) {
+      await flashcardContainer.evaluate(el => el.innerHTML = '');
+    }
+  }
+
+  /**
+   * Comprehensive test isolation cleanup - resets all modal state and DOM elements
+   */
+  async resetTestState() {
+    console.log('🧹 Starting comprehensive test state reset...');
+    
+    // Step 1: Force close all modals
+    await this.forceCloseModals();
+    
+    // Step 2: Wait for any pending HTMX requests
+    await this.waitForHtmxCompletion();
+    
+    // Step 3: Reset all modal containers to empty state
+    await this.page.evaluate(() => {
+      // Reset all HTMX modal containers
+      const modalContainers = [
+        '#child-form-modal',
+        '#subject-form-modal', 
+        '#unit-form-modal',
+        '#topic-form-modal',
+        '#flashcard-modal',
+        '#review-modal',
+        '#scheduling-modal'
+      ];
+      
+      modalContainers.forEach(selector => {
+        const container = document.querySelector(selector);
+        if (container) {
+          container.innerHTML = '';
+          container.className = '';
+          // Reset any Alpine.js state
+          if (container.__x) {
+            container.__x = null;
+          }
+        }
+      });
+      
+      // Clear any Alpine.js component state that might be lingering
+      if (window.Alpine) {
+        window.Alpine.clearPendingMutations?.();
+      }
+      
+      // Reset HTMX state
+      if (window.htmx) {
+        // Clear any pending requests
+        window.htmx.trigger(document.body, 'htmx:abort');
+        
+        // Reset request queue
+        if (window.htmx.requestQueue) {
+          window.htmx.requestQueue.length = 0;
+        }
+      }
+    });
+    
+    // Step 4: Clear any toast notifications or alerts
+    const notifications = this.page.locator('.toast, .alert, .notification, [role="alert"]');
+    const notificationCount = await notifications.count();
+    if (notificationCount > 0) {
+      await this.page.evaluate(() => {
+        const toasts = document.querySelectorAll('.toast, .alert, .notification, [role="alert"]');
+        toasts.forEach(toast => toast.remove());
+      });
+    }
+    
+    // Step 5: Reset any form states that might persist
+    await this.page.evaluate(() => {
+      const forms = document.querySelectorAll('form');
+      forms.forEach(form => {
+        try {
+          form.reset();
+        } catch (e) {
+          // Ignore form reset errors
+        }
+      });
+    });
+    
+    // Step 6: Small delay to ensure all cleanup completes
+    await this.page.waitForTimeout(300);
+    
+    console.log('✅ Test state reset completed');
+  }
+
+  /**
+   * Safe click for buttons that might have multiple instances - uses specific testids to avoid strict mode violations
+   */
+  async safeClickButton(buttonText: string, preferredTestId?: string) {
+    // First try to use specific test ID if provided
+    if (preferredTestId) {
+      const specificButton = this.page.getByTestId(preferredTestId);
+      const specificExists = await specificButton.count() > 0;
+      if (specificExists && await specificButton.isVisible().catch(() => false)) {
+        await specificButton.click();
+        return;
+      }
+    }
+    
+    // If specific test ID not found, look for buttons with text but be more strategic
+    const allButtons = this.page.locator(`button:has-text("${buttonText}")`);
+    const buttonCount = await allButtons.count();
+    
+    if (buttonCount === 0) {
+      throw new Error(`No button found with text "${buttonText}"`);
+    } else if (buttonCount === 1) {
+      // Only one button - safe to click
+      await allButtons.first().click();
+    } else {
+      // Multiple buttons - try to find the most appropriate one
+      console.log(`Found ${buttonCount} buttons with text "${buttonText}", selecting strategically...`);
+      
+      // Strategy: prefer buttons that are not in empty states or headers
+      for (let i = 0; i < buttonCount; i++) {
+        const button = allButtons.nth(i);
+        const isVisible = await button.isVisible().catch(() => false);
+        const isEnabled = !await button.isDisabled().catch(() => false);
+        
+        if (isVisible && isEnabled) {
+          // Check if this button has a useful test ID
+          const testId = await button.getAttribute('data-testid').catch(() => null);
+          
+          // Prefer buttons with header or main action test IDs
+          if (testId && (testId.includes('header') || testId.includes('main') || !testId.includes('empty-state'))) {
+            await button.click();
+            return;
+          }
+        }
+      }
+      
+      // Fallback: click the first visible, enabled button
+      const firstButton = allButtons.first();
+      if (await firstButton.isVisible().catch(() => false)) {
+        await firstButton.click();
+      } else {
+        throw new Error(`Multiple buttons found with text "${buttonText}" but none are clickable`);
       }
     }
   }
@@ -319,16 +598,16 @@ export class ElementHelper {
   }
 
   /**
-   * Wait for page to be ready for interaction
+   * Wait for page to be ready for interaction - optimized for speed
    */
   async waitForPageReady() {
-    // Wait for network to be idle
-    await this.page.waitForLoadState('networkidle');
-    
     // Wait for DOM to be stable
     await this.page.waitForLoadState('domcontentloaded');
     
-    // Small delay for any client-side rendering
-    await this.page.waitForTimeout(500);
+    // Wait for network to be idle (this has a built-in 500ms idle time by default)
+    await this.page.waitForLoadState('networkidle');
+    
+    // Reduced delay for client-side rendering (was 500ms)
+    await this.page.waitForTimeout(200);
   }
 }

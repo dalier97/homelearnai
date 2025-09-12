@@ -106,7 +106,7 @@ test.describe('Internationalization (i18n)', () => {
     const languageSwitcher = page.locator('[data-testid="language-switcher"], button:has-text("🇬🇧"), button:has-text("English")').first();
     
     // If language switcher is found, test it
-    if (await languageSwitcher.isVisible({ timeout: 5000 })) {
+    if (await languageSwitcher.isVisible({ timeout: 10000 })) {
       // Click the language switcher
       await languageSwitcher.click();
       
@@ -116,7 +116,7 @@ test.describe('Internationalization (i18n)', () => {
       // Look for Russian option
       const russianOption = page.locator('button:has-text("🇷🇺"), button:has-text("Русский"), [data-testid="language-option-ru"]').first();
       
-      if (await russianOption.isVisible({ timeout: 5000 })) {
+      if (await russianOption.isVisible({ timeout: 10000 })) {
         // Click Russian option
         await russianOption.click();
         
@@ -177,7 +177,7 @@ test.describe('Internationalization (i18n)', () => {
     // Try to switch language if switcher is available
     const languageSwitcher = page.locator('[data-testid="language-switcher"], button:has-text("🇬🇧"), button:has-text("English")').first();
     
-    if (await languageSwitcher.isVisible({ timeout: 5000 })) {
+    if (await languageSwitcher.isVisible({ timeout: 10000 })) {
       await languageSwitcher.click();
       await page.waitForTimeout(100);
       

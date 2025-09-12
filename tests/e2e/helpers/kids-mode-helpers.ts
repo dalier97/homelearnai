@@ -607,7 +607,7 @@ export class KidsModeHelper {
       for (const selector of modalSelectors) {
         modal = this.page.locator(selector);
         try {
-          await expect(modal).toBeVisible({ timeout: 5000 });
+          await expect(modal).toBeVisible({ timeout: 10000 });
           console.log(`Modal found with selector: ${selector}`);
           break;
         } catch {
@@ -1116,9 +1116,7 @@ export class KidsModeHelper {
       if (await addChildBtn.count() === 0) {
         addChildBtn = this.page.getByTestId('empty-state-add-child-btn');
       }
-      if (await addChildBtn.count() === 0) {
-        addChildBtn = this.page.locator('button:has-text("Add Child")').first();
-      }
+      // Removed fallback to avoid strict mode violation - specific data-testids should work
       if (await addChildBtn.count() > 0) {
         await addChildBtn.click();
         console.log('Add child button clicked in onboarding');
@@ -1130,7 +1128,7 @@ export class KidsModeHelper {
       await this.page.selectOption('select[name="independence_level"]', '2'); // Default independence level
       
       // Submit the child form
-      await this.page.click('button[type="submit"]:has-text("Add Child"), button:has-text("Add")');
+      await this.page.click('button[type="submit"]');
       console.log('Child form submitted in onboarding');
       
       // Wait for child to be added

@@ -10,12 +10,9 @@ use Illuminate\Support\Facades\Session;
 
 class LocaleController extends Controller
 {
-    private SupabaseClient $supabase;
-
-    public function __construct(SupabaseClient $supabase)
-    {
-        $this->supabase = $supabase;
-    }
+    public function __construct(
+        private SupabaseClient $supabase
+    ) {}
 
     /**
      * Generate a unique guest ID for non-authenticated users

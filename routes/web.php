@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ChildController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FlashcardController;
+use App\Http\Controllers\FlashcardPreviewController;
 use App\Http\Controllers\IcsImportController;
 use App\Http\Controllers\KidsModeController;
 use App\Http\Controllers\LocaleController;
@@ -17,299 +18,190 @@ use App\Http\Controllers\TopicController;
 use App\Http\Controllers\UnitController;
 use Illuminate\Support\Facades\Route;
 
-// Public routes
 Route::get('/', function () {
+    // If user is authenticated, redirect to dashboard
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+
+    // Otherwise, redirect to login page
     return redirect()->route('login');
 });
 
-// Legacy Supabase Authentication routes (for transition period)
-// These routes are prefixed to avoid conflicts with Breeze routes
-Route::prefix('auth/supabase')->name('supabase.')->middleware('guest')->group(function () {
-    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
+// Dashboard routes
+Route::middleware(['auth'])->group(function () {
+    // Main dashboard redirects to parent dashboard
+    Route::get('/dashboard', [DashboardController::class, 'parentDashboard'])->name('dashboard');
 
-    // Email confirmation callback from Supabase
-    Route::get('/confirm', [AuthController::class, 'confirmEmail'])->name('confirm');
+    // Parent dashboard
+    Route::get('/dashboard/parent', [DashboardController::class, 'parentDashboard'])->name('dashboard.parent');
+
+    // Child dashboard routes
+    Route::get('/dashboard/child/{child}/today', [DashboardController::class, 'childToday'])->name('dashboard.child.today');
+    Route::get('/dashboard/child-today/{child_id?}', [DashboardController::class, 'childToday'])->name('dashboard.child-today');
+
+    // Dashboard actions
+    Route::post('/dashboard/bulk-complete-today', [DashboardController::class, 'bulkCompleteToday'])->name('dashboard.bulk-complete-today');
+    Route::put('/dashboard/child/{child}/independence-level', [DashboardController::class, 'updateIndependenceLevel'])->name('dashboard.independence-level');
 });
 
-// Locale routes (available to both guests and authenticated users)
-// These MUST be web routes (not API prefix) to have session support
-Route::post('/locale/update', [LocaleController::class, 'updateLocale'])->name('locale.update');
-Route::get('/translations/{locale}', [LocaleController::class, 'getTranslations'])->name('locale.translations');
-Route::get('/locales', [LocaleController::class, 'getAvailableLocales'])->name('locale.available');
-
-// Legacy locale routes for backward compatibility
-Route::post('/locale/session', [LocaleController::class, 'updateSessionLocale'])->name('locale.session');
-
-// Test route for debugging database issues
-Route::get('/debug/subject/{id}', function ($id) {
-    try {
-        \Log::info('Debug route: Testing database query', ['id' => $id]);
-
-        // Test 1: Raw database query
-        $raw = \DB::select('SELECT * FROM subjects WHERE id = ?', [$id]);
-        \Log::info('Debug route: Raw query result', ['result' => $raw]);
-
-        // Test 2: Query builder
-        $builder = \DB::table('subjects')->where('id', $id)->first();
-        \Log::info('Debug route: Query builder result', ['result' => $builder]);
-
-        // Test 3: Direct parent::find (bypassing custom find)
-        $parent = \App\Models\Subject::query()->find((int) $id);
-        \Log::info('Debug route: Parent find result', ['result' => $parent]);
-
-        return response()->json([
-            'raw' => $raw,
-            'builder' => $builder,
-            'parent' => $parent,
-        ]);
-    } catch (\Exception $e) {
-        \Log::error('Debug route error', ['exception' => $e->getMessage()]);
-
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-});
-
-// Protected routes - using Laravel native auth middleware
+// Authentication middleware for all protected routes
 Route::middleware('auth')->group(function () {
-    // Legacy Supabase logout route (for transition period)
-    Route::post('/auth/supabase/logout', [AuthController::class, 'logout'])->name('supabase.logout');
-
-    // Legacy user locale route for backward compatibility
-    Route::post('/locale/user', [LocaleController::class, 'updateUserLocale'])->name('locale.user');
-
-    // Profile management routes (Laravel Breeze)
+    // Profile routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Onboarding routes
-    Route::prefix('onboarding')->name('onboarding.')->group(function () {
-        Route::get('/', [OnboardingController::class, 'index'])->name('index')->middleware('redirect-if-onboarding-completed');
-        Route::post('/children', [OnboardingController::class, 'saveChildren'])->name('children');
-        Route::post('/subjects', [OnboardingController::class, 'saveSubjects'])->name('subjects');
-        Route::post('/complete', [OnboardingController::class, 'complete'])->name('complete');
-        Route::post('/skip', [OnboardingController::class, 'skip'])->name('skip');
+    Route::get('/onboarding', [OnboardingController::class, 'index'])->name('onboarding.index');
+    Route::get('/onboarding/children', [OnboardingController::class, 'children'])->name('onboarding.children');
+    Route::get('/onboarding/subjects', [OnboardingController::class, 'subjects'])->name('onboarding.subjects');
+    Route::post('/onboarding/child', [OnboardingController::class, 'storeChild'])->name('onboarding.child.store');
+    Route::post('/onboarding/subjects', [OnboardingController::class, 'storeSubjects'])->name('onboarding.subjects.store');
+    Route::post('/onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
+    Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
+
+    // Children management
+    Route::resource('children', ChildController::class);
+
+    // Subjects management
+    Route::resource('subjects', SubjectController::class);
+    Route::get('/subjects/quick-start/form', [SubjectController::class, 'quickStartForm'])->name('subjects.quick-start.form');
+    Route::post('/subjects/quick-start', [SubjectController::class, 'quickStartStore'])->name('subjects.quick-start.store');
+    Route::get('/subjects/{subject}/units/create', [UnitController::class, 'create'])->name('units.create');
+    Route::post('/subjects/{subject}/units', [UnitController::class, 'store'])->name('subjects.units.store');
+
+    // Units management (subject-scoped and direct)
+    Route::get('/subjects/{subject}/units', [UnitController::class, 'index'])->name('subjects.units.index');
+    Route::get('/subjects/{subject}/units/{unit}', [UnitController::class, 'show'])->name('subjects.units.show');
+    Route::get('/subjects/{subject}/units/{unit}/edit', [UnitController::class, 'edit'])->name('subjects.units.edit');
+    Route::put('/subjects/{subject}/units/{unit}', [UnitController::class, 'update'])->name('subjects.units.update');
+    Route::delete('/subjects/{subject}/units/{unit}', [UnitController::class, 'destroy'])->name('subjects.units.destroy');
+
+    // Direct unit routes for compatibility
+    Route::get('/units/{unit}', [UnitController::class, 'showDirect'])->name('units.show');
+    Route::get('/units/{unit}/edit', [UnitController::class, 'editDirect'])->name('units.edit');
+    Route::put('/units/{unit}', [UnitController::class, 'updateDirect'])->name('units.update');
+    Route::delete('/units/{unit}', [UnitController::class, 'destroyDirect'])->name('units.destroy');
+
+    // Topics management
+    Route::resource('topics', TopicController::class);
+    Route::get('/subjects/{subject}/units/{unit}/topics/create', [TopicController::class, 'create'])->name('topics.create');
+    Route::post('/units/{unit}/topics', [TopicController::class, 'storeForUnit'])->name('units.topics.store');
+    Route::get('/units/{unit}/topics/{topic}', [TopicController::class, 'show'])->name('units.topics.show');
+
+    // Planning board
+    Route::get('/planning', [PlanningController::class, 'index'])->name('planning.index');
+    Route::get('/planning/sessions/create', [PlanningController::class, 'createSession'])->name('planning.create-session');
+    Route::post('/planning/sessions', [PlanningController::class, 'createSession'])->name('planning.sessions.store');
+    Route::patch('/planning/sessions/{sessionId}/status', [PlanningController::class, 'updateSessionStatus'])->name('planning.sessions.status');
+    Route::patch('/planning/sessions/{sessionId}/schedule', [PlanningController::class, 'scheduleSession'])->name('planning.sessions.schedule');
+    Route::patch('/planning/sessions/{sessionId}/unschedule', [PlanningController::class, 'unscheduleSession'])->name('planning.sessions.unschedule');
+    Route::patch('/planning/sessions/{sessionId}/commitment-type', [PlanningController::class, 'updateSessionCommitmentType'])->name('planning.sessions.commitment-type');
+    Route::get('/planning/sessions/{sessionId}/skip-modal', [PlanningController::class, 'showSkipDayModal'])->name('planning.sessions.skip-modal');
+    Route::post('/planning/sessions/{sessionId}/skip', [PlanningController::class, 'skipSessionDay'])->name('planning.sessions.skip');
+    Route::get('/planning/sessions/{sessionId}/reschedule-suggestions', [PlanningController::class, 'getSchedulingSuggestions'])->name('planning.sessions.reschedule-suggestions');
+    Route::post('/planning/catch-up/redistribute', [PlanningController::class, 'redistributeCatchUp'])->name('planning.catch-up.redistribute');
+    Route::patch('/planning/catch-up/{catchUpId}/priority', [PlanningController::class, 'updateCatchUpPriority'])->name('planning.catch-up.priority');
+
+    // Calendar and ICS import
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::get('/calendar/create', [CalendarController::class, 'create'])->name('calendar.create');
+    Route::get('/calendar/import', [IcsImportController::class, 'index'])->name('calendar.import');
+    Route::post('/calendar/import/file', [IcsImportController::class, 'importFile'])->name('calendar.import.file');
+    Route::post('/calendar/import/url', [IcsImportController::class, 'importUrl'])->name('calendar.import.url');
+    Route::get('/calendar/import/help', [IcsImportController::class, 'help'])->name('calendar.import.help');
+
+    // Reviews system
+    Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+    Route::get('/reviews/{child}/session', [ReviewController::class, 'startSession'])->name('reviews.session');
+    Route::get('/reviews/{reviewId}/show', [ReviewController::class, 'show'])->name('reviews.show');
+    Route::post('/reviews/{reviewId}/result', [ReviewController::class, 'processResult'])->name('reviews.process');
+    Route::post('/reviews/{reviewId}/flashcard-result', [ReviewController::class, 'processFlashcardResult'])->name('reviews.flashcard.process');
+    Route::post('/reviews/session/{sessionId}/complete', [ReviewController::class, 'completeSession'])->name('reviews.session.complete');
+
+    // Review slots management
+    Route::get('/reviews/child/{childId}/slots', [ReviewController::class, 'manageSlots'])->name('reviews.slots');
+    Route::post('/reviews/slots', [ReviewController::class, 'storeSlot'])->name('reviews.slots.store');
+    Route::put('/reviews/slots/{slotId}', [ReviewController::class, 'updateSlot'])->name('reviews.slots.update');
+    Route::delete('/reviews/slots/{slotId}', [ReviewController::class, 'destroySlot'])->name('reviews.slots.destroy');
+    Route::patch('/reviews/slots/{slotId}/toggle', [ReviewController::class, 'toggleSlot'])->name('reviews.slots.toggle');
+
+    // Flashcards system - Unit-scoped routes
+    Route::get('/units/{unit}/flashcards', [FlashcardController::class, 'unitIndex'])->name('units.flashcards.index');
+    Route::get('/units/{unitId}/flashcards/list', [FlashcardController::class, 'listView'])->name('units.flashcards.list');
+    Route::get('/units/{unitId}/flashcards/create', [FlashcardController::class, 'create'])->name('units.flashcards.create');
+    Route::post('/units/{unitId}/flashcards', [FlashcardController::class, 'storeView'])->name('units.flashcards.store');
+    Route::get('/units/{unitId}/flashcards/{flashcardId}', [FlashcardController::class, 'show'])->name('units.flashcards.show');
+    Route::get('/units/{unitId}/flashcards/{flashcardId}/edit', [FlashcardController::class, 'edit'])->name('units.flashcards.edit');
+    Route::put('/units/{unitId}/flashcards/{flashcardId}', [FlashcardController::class, 'updateView'])->name('units.flashcards.update');
+    Route::delete('/units/{unitId}/flashcards/{flashcardId}', [FlashcardController::class, 'destroyView'])->name('units.flashcards.destroy');
+
+    // Flashcard bulk operations
+    Route::patch('/units/{unitId}/flashcards/bulk-status', [FlashcardController::class, 'bulkUpdateStatus'])->name('units.flashcards.bulk-status');
+    Route::get('/units/{unitId}/flashcards/type/{cardType}', [FlashcardController::class, 'getByType'])->name('units.flashcards.by-type');
+    Route::post('/units/{unitId}/flashcards/{flashcardId}/restore', [FlashcardController::class, 'restore'])->name('units.flashcards.restore');
+    Route::delete('/units/{unitId}/flashcards/{flashcardId}/force', [FlashcardController::class, 'forceDestroy'])->name('units.flashcards.force-destroy');
+
+    // Flashcard import/export
+    Route::get('/units/{unitId}/flashcards/import/show', [FlashcardController::class, 'showImport'])->name('units.flashcards.import.show');
+    Route::post('/units/{unitId}/flashcards/import/preview', [FlashcardController::class, 'previewImport'])->name('units.flashcards.import.preview');
+    Route::post('/units/{unitId}/flashcards/import/execute', [FlashcardController::class, 'executeImport'])->name('units.flashcards.import.execute');
+    Route::get('/units/{unitId}/flashcards/import/advanced', [FlashcardController::class, 'showAdvancedImportModal'])->name('units.flashcards.import.advanced');
+    Route::post('/units/{unitId}/flashcards/import/duplicates/resolve', [FlashcardController::class, 'resolveDuplicates'])->name('units.flashcards.import.resolve-duplicates');
+    Route::get('/units/{unitId}/flashcards/import/history', [FlashcardController::class, 'getImportHistory'])->name('units.flashcards.import.history');
+    Route::post('/flashcards/import/{importId}/rollback', [FlashcardController::class, 'rollbackImport'])->name('flashcards.import.rollback');
+
+    Route::get('/units/{unitId}/flashcards/export/show', [FlashcardController::class, 'showExportOptions'])->name('units.flashcards.export.show');
+    Route::post('/units/{unitId}/flashcards/export/preview', [FlashcardController::class, 'exportPreview'])->name('units.flashcards.export.preview');
+    Route::post('/units/{unitId}/flashcards/export/download', [FlashcardController::class, 'downloadExport'])->name('units.flashcards.export.download');
+    Route::get('/units/{unitId}/flashcards/export/bulk', [FlashcardController::class, 'bulkExportSelection'])->name('units.flashcards.export.bulk');
+    Route::get('/units/{unitId}/flashcards/export/stats', [FlashcardController::class, 'exportStats'])->name('units.flashcards.export.stats');
+
+    Route::get('/units/{unitId}/flashcards/print/show', [FlashcardController::class, 'showPrintOptions'])->name('units.flashcards.print.show');
+    Route::post('/units/{unitId}/flashcards/print/preview', [FlashcardController::class, 'printPreview'])->name('units.flashcards.print.preview');
+    Route::post('/units/{unitId}/flashcards/print/download', [FlashcardController::class, 'downloadPDF'])->name('units.flashcards.print.download');
+    Route::get('/units/{unitId}/flashcards/print/bulk', [FlashcardController::class, 'bulkPrintSelection'])->name('units.flashcards.print.bulk');
+
+    // Flashcard preview (for parents only - no database impact)
+    Route::get('/units/{unit}/flashcards/preview/start', [FlashcardPreviewController::class, 'startPreview'])->name('units.flashcards.preview.start');
+    Route::get('/preview/session/{sessionId}/next', [FlashcardPreviewController::class, 'getNextCard'])->name('flashcards.preview.next');
+    Route::post('/preview/session/{sessionId}/answer', [FlashcardPreviewController::class, 'submitAnswer'])->name('flashcards.preview.answer');
+    Route::get('/preview/session/{sessionId}/end', [FlashcardPreviewController::class, 'endPreview'])->name('flashcards.preview.end');
+    Route::get('/preview/session/{sessionId}/status', [FlashcardPreviewController::class, 'getSessionStatus'])->name('flashcards.preview.status');
+
+    // Flashcard search and performance
+    Route::get('/units/{unitId}/flashcards/search', [FlashcardController::class, 'search'])->name('units.flashcards.search');
+    Route::get('/units/{unitId}/flashcards/performance', [FlashcardController::class, 'performanceMetrics'])->name('units.flashcards.performance');
+    Route::get('/units/{unitId}/flashcards/errors', [FlashcardController::class, 'errorStatistics'])->name('units.flashcards.errors');
+
+    // API Routes for JSON responses (used by tests and API consumers)
+    Route::prefix('api')->group(function () {
+        Route::get('/units/{unitId}/flashcards', [FlashcardController::class, 'index'])->name('api.units.flashcards.index');
+        Route::post('/units/{unitId}/flashcards', [FlashcardController::class, 'store'])->name('api.units.flashcards.store');
+        Route::get('/units/{unitId}/flashcards/{flashcardId}', [FlashcardController::class, 'show'])->name('api.units.flashcards.show');
+        Route::put('/units/{unitId}/flashcards/{flashcardId}', [FlashcardController::class, 'update'])->name('api.units.flashcards.update');
+        Route::delete('/units/{unitId}/flashcards/{flashcardId}', [FlashcardController::class, 'destroy'])->name('api.units.flashcards.destroy');
+        Route::patch('/units/{unitId}/flashcards/bulk-status', [FlashcardController::class, 'bulkUpdateStatus'])->name('api.units.flashcards.bulk-status');
+        Route::get('/units/{unitId}/flashcards/type/{cardType}', [FlashcardController::class, 'getByType'])->name('api.units.flashcards.by-type');
+        Route::post('/units/{unitId}/flashcards/{flashcardId}/restore', [FlashcardController::class, 'restore'])->name('api.units.flashcards.restore');
+        Route::delete('/units/{unitId}/flashcards/{flashcardId}/force', [FlashcardController::class, 'forceDestroy'])->name('api.units.flashcards.force-destroy');
     });
 
-    // Dashboard routes - Parent/Child Views (Milestone 5)
-    // Main dashboard (redirect to parent view) - blocked in kids mode
-    Route::get('/dashboard', [DashboardController::class, 'parentDashboard'])
-        ->name('dashboard')
-        ->middleware('not-in-kids-mode');
+    // Tasks (legacy/fallback)
+    Route::resource('tasks', TaskController::class);
 
-    Route::prefix('dashboard')->name('dashboard.')->group(function () {
-        // Parent dashboard (explicit) - blocked in kids mode
-        Route::get('/parent', [DashboardController::class, 'parentDashboard'])
-            ->name('parent')
-            ->middleware('not-in-kids-mode');
+    // Kids Mode
+    Route::get('/kids-mode/setup', [KidsModeController::class, 'showPinSettings'])->name('kids-mode.setup');
+    Route::get('/kids-mode/settings', [KidsModeController::class, 'showPinSettings'])->name('kids-mode.settings');
+    Route::post('/kids-mode/setup', [KidsModeController::class, 'updatePin'])->name('kids-mode.pin.update');
+    Route::post('/kids-mode/reset-pin', [KidsModeController::class, 'resetPin'])->name('kids-mode.pin.reset');
+    Route::post('/kids-mode/{child}/enter', [KidsModeController::class, 'enterKidsMode'])->name('kids-mode.enter');
+    Route::get('/kids-mode/exit', [KidsModeController::class, 'showExitScreen'])->name('kids-mode.exit');
+    Route::post('/kids-mode/exit', [KidsModeController::class, 'validateExitPin'])->name('kids-mode.exit.validate');
 
-        // Child today view with access control
-        Route::get('/child/{child_id}/today', [DashboardController::class, 'childToday'])
-            ->name('child-today')
-            ->middleware(\App\Http\Middleware\ChildAccess::class);
-
-        // Parent one-click actions - blocked in kids mode
-        Route::post('/skip-day', [DashboardController::class, 'skipDay'])
-            ->name('skip-day')
-            ->middleware('not-in-kids-mode');
-        Route::post('/move-theme', [DashboardController::class, 'moveTheme'])
-            ->name('move-theme')
-            ->middleware('not-in-kids-mode');
-        Route::post('/bulk-complete-today', [DashboardController::class, 'bulkCompleteToday'])
-            ->name('bulk-complete-today')
-            ->middleware('not-in-kids-mode');
-
-        // Session management - allow completion and reordering in kids mode
-        Route::post('/sessions/{sessionId}/complete', [DashboardController::class, 'completeSession'])->name('sessions.complete');
-        Route::post('/child/{childId}/reorder-today', [DashboardController::class, 'reorderTodaySessions'])->name('reorder-today');
-
-        // Advanced session management - blocked in kids mode
-        Route::put('/sessions/move-in-week', [DashboardController::class, 'moveSessionInWeek'])
-            ->name('move-session-in-week')
-            ->middleware('not-in-kids-mode');
-
-        // Independence level management - blocked in kids mode
-        Route::put('/child/{childId}/independence-level', [DashboardController::class, 'updateIndependenceLevel'])
-            ->name('independence-level')
-            ->middleware('not-in-kids-mode');
-    });
-
-    // Children management routes - all blocked in kids mode
-    Route::prefix('children')->name('children.')->middleware('not-in-kids-mode')->group(function () {
-        Route::get('/', [ChildController::class, 'index'])->name('index');
-        Route::get('/create', [ChildController::class, 'create'])->name('create');
-        Route::post('/', [ChildController::class, 'store'])->name('store');
-        Route::get('/{id}', [ChildController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [ChildController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [ChildController::class, 'update'])->name('update');
-        Route::delete('/{id}', [ChildController::class, 'destroy'])->name('destroy');
-    });
-
-    // Calendar/Time Block management routes - all blocked in kids mode
-    Route::prefix('calendar')->name('calendar.')->middleware('not-in-kids-mode')->group(function () {
-        Route::get('/', [CalendarController::class, 'index'])->name('index');
-        Route::get('/create', [CalendarController::class, 'create'])->name('create');
-        Route::post('/', [CalendarController::class, 'store'])->name('store');
-        Route::get('/{id}/edit', [CalendarController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [CalendarController::class, 'update'])->name('update');
-        Route::delete('/{id}', [CalendarController::class, 'destroy'])->name('destroy');
-
-        // ICS Import routes (Milestone 6)
-        Route::get('/import', [IcsImportController::class, 'index'])->name('import');
-        Route::post('/import/preview', [IcsImportController::class, 'preview'])->name('import.preview');
-        Route::post('/import/file', [IcsImportController::class, 'import'])->name('import.file');
-        Route::post('/import/url', [IcsImportController::class, 'importUrl'])->name('import.url');
-        Route::get('/import/help', [IcsImportController::class, 'help'])->name('import.help');
-    });
-
-    // Planning Board routes - all blocked in kids mode
-    Route::prefix('planning')->name('planning.')->middleware('not-in-kids-mode')->group(function () {
-        Route::get('/', [PlanningController::class, 'index'])->name('index');
-        Route::get('/create-session', [PlanningController::class, 'createSession'])->name('create-session');
-        Route::post('/sessions', [PlanningController::class, 'createSession'])->name('sessions.store');
-        Route::put('/sessions/{id}/status', [PlanningController::class, 'updateSessionStatus'])->name('sessions.status');
-        Route::get('/sessions/{id}/schedule', [PlanningController::class, 'scheduleSession'])->name('sessions.schedule');
-        Route::put('/sessions/{id}/schedule', [PlanningController::class, 'scheduleSession'])->name('sessions.schedule.store');
-        Route::put('/sessions/{id}/unschedule', [PlanningController::class, 'unscheduleSession'])->name('sessions.unschedule');
-        Route::delete('/sessions/{id}', [PlanningController::class, 'deleteSession'])->name('sessions.destroy');
-
-        // Milestone 3: Flexible Scheduling Routes
-        Route::get('/skip-day-modal/{id}', [PlanningController::class, 'showSkipDayModal'])->name('skip-day-modal');
-        Route::post('/sessions/{id}/skip-day', [PlanningController::class, 'skipSessionDay'])->name('sessions.skip-day');
-        Route::put('/sessions/{id}/commitment-type', [PlanningController::class, 'updateSessionCommitmentType'])->name('sessions.commitment-type');
-        Route::get('/sessions/{id}/scheduling-suggestions', [PlanningController::class, 'getSchedulingSuggestions'])->name('scheduling-suggestions');
-
-        // Catch-up session routes
-        Route::post('/redistribute-catchup', [PlanningController::class, 'redistributeCatchUp'])->name('redistribute-catchup');
-        Route::put('/catch-up/{id}/priority', [PlanningController::class, 'updateCatchUpPriority'])->name('catch-up.priority');
-        Route::delete('/catch-up/{id}', [PlanningController::class, 'deleteCatchUpSession'])->name('catch-up.delete');
-
-        // Capacity analysis
-        Route::get('/capacity-analysis', [PlanningController::class, 'getCapacityAnalysis'])->name('capacity-analysis');
-
-        // Quality heuristics analysis (Milestone 6)
-        Route::get('/quality-analysis', [PlanningController::class, 'getQualityAnalysis'])->name('quality-analysis');
-    });
-
-    // Review System routes (Milestone 4)
-    Route::prefix('reviews')->name('reviews.')->group(function () {
-        // Allow basic review functionality in kids mode (read-only for child)
-        Route::get('/', [ReviewController::class, 'index'])->name('index');
-        Route::get('/session/{childId}', [ReviewController::class, 'startSession'])->name('session');
-        Route::post('/process/{reviewId}', [ReviewController::class, 'processResult'])->name('process');
-        Route::get('/review/{reviewId}', [ReviewController::class, 'show'])->name('show');
-        Route::post('/complete/{sessionId}', [ReviewController::class, 'completeSession'])->name('complete');
-
-        // Review slots management - blocked in kids mode (parent-only)
-        Route::middleware('not-in-kids-mode')->group(function () {
-            Route::get('/slots/{childId}', [ReviewController::class, 'manageSlots'])->name('slots');
-            Route::post('/slots', [ReviewController::class, 'storeSlot'])->name('slots.store');
-            Route::put('/slots/{id}', [ReviewController::class, 'updateSlot'])->name('slots.update');
-            Route::delete('/slots/{id}', [ReviewController::class, 'destroySlot'])->name('slots.destroy');
-            Route::put('/slots/{id}/toggle', [ReviewController::class, 'toggleSlot'])->name('slots.toggle');
-        });
-    });
-
-    // Subject management routes
-    Route::prefix('subjects')->name('subjects.')->group(function () {
-        // Allow viewing subjects in kids mode
-        Route::get('/', [SubjectController::class, 'index'])->name('index');
-
-        // Block creation and editing in kids mode (parent-only)
-        // IMPORTANT: Define specific routes BEFORE wildcard {id} routes
-        Route::middleware('not-in-kids-mode')->group(function () {
-            Route::get('/create', [SubjectController::class, 'create'])->name('create');
-            Route::post('/', [SubjectController::class, 'store'])->name('store');
-            Route::get('/quick-start', [SubjectController::class, 'quickStartForm'])->name('quick-start.form');
-            Route::post('/quick-start', [SubjectController::class, 'quickStartStore'])->name('quick-start.store');
-            Route::get('/{id}/edit', [SubjectController::class, 'edit'])->name('edit');
-            Route::put('/{id}', [SubjectController::class, 'update'])->name('update');
-            Route::delete('/{id}', [SubjectController::class, 'destroy'])->name('destroy');
-        });
-
-        // Wildcard route MUST come AFTER specific routes
-        Route::get('/{id}', [SubjectController::class, 'show'])->name('show');
-    });
-
-    // Unit management routes (nested under subjects)
-    Route::prefix('subjects/{subjectId}/units')->name('units.')->group(function () {
-        // Allow viewing units in kids mode
-        Route::get('/', [UnitController::class, 'index'])->name('index');
-
-        // Block creation and editing in kids mode (parent-only)
-        // IMPORTANT: Define specific routes BEFORE wildcard {id} routes
-        Route::middleware('not-in-kids-mode')->group(function () {
-            Route::get('/create', [UnitController::class, 'create'])->name('create');
-            Route::post('/', [UnitController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [UnitController::class, 'edit'])->name('edit');
-            Route::put('/{id}', [UnitController::class, 'update'])->name('update');
-            Route::delete('/{id}', [UnitController::class, 'destroy'])->name('destroy');
-        });
-
-        // Wildcard route MUST come AFTER specific routes
-        Route::get('/{id}', [UnitController::class, 'show'])->name('show');
-    });
-
-    // Topic management routes (nested under subjects/units)
-    Route::prefix('subjects/{subjectId}/units/{unitId}/topics')->name('topics.')->group(function () {
-        // Allow viewing topics in kids mode
-        Route::get('/', [TopicController::class, 'index'])->name('index');
-
-        // Block creation and editing in kids mode (parent-only)
-        // IMPORTANT: Define specific routes BEFORE wildcard {id} routes
-        Route::middleware('not-in-kids-mode')->group(function () {
-            Route::get('/create', [TopicController::class, 'create'])->name('create');
-            Route::post('/', [TopicController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [TopicController::class, 'edit'])->name('edit');
-            Route::put('/{id}', [TopicController::class, 'update'])->name('update');
-            Route::delete('/{id}', [TopicController::class, 'destroy'])->name('destroy');
-        });
-
-        // Wildcard route MUST come AFTER specific routes
-        Route::get('/{id}', [TopicController::class, 'show'])->name('show');
-    });
-
-    // Task routes (keeping original task functionality)
-    Route::prefix('tasks')->name('tasks.')->group(function () {
-        // Allow viewing and toggling tasks in kids mode
-        Route::get('/', [TaskController::class, 'index'])->name('index');
-        Route::post('/{id}/toggle', [TaskController::class, 'toggle'])->name('toggle');
-
-        // Block creation and editing in kids mode (parent-only)
-        Route::middleware('not-in-kids-mode')->group(function () {
-            Route::get('/create', [TaskController::class, 'create'])->name('create');
-            Route::post('/', [TaskController::class, 'store'])->name('store');
-            Route::get('/{id}/edit', [TaskController::class, 'edit'])->name('edit');
-            Route::put('/{id}', [TaskController::class, 'update'])->name('update');
-            Route::delete('/{id}', [TaskController::class, 'destroy'])->name('destroy');
-        });
-    });
-
-    // Kids Mode management routes
-    Route::prefix('kids-mode')->name('kids-mode.')->group(function () {
-        // Enter kids mode for specific child - blocked in kids mode (prevents re-entry)
-        Route::post('/enter/{child_id}', [KidsModeController::class, 'enterKidsMode'])
-            ->name('enter')
-            ->middleware('not-in-kids-mode');
-
-        // Exit kids mode - PIN validation (always accessible)
-        Route::get('/exit', [KidsModeController::class, 'showExitScreen'])->name('exit');
-        Route::post('/exit', [KidsModeController::class, 'validateExitPin'])->name('exit.validate');
-        Route::get('/exit-test', function () {
-            return view('kids-mode.exit-test');
-        })->name('exit-test');
-
-        // PIN management for parents - blocked in kids mode
-        Route::middleware('not-in-kids-mode')->group(function () {
-            Route::get('/settings/pin', [KidsModeController::class, 'showPinSettings'])->name('settings');
-            Route::post('/settings/pin', [KidsModeController::class, 'updatePin'])->name('pin.update');
-            Route::post('/settings/pin/reset', [KidsModeController::class, 'resetPin'])->name('pin.reset');
-        });
-    });
+    // Locale switching
+    Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
 });
 
-// Include Laravel Breeze auth routes
 require __DIR__.'/auth.php';

@@ -23,14 +23,14 @@ class QualityHeuristicsService
         $suggestions = [];
 
         // Get child's current schedule
-        $sessions = Session::forChild($child->id, $this->supabase)
+        $sessions = Session::forChild($child->id)
             ->where('status', 'scheduled');
-        $timeBlocks = $child->timeBlocks($this->supabase);
+        $timeBlocks = $child->timeBlocks;
 
-        // Age-based validation
-        $ageValidation = $this->validateAgeAppropriateScheduling($child, $sessions, $timeBlocks);
-        $warnings = array_merge($warnings, $ageValidation['warnings']);
-        $suggestions = array_merge($suggestions, $ageValidation['suggestions']);
+        // Grade-based validation
+        $gradeValidation = $this->validateGradeAppropriateScheduling($child, $sessions, $timeBlocks);
+        $warnings = array_merge($warnings, $gradeValidation['warnings']);
+        $suggestions = array_merge($suggestions, $gradeValidation['suggestions']);
 
         // Cognitive load validation
         $cognitiveValidation = $this->validateCognitiveLoad($child, $sessions);
@@ -63,15 +63,15 @@ class QualityHeuristicsService
     }
 
     /**
-     * Validate age-appropriate scheduling
+     * Validate grade-appropriate scheduling
      */
-    private function validateAgeAppropriateScheduling(Child $child, Collection $sessions, Collection $timeBlocks): array
+    private function validateGradeAppropriateScheduling(Child $child, Collection $sessions, Collection $timeBlocks): array
     {
         $warnings = [];
         $suggestions = [];
 
-        $age = $child->age;
-        $recommendedLimits = $this->getAgeBasedLimits($age);
+        $grade = $child->grade;
+        $recommendedLimits = $this->getGradeBasedLimits($grade);
 
         // Session length validation
         $longSessions = $sessions->filter(function ($session) use ($recommendedLimits) {
@@ -82,7 +82,7 @@ class QualityHeuristicsService
             $warnings[] = [
                 'type' => 'long_sessions',
                 'severity' => 'medium',
-                'message' => "Found {$longSessions->count()} session(s) longer than recommended {$recommendedLimits['max_session_minutes']} minutes for age {$age}",
+                'message' => "Found {$longSessions->count()} session(s) longer than recommended {$recommendedLimits['max_session_minutes']} minutes for grade {$grade}",
                 'affected_sessions' => $longSessions->pluck('id')->toArray(),
             ];
 
@@ -100,7 +100,7 @@ class QualityHeuristicsService
                 $warnings[] = [
                     'type' => 'daily_overload',
                     'severity' => 'high',
-                    'message' => "Day {$this->getDayName($dayOfWeek)} has {$minutes} minutes of sessions, exceeding recommended {$recommendedLimits['max_daily_minutes']} minutes for age {$age}",
+                    'message' => "Day {$this->getDayName($dayOfWeek)} has {$minutes} minutes of sessions, exceeding recommended {$recommendedLimits['max_daily_minutes']} minutes for grade {$grade}",
                     'day_of_week' => $dayOfWeek,
                     'minutes' => $minutes,
                 ];
@@ -108,7 +108,7 @@ class QualityHeuristicsService
         }
 
         // Early morning sessions for young kids
-        if ($age <= 8) {
+        if ($this->isEarlyGrade($grade)) {
             $earlyMorningSessions = $timeBlocks->filter(function ($block) {
                 $startTime = Carbon::createFromFormat('H:i:s', $block->start_time);
 
@@ -119,20 +119,20 @@ class QualityHeuristicsService
                 $warnings[] = [
                     'type' => 'early_morning',
                     'severity' => 'low',
-                    'message' => "Young children (age {$age}) may struggle with sessions before 9:00 AM",
+                    'message' => "Young children (grade {$grade}) may struggle with sessions before 9:00 AM",
                     'affected_blocks' => $earlyMorningSessions->pluck('id')->toArray(),
                 ];
             }
         }
 
         // Concentration span recommendations
-        if ($age <= 12) {
+        if ($this->isElementaryOrEarlier($grade)) {
             $backToBackSessions = $this->findBackToBackSessions($sessions, $timeBlocks);
             if (! empty($backToBackSessions)) {
                 $warnings[] = [
                     'type' => 'back_to_back_sessions',
                     'severity' => 'medium',
-                    'message' => "Found back-to-back sessions which may be too demanding for age {$age}",
+                    'message' => "Found back-to-back sessions which may be too demanding for grade {$grade}",
                     'affected_sessions' => $backToBackSessions,
                 ];
 
@@ -219,8 +219,8 @@ class QualityHeuristicsService
         $warnings = [];
         $suggestions = [];
 
-        $age = $child->age;
-        $limits = $this->getAgeBasedLimits($age);
+        $grade = $child->grade;
+        $limits = $this->getGradeBasedLimits($grade);
         $totalWeeklyMinutes = $sessions->sum('estimated_minutes');
 
         // Weekly overload
@@ -228,7 +228,7 @@ class QualityHeuristicsService
             $warnings[] = [
                 'type' => 'weekly_overload',
                 'severity' => 'high',
-                'message' => "Total weekly learning time ({$totalWeeklyMinutes} minutes) exceeds recommended maximum ({$limits['max_weekly_minutes']} minutes) for age {$age}",
+                'message' => "Total weekly learning time ({$totalWeeklyMinutes} minutes) exceeds recommended maximum ({$limits['max_weekly_minutes']} minutes) for grade {$grade}",
                 'total_minutes' => $totalWeeklyMinutes,
                 'recommended_max' => $limits['max_weekly_minutes'],
             ];
@@ -329,41 +329,43 @@ class QualityHeuristicsService
     }
 
     /**
-     * Get age-based scheduling limits
+     * Get grade-based scheduling limits
      */
-    private function getAgeBasedLimits(int $age): array
+    private function getGradeBasedLimits(string $grade): array
     {
         // Based on educational research and homeschool guidelines
-        return match (true) {
-            $age <= 6 => [
+        $gradeGroup = $this->getGradeGroupFromGrade($grade);
+
+        return match ($gradeGroup) {
+            'preschool' => [
                 'max_session_minutes' => 20,
                 'max_daily_minutes' => 90,
                 'max_weekly_minutes' => 450,
                 'min_weekly_minutes' => 180,
             ],
-            $age <= 9 => [
-                'max_session_minutes' => 30,
-                'max_daily_minutes' => 150,
-                'max_weekly_minutes' => 750,
-                'min_weekly_minutes' => 300,
-            ],
-            $age <= 12 => [
+            'elementary' => [
                 'max_session_minutes' => 45,
                 'max_daily_minutes' => 240,
                 'max_weekly_minutes' => 1200,
                 'min_weekly_minutes' => 450,
             ],
-            $age <= 15 => [
+            'middle_school' => [
                 'max_session_minutes' => 60,
                 'max_daily_minutes' => 360,
                 'max_weekly_minutes' => 1800,
                 'min_weekly_minutes' => 600,
             ],
-            default => [
+            'high_school' => [
                 'max_session_minutes' => 90,
                 'max_daily_minutes' => 480,
                 'max_weekly_minutes' => 2400,
                 'min_weekly_minutes' => 900,
+            ],
+            default => [
+                'max_session_minutes' => 45,
+                'max_daily_minutes' => 240,
+                'max_weekly_minutes' => 1200,
+                'min_weekly_minutes' => 450,
             ],
         };
     }
@@ -455,85 +457,94 @@ class QualityHeuristicsService
      */
     public function getSchedulingRecommendations(Child $child): array
     {
-        $age = $child->age;
-        $limits = $this->getAgeBasedLimits($age);
+        $grade = $child->grade;
+        $limits = $this->getGradeBasedLimits($grade);
 
         return [
-            'age_group' => $this->getAgeGroupName($age),
+            'grade_group' => $this->getGradeGroupName($grade),
             'recommended_session_length' => $limits['max_session_minutes'],
             'recommended_daily_minutes' => $limits['max_daily_minutes'],
             'recommended_weekly_minutes' => $limits['max_weekly_minutes'],
-            'optimal_times' => $this->getOptimalLearningTimes($age),
-            'break_recommendations' => $this->getBreakRecommendations($age),
-            'subject_sequencing' => $this->getSubjectSequencingTips($age),
+            'optimal_times' => $this->getOptimalLearningTimes($grade),
+            'break_recommendations' => $this->getBreakRecommendations($grade),
+            'subject_sequencing' => $this->getSubjectSequencingTips($grade),
         ];
     }
 
     /**
-     * Get age group name
+     * Get grade group name
      */
-    private function getAgeGroupName(int $age): string
+    private function getGradeGroupName(string $grade): string
     {
-        return match (true) {
-            $age <= 6 => 'Early Elementary',
-            $age <= 9 => 'Elementary',
-            $age <= 12 => 'Middle Elementary',
-            $age <= 15 => 'Middle School',
-            default => 'High School',
+        $gradeGroup = $this->getGradeGroupFromGrade($grade);
+
+        return match ($gradeGroup) {
+            'preschool' => 'Pre-K/Kindergarten',
+            'elementary' => 'Elementary (1st-5th)',
+            'middle_school' => 'Middle School (6th-8th)',
+            'high_school' => 'High School (9th-12th)',
+            default => 'Elementary',
         };
     }
 
     /**
-     * Get optimal learning times for age
+     * Get optimal learning times for grade
      */
-    private function getOptimalLearningTimes(int $age): array
+    private function getOptimalLearningTimes(string $grade): array
     {
-        if ($age <= 8) {
-            return [
+        $gradeGroup = $this->getGradeGroupFromGrade($grade);
+
+        return match ($gradeGroup) {
+            'preschool' => [
                 'best' => '9:00 AM - 11:00 AM',
                 'good' => '2:00 PM - 3:00 PM',
                 'avoid' => 'Before 8:30 AM, After 4:00 PM',
-            ];
-        } elseif ($age <= 12) {
-            return [
+            ],
+            'elementary' => [
                 'best' => '9:00 AM - 12:00 PM',
                 'good' => '1:00 PM - 3:00 PM',
                 'avoid' => 'Before 8:00 AM, After 5:00 PM',
-            ];
-        } else {
-            return [
+            ],
+            'middle_school', 'high_school' => [
                 'best' => '9:00 AM - 12:00 PM, 2:00 PM - 4:00 PM',
                 'good' => '8:00 AM - 9:00 AM, 1:00 PM - 2:00 PM',
                 'flexible' => 'Can adapt to individual preferences',
-            ];
-        }
+            ],
+            default => [
+                'best' => '9:00 AM - 12:00 PM',
+                'good' => '1:00 PM - 3:00 PM',
+                'avoid' => 'Before 8:00 AM, After 5:00 PM',
+            ],
+        };
     }
 
     /**
      * Get break recommendations
      */
-    private function getBreakRecommendations(int $age): array
+    private function getBreakRecommendations(string $grade): array
     {
-        return match (true) {
-            $age <= 6 => [
+        $gradeGroup = $this->getGradeGroupFromGrade($grade);
+
+        return match ($gradeGroup) {
+            'preschool' => [
                 'frequency' => 'Every 15-20 minutes',
                 'duration' => '5-10 minutes',
                 'type' => 'Movement breaks, stretching, free play',
             ],
-            $age <= 9 => [
-                'frequency' => 'Every 20-30 minutes',
-                'duration' => '10-15 minutes',
-                'type' => 'Physical activity, snack breaks, outdoor time',
-            ],
-            $age <= 12 => [
+            'elementary' => [
                 'frequency' => 'Every 30-45 minutes',
                 'duration' => '10-15 minutes',
                 'type' => 'Exercise, social interaction, creative activities',
             ],
-            default => [
+            'middle_school', 'high_school' => [
                 'frequency' => 'Every 45-60 minutes',
                 'duration' => '15-30 minutes',
                 'type' => 'Physical activity, meals, self-directed time',
+            ],
+            default => [
+                'frequency' => 'Every 30-45 minutes',
+                'duration' => '10-15 minutes',
+                'type' => 'Exercise, social interaction, creative activities',
             ],
         };
     }
@@ -541,7 +552,7 @@ class QualityHeuristicsService
     /**
      * Get subject sequencing tips
      */
-    private function getSubjectSequencingTips(int $age): array
+    private function getSubjectSequencingTips(string $grade): array
     {
         return [
             'morning_priority' => 'Math, Science, intensive reading',
@@ -549,5 +560,39 @@ class QualityHeuristicsService
             'energy_management' => 'Start with most challenging subjects when energy is highest',
             'variety_importance' => 'Alternate between subjects requiring different types of thinking',
         ];
+    }
+
+    /**
+     * Get grade group from grade string
+     */
+    private function getGradeGroupFromGrade(string $grade): string
+    {
+        return match ($grade) {
+            'PK', 'PreK', 'K', 'Kindergarten' => 'preschool',
+            '1st', '2nd', '3rd', '4th', '5th' => 'elementary',
+            '6th', '7th', '8th' => 'middle_school',
+            '9th', '10th', '11th', '12th' => 'high_school',
+            default => 'elementary',
+        };
+    }
+
+    /**
+     * Check if grade is early/young
+     */
+    private function isEarlyGrade(string $grade): bool
+    {
+        $gradeGroup = $this->getGradeGroupFromGrade($grade);
+
+        return in_array($gradeGroup, ['preschool', 'elementary']);
+    }
+
+    /**
+     * Check if grade is elementary or earlier
+     */
+    private function isElementaryOrEarlier(string $grade): bool
+    {
+        $gradeGroup = $this->getGradeGroupFromGrade($grade);
+
+        return in_array($gradeGroup, ['preschool', 'elementary']);
     }
 }

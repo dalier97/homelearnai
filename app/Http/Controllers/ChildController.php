@@ -37,7 +37,7 @@ class ChildController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'age' => 'required|integer|min:3|max:25',
+            'grade' => 'required|string|in:PreK,K,1st,2nd,3rd,4th,5th,6th,7th,8th,9th,10th,11th,12th',
             'independence_level' => 'integer|min:1|max:4',
         ]);
 
@@ -113,7 +113,7 @@ class ChildController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'age' => 'required|integer|min:3|max:25',
+            'grade' => 'required|string|in:PreK,K,1st,2nd,3rd,4th,5th,6th,7th,8th,9th,10th,11th,12th',
             'independence_level' => 'integer|min:1|max:4',
         ]);
 

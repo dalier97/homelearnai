@@ -49,15 +49,23 @@ supabase status  # Should show PostgreSQL on port 54322
 ```
 
 #### **PHP Unit Tests (100% Working)**
+
+⚠️ **WARNING**: PHP tests use `RefreshDatabase` trait which **WIPES THE DATABASE**! 
+Always use `APP_ENV=testing` to protect your development data.
+
 ```bash
-# Run PHP tests with correct environment (REQUIRED FORMAT)
+# SAFE: Use the safe test runner (RECOMMENDED)
+./scripts/safe-test.sh                    # Automatically uses test database
+./scripts/safe-test.sh --filter TestName  # Run specific test safely
+
+# OR manually specify environment (REQUIRED FORMAT)
 APP_ENV=testing DB_CONNECTION=pgsql SESSION_DRIVER=file CACHE_STORE=array php artisan test
 
 # Run specific test
 APP_ENV=testing DB_CONNECTION=pgsql SESSION_DRIVER=file CACHE_STORE=array php artisan test --filter TestName
 ```
 
-**Note**: Environment variables MUST be explicitly set to avoid SQLite cache issues.
+**Note**: Environment variables MUST be explicitly set to use the test database (`learning_app_test`) instead of your development database (`learning_app`).
 
 #### **E2E Tests (Infrastructure Working)**
 ```bash

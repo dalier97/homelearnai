@@ -159,7 +159,7 @@ return [
         'description' => 'description',
         'estimated_duration' => 'estimated duration',
         'target_completion_date' => 'target completion date',
-        'age' => 'age',
+        'grade' => 'grade',
         'independence_level' => 'independence level',
         'start_time' => 'start time',
         'end_time' => 'end time',

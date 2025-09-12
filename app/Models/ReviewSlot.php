@@ -2,174 +2,124 @@
 
 namespace App\Models;
 
-use App\Services\SupabaseClient;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ReviewSlot
+/**
+ * @property int $id
+ * @property int $child_id
+ * @property int $day_of_week
+ * @property string $start_time
+ * @property string $end_time
+ * @property string $slot_type
+ * @property bool $is_active
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property-read \App\Models\Child $child
+ */
+class ReviewSlot extends Model
 {
-    public ?int $id = null;
+    protected $fillable = [
+        'child_id',
+        'day_of_week',
+        'start_time',
+        'end_time',
+        'slot_type',
+        'is_active',
+    ];
 
-    public int $child_id;
+    protected $casts = [
+        'day_of_week' => 'integer',
+        'is_active' => 'boolean',
+    ];
 
-    public int $day_of_week; // 1-7 for Monday-Sunday
+    protected $attributes = [
+        'slot_type' => 'micro',
+        'is_active' => true,
+    ];
 
-    public string $start_time; // HH:mm:ss format
-
-    public string $end_time; // HH:mm:ss format
-
-    public string $slot_type = 'micro'; // micro, standard
-
-    public bool $is_active = true;
-
-    public ?Carbon $created_at = null;
-
-    public ?Carbon $updated_at = null;
-
-    public function __construct(array $attributes = [])
+    /**
+     * Eloquent relationships
+     */
+    public function child(): BelongsTo
     {
-        foreach ($attributes as $key => $value) {
-            if (property_exists($this, $key)) {
-                if (in_array($key, ['created_at', 'updated_at']) && $value) {
-                    $this->$key = Carbon::parse($value);
-                } elseif ($key === 'is_active') {
-                    $this->$key = $value === 'true' || $value === '1' || $value === true || $value === 1;
-                } else {
-                    $this->$key = $value;
-                }
-            }
-        }
+        return $this->belongsTo(Child::class);
     }
 
-    public static function find(string $id, SupabaseClient $supabase): ?self
+    /**
+     * Scopes and query methods
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\ReviewSlot>
+     */
+    public static function forChild(int $childId): Collection
     {
-        $data = $supabase->from('review_slots')
-            ->eq('id', $id)
-            ->single();
-
-        return $data ? new self($data) : null;
-    }
-
-    public static function where(string $column, mixed $value, SupabaseClient $supabase): Collection
-    {
-        return $supabase->from('review_slots')
-            ->eq($column, $value)
+        return self::where('child_id', $childId)
             ->orderBy('day_of_week', 'asc')
             ->orderBy('start_time', 'asc')
-            ->get()
-            ->map(fn ($item) => new self($item));
+            ->get();
     }
 
-    public static function forChild(int $childId, SupabaseClient $supabase): Collection
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\ReviewSlot>
+     */
+    public static function forChildAndDay(int $childId, int $dayOfWeek): Collection
     {
-        return self::where('child_id', $childId, $supabase);
-    }
-
-    public static function forChildAndDay(int $childId, int $dayOfWeek, SupabaseClient $supabase): Collection
-    {
-        return $supabase->from('review_slots')
-            ->eq('child_id', $childId)
-            ->eq('day_of_week', $dayOfWeek)
-            ->eq('is_active', true)
+        return self::where('child_id', $childId)
+            ->where('day_of_week', $dayOfWeek)
+            ->where('is_active', true)
             ->orderBy('start_time', 'asc')
-            ->get()
-            ->map(fn ($item) => new self($item));
+            ->get();
     }
 
     /**
      * Get today's review slots for a child
      */
-    public static function getTodaySlots(int $childId, SupabaseClient $supabase): Collection
+    public static function getTodaySlots(int $childId): Collection
     {
         $todayDayOfWeek = Carbon::now()->dayOfWeekIso; // 1=Monday, 7=Sunday
 
-        return self::forChildAndDay($childId, $todayDayOfWeek, $supabase);
+        return self::forChildAndDay($childId, $todayDayOfWeek);
     }
 
     /**
      * Get active slots for current time
      */
-    public static function getCurrentActiveSlots(int $childId, SupabaseClient $supabase): Collection
+    public static function getCurrentActiveSlots(int $childId): Collection
     {
         $now = Carbon::now();
         $currentTime = $now->format('H:i:s');
         $dayOfWeek = $now->dayOfWeekIso;
 
-        return $supabase->from('review_slots')
-            ->eq('child_id', $childId)
-            ->eq('day_of_week', $dayOfWeek)
-            ->eq('is_active', true)
-            ->lte('start_time', $currentTime)
-            ->gte('end_time', $currentTime)
-            ->get()
-            ->map(fn ($item) => new self($item));
+        return self::where('child_id', $childId)
+            ->where('day_of_week', $dayOfWeek)
+            ->where('is_active', true)
+            ->where('start_time', '<=', $currentTime)
+            ->where('end_time', '>=', $currentTime)
+            ->get();
     }
 
     /**
      * Get upcoming slots for today
      */
-    public static function getUpcomingTodaySlots(int $childId, SupabaseClient $supabase): Collection
+    public static function getUpcomingTodaySlots(int $childId): Collection
     {
         $now = Carbon::now();
         $currentTime = $now->format('H:i:s');
         $dayOfWeek = $now->dayOfWeekIso;
 
-        return $supabase->from('review_slots')
-            ->eq('child_id', $childId)
-            ->eq('day_of_week', $dayOfWeek)
-            ->eq('is_active', true)
-            ->gt('start_time', $currentTime)
+        return self::where('child_id', $childId)
+            ->where('day_of_week', $dayOfWeek)
+            ->where('is_active', true)
+            ->where('start_time', '>', $currentTime)
             ->orderBy('start_time', 'asc')
-            ->get()
-            ->map(fn ($item) => new self($item));
+            ->get();
     }
 
-    public function save(SupabaseClient $supabase): bool
-    {
-        $data = [
-            'child_id' => $this->child_id,
-            'day_of_week' => $this->day_of_week,
-            'start_time' => $this->start_time,
-            'end_time' => $this->end_time,
-            'slot_type' => $this->slot_type,
-            'is_active' => $this->is_active,
-        ];
+    // Note: save() and delete() methods are now handled by Eloquent automatically
 
-        if ($this->id) {
-            // Update existing
-            $result = $supabase->from('review_slots')
-                ->eq('id', $this->id)
-                ->update($data);
-        } else {
-            // Create new
-            $result = $supabase->from('review_slots')->insert($data);
-            if ($result && isset($result[0]['id'])) {
-                $this->id = $result[0]['id'];
-                $this->created_at = Carbon::now();
-            }
-        }
-
-        return ! empty($result);
-    }
-
-    public function delete(SupabaseClient $supabase): bool
-    {
-        if (! $this->id) {
-            return false;
-        }
-
-        return $supabase->from('review_slots')
-            ->eq('id', $this->id)
-            ->delete();
-    }
-
-    /**
-     * Get related models
-     */
-    public function child(SupabaseClient $supabase): ?Child
-    {
-        return Child::find((int) $this->child_id);
-    }
+    // Relationship defined above using Eloquent belongsTo()
 
     /**
      * Get duration in minutes
@@ -298,11 +248,11 @@ class ReviewSlot
     /**
      * Toggle active status
      */
-    public function toggleActive(SupabaseClient $supabase): bool
+    public function toggleActive(): bool
     {
         $this->is_active = ! $this->is_active;
 
-        return $this->save($supabase);
+        return $this->save();
     }
 
     /**
@@ -316,7 +266,7 @@ class ReviewSlot
     /**
      * Create default review slots for a child (called when child is created)
      */
-    public static function createDefaultSlotsForChild(int $childId, SupabaseClient $supabase): bool
+    public static function createDefaultSlotsForChild(int $childId): bool
     {
         $slots = [];
 
@@ -342,9 +292,7 @@ class ReviewSlot
             ];
         }
 
-        $result = $supabase->from('review_slots')->insert($slots);
-
-        return ! empty($result);
+        return self::insert($slots);
     }
 
     public function toArray(): array

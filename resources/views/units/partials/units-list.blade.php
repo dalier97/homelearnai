@@ -43,8 +43,7 @@
                 <!-- Unit Stats -->
                 <div class="text-sm text-gray-600 mb-4 space-y-1">
                     @php
-                        $supabaseClient = app(App\Services\SupabaseClient::class);
-                        $topicsCount = $unit->topics($supabaseClient)->count();
+                        $topicsCount = $unit->topics()->count();
                     @endphp
                     <p>{{ __('topics_count', ['count' => $topicsCount]) }}</p>
                     @if($unit->target_completion_date)
@@ -61,7 +60,8 @@
                 </div>
 
                 <!-- View Unit Button -->
-                <a href="{{ route('units.show', [$subject->id, $unit->id]) }}" 
+                <a href="{{ route('subjects.units.show', [$subject->id, $unit->id]) }}" 
+                   data-testid="view-unit-{{ $unit->name }}"
                    class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white rounded-md shadow-sm hover:opacity-90 transition-opacity"
                    style="background-color: {{ $subject->color }}">
                     {{ __('view_unit') }}
@@ -82,13 +82,16 @@
         <div class="mt-6">
             <button 
                 type="button"
+                data-testid="add-unit-button"
                 hx-get="{{ route('units.create', $subject->id) }}"
                 hx-target="#unit-modal"
                 hx-swap="innerHTML"
+                hx-indicator="next .loading"
                 class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white hover:opacity-90 transition-opacity"
                 style="background-color: {{ $subject->color }}">
                 {{ __('add_unit') }}
             </button>
+            <div class="loading htmx-indicator">Loading...</div>
         </div>
     </div>
 @endif

@@ -55,7 +55,7 @@ test.describe('Quick Start Subjects', () => {
   test('complete Quick Start workflow - elementary grade level', async ({ page }) => {
     // Step 1: Create a child first
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
 
     // Wait for child modal to be ready
     await modalHelper.waitForModal('child-form-modal');
@@ -105,8 +105,8 @@ test.describe('Quick Start Subjects', () => {
 
     for (const subject of expectedElementarySubjects) {
       await expect(page.locator(`text=${subject}`).first()).toBeVisible();
-      // Verify checkbox is checked by default
-      await expect(page.locator(`input[type="checkbox"][value*="${subject.split('/')[0]}"]`)).toBeChecked();
+      // Verify checkbox is checked by default - use exact value match
+      await expect(page.locator(`input[type="checkbox"][value="${subject}"]`)).toBeChecked();
     }
 
     // Step 8: Add a custom subject
@@ -135,12 +135,30 @@ test.describe('Quick Start Subjects', () => {
     // Step 12: Verify subject count is correct (7 standard + 1 custom = 8 total)
     const subjectCards = page.locator('[class*="grid"] > div[class*="bg-white"]');
     await expect(subjectCards).toHaveCount(8);
+
+    // Step 13: Navigate to dashboard and verify it loads without errors
+    await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
+    
+    // Check that dashboard loads successfully without server errors
+    await expect(page.locator('text=Internal Server Error')).not.toBeVisible();
+    await expect(page.locator('text=500')).not.toBeVisible();
+    await expect(page.locator('text=Exception')).not.toBeVisible();
+    
+    // Verify dashboard content is present (parent dashboard view)
+    const dashboardContent = page.locator('body');
+    await expect(dashboardContent).toContainText(/Dashboard|Children|Emma Quick Start/i);
+    
+    // Ensure the page loaded without PHP errors related to Review model
+    const pageContent = await page.content();
+    expect(pageContent).not.toContain('Return value must be of type');
+    expect(pageContent).not.toContain('QueryException');
   });
 
   test('middle school grade level workflow', async ({ page }) => {
     // Setup child
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Alex Middle School');
     await page.selectOption('#child-form-modal select[name="age"]', '12');
@@ -186,12 +204,30 @@ test.describe('Quick Start Subjects', () => {
     // Verify subjects created
     await expect(page.locator('text=English Language Arts')).toBeVisible();
     await expect(page.locator('text=Life Science')).toBeVisible();
+    
+    // Step 13: Navigate to dashboard and verify it loads without errors
+    await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
+    
+    // Check that dashboard loads successfully without server errors
+    await expect(page.locator('text=Internal Server Error')).not.toBeVisible();
+    await expect(page.locator('text=500')).not.toBeVisible();
+    await expect(page.locator('text=Exception')).not.toBeVisible();
+    
+    // Verify we actually see dashboard content
+    const dashboardContent = await page.locator('body').textContent();
+    await expect(dashboardContent).toContainText(/Dashboard|Children|Alex Middle School/i);
+    
+    // Ensure the page loaded without PHP errors related to Review model
+    const pageContent = await page.content();
+    expect(pageContent).not.toContain('Return value must be of type');
+    expect(pageContent).not.toContain('QueryException');
   });
 
   test('high school grade level workflow', async ({ page }) => {
     // Setup child
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Jordan High School');
     await page.selectOption('#child-form-modal select[name="age"]', '16');
@@ -230,12 +266,30 @@ test.describe('Quick Start Subjects', () => {
     await expect(page.locator('text=Chemistry')).toBeVisible();
     await expect(page.locator('text=Psychology')).not.toBeVisible();
     await expect(page.locator('text=Economics')).not.toBeVisible();
+    
+    // Step 13: Navigate to dashboard and verify it loads without errors
+    await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
+    
+    // Check that dashboard loads successfully without server errors
+    await expect(page.locator('text=Internal Server Error')).not.toBeVisible();
+    await expect(page.locator('text=500')).not.toBeVisible();
+    await expect(page.locator('text=Exception')).not.toBeVisible();
+    
+    // Verify we actually see dashboard content
+    const dashboardContent = await page.locator('body').textContent();
+    await expect(dashboardContent).toContainText(/Dashboard|Children|Jordan High School/i);
+    
+    // Ensure the page loaded without PHP errors related to Review model
+    const pageContent = await page.content();
+    expect(pageContent).not.toContain('Return value must be of type');
+    expect(pageContent).not.toContain('QueryException');
   });
 
   test('custom subjects functionality', async ({ page }) => {
     // Setup child  
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Sam Custom');
     await page.selectOption('#child-form-modal select[name="age"]', '10');
@@ -290,7 +344,7 @@ test.describe('Quick Start Subjects', () => {
   test('form validation and error handling', async ({ page }) => {
     // Setup child
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Validation Test');
     await page.selectOption('#child-form-modal select[name="age"]', '8');
@@ -341,7 +395,7 @@ test.describe('Quick Start Subjects', () => {
   test('Quick Start not available when subjects exist', async ({ page }) => {
     // Setup child
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Existing Subjects Test');
     await page.selectOption('#child-form-modal select[name="age"]', '9');
@@ -349,7 +403,7 @@ test.describe('Quick Start Subjects', () => {
 
     // Create a regular subject first  
     await page.goto('/subjects');
-    await elementHelper.safeClick('button:has-text("Add Subject")');
+    await elementHelper.safeClick('button:has-text("Add Subject")', 'first');
     await modalHelper.waitForModal('subject-modal');
     await modalHelper.fillModalField('subject-modal', 'name', 'Existing Subject');
     await page.selectOption('select[name="color"]', '#3B82F6');
@@ -398,7 +452,7 @@ test.describe('Quick Start Subjects', () => {
   test('modal interaction and cancellation', async ({ page }) => {
     // Setup child
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Modal Test');
     await page.selectOption('#child-form-modal select[name="age"]', '6');
@@ -425,13 +479,13 @@ test.describe('Quick Start Subjects', () => {
     
     // Should close modal and show manual add subject option
     await expect(page.locator('[data-testid="quick-start-modal"]')).not.toBeVisible();
-    await expect(page.locator('button:has-text("Add Subject")')).toBeVisible();
+    await expect(page.locator('button:has-text("Add Subject")').first()).toBeVisible();
   });
 
   test('subject color assignment and display', async ({ page }) => {
     // Setup child
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Color Test');
     await page.selectOption('#child-form-modal select[name="age"]', '11');

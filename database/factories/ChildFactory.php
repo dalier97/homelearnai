@@ -19,40 +19,40 @@ class ChildFactory extends Factory
         return [
             'user_id' => \App\Models\User::factory(),
             'name' => $this->faker->firstName(),
-            'age' => $this->faker->numberBetween(3, 18),
+            'grade' => $this->faker->randomElement(['PreK', 'K', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th']),
             'independence_level' => $this->faker->numberBetween(1, 4),
         ];
     }
 
     /**
-     * Create a preschool child (ages 3-5)
+     * Create a preschool child (PreK-K)
      */
     public function preschool(): static
     {
         return $this->state(fn (array $attributes) => [
-            'age' => $this->faker->numberBetween(3, 5),
+            'grade' => $this->faker->randomElement(['PreK', 'K']),
             'independence_level' => 1, // Typically guided
         ]);
     }
 
     /**
-     * Create an elementary school child (ages 6-12)
+     * Create an elementary school child (1st-5th grade)
      */
     public function elementary(): static
     {
         return $this->state(fn (array $attributes) => [
-            'age' => $this->faker->numberBetween(6, 12),
+            'grade' => $this->faker->randomElement(['1st', '2nd', '3rd', '4th', '5th']),
             'independence_level' => $this->faker->numberBetween(1, 3),
         ]);
     }
 
     /**
-     * Create a high school child (ages 13-18)
+     * Create a high school child (6th-12th grade)
      */
     public function highSchool(): static
     {
         return $this->state(fn (array $attributes) => [
-            'age' => $this->faker->numberBetween(13, 18),
+            'grade' => $this->faker->randomElement(['6th', '7th', '8th', '9th', '10th', '11th', '12th']),
             'independence_level' => $this->faker->numberBetween(2, 4),
         ]);
     }

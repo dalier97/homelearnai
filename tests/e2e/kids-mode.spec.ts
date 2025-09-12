@@ -40,7 +40,7 @@ test.describe('Kids Mode - Complete Functionality', () => {
 
   test('PIN Setup and Management Flow', async ({ page }) => {
     // 1. Navigate to PIN settings
-    await page.goto('/kids-mode/settings/pin');
+    await page.goto('/kids-mode/setup');
     
     // Should see PIN setup form
     await expect(page.getByRole('heading', { name: /Kids Mode Settings/i })).toBeVisible();
@@ -82,7 +82,7 @@ test.describe('Kids Mode - Complete Functionality', () => {
     
     // Child is already created by setupPin, just verify we can see it
     await page.goto('/children');
-    await page.waitForSelector('.child-item:has-text("Test Child")', { timeout: 5000 });
+    await page.waitForSelector('.child-item:has-text("Test Child")', { timeout: 10000 });
     
     // 1. Enter kids mode from parent dashboard
     await page.goto('/dashboard');
@@ -402,7 +402,7 @@ test.describe('Kids Mode - Complete Functionality', () => {
     
     // Add additional children (we already have "Test Child" from setupPin)
     for (const childData of additionalChildrenData) {
-      await elementHelper.safeClick('button:has-text("Add Child")');
+      await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
       
       // Wait for the modal to appear and be fully loaded
       await page.waitForSelector('[data-testid="child-form-modal"]', { timeout: 10000 });

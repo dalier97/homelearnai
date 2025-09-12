@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 <div class="bg-white shadow rounded-lg">
     <div class="p-6 border-b border-gray-200">
         <div class="flex justify-between items-center">
@@ -42,7 +43,7 @@
                 <option value="">{{ __('select_a_child') }}</option>
                 @foreach($children as $child)
                     <option value="{{ $child->id }}" {{ $selectedChild && $selectedChild->id == $child->id ? 'selected' : '' }}>
-                        {{ $child->name }} ({{ __('age') }} {{ $child->age }})
+                        {{ $child->name }} ({{ $child->grade }} {{ __('Grade') }})
                     </option>
                 @endforeach
             </select>
@@ -125,4 +126,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+</div>
 @endsection

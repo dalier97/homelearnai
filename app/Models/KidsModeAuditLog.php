@@ -119,7 +119,7 @@ class KidsModeAuditLog extends Model
                 ->gte('created_at', $since)
                 ->get();
 
-            return count($logs);
+            return $logs->count();
         } catch (\Exception $e) {
             Log::error('Failed to fetch recent failed attempts', [
                 'user_id' => $userId,
@@ -148,7 +148,7 @@ class KidsModeAuditLog extends Model
                 ->gte('created_at', $since)
                 ->get();
 
-            return count($logs);
+            return $logs->count();
         } catch (\Exception $e) {
             Log::error('Failed to fetch failed attempts by IP', [
                 'ip_address' => $ipAddress,

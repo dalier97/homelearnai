@@ -44,7 +44,7 @@
         @if($children->count() > 0)
           @foreach($children as $child)
             <option value="{{ $child->id }}" {{ $selectedChild && $selectedChild->id === $child->id ? 'selected' : '' }}>
-              {{ $child->name }} ({{ __('years_old', ['age' => $child->age]) }})
+              {{ $child->name }} ({{ $child->grade }} {{ __('Grade') }})
             </option>
           @endforeach
         @else

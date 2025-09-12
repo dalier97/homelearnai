@@ -1,9 +1,20 @@
 import { test, expect } from '@playwright/test';
+import { ModalHelper } from './helpers/modal-helpers';
+import { TestSetupHelper } from './helpers/test-setup-helpers';
 
 test.describe('Navigation Menu', () => {
   let testUser: { email: string; password: string };
+  let modalHelper: ModalHelper;
+  let testSetupHelper: TestSetupHelper;
 
   test.beforeEach(async ({ page }) => {
+    // Initialize helpers
+    modalHelper = new ModalHelper(page);
+    testSetupHelper = new TestSetupHelper(page);
+    
+    // Ensure test isolation
+    await testSetupHelper.isolateTest();
+    
     // Create unique test user
     testUser = {
       email: `nav-test-${Date.now()}@example.com`,
@@ -36,7 +47,7 @@ test.describe('Navigation Menu', () => {
       await page.waitForFunction(() => {
         const nextBtn = document.querySelector('[data-testid="next-button"]');
         return nextBtn && !nextBtn.disabled;
-      }, { timeout: 5000 });
+      }, { timeout: 10000 });
       
       await page.click('[data-testid="next-button"]');
       await page.waitForTimeout(1000);
@@ -51,6 +62,11 @@ test.describe('Navigation Menu', () => {
         await page.waitForLoadState('networkidle');
       }
     }
+  });
+
+  test.afterEach(async ({ page }) => {
+    // Reset test state after each test
+    await modalHelper.resetTestState();
   });
 
   test('should display all navigation menu items for logged-in parent', async ({ page }) => {
@@ -74,7 +90,7 @@ test.describe('Navigation Menu', () => {
     
     for (const link of navLinks) {
       const linkElement = nav.locator(`a:has-text("${link.text}")`);
-      await expect(linkElement).toBeVisible({ timeout: 5000 });
+      await expect(linkElement).toBeVisible({ timeout: 10000 });
       
       // Verify href attribute
       const href = await linkElement.getAttribute('href');
@@ -98,7 +114,7 @@ test.describe('Navigation Menu', () => {
     
     // Verify user dropdown is visible
     const userDropdown = page.locator('button').filter({ hasText: testUser.email });
-    await expect(userDropdown).toBeVisible({ timeout: 5000 });
+    await expect(userDropdown).toBeVisible({ timeout: 10000 });
   });
 
   test('should navigate to each menu item successfully', async ({ page }) => {

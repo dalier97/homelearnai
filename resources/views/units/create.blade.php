@@ -9,7 +9,7 @@
                 <p class="text-gray-600 mt-2">{{ __('Add a new unit to') }} {{ $subject->name }}</p>
             </div>
             <div>
-                <a href="{{ route('units.index', ['subject' => $subject->id]) }}" 
+                <a href="{{ route('subjects.units.index', ['subject' => $subject->id]) }}" 
                    class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors">
                     {{ __('Back') }}
                 </a>
@@ -17,7 +17,7 @@
         </div>
 
         <div class="bg-white rounded-lg shadow-sm border">
-            @include('units.partials.create-form', compact('subject'))
+            @include('units.partials.standalone-create-form', compact('subject'))
         </div>
     </div>
 </div>

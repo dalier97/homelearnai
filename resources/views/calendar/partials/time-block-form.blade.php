@@ -42,7 +42,7 @@
                                 <option value="">{{ __('select_child') }}</option>
                                 @foreach($children as $child)
                                     <option value="{{ $child->id }}" {{ ($selectedChildId == $child->id || (old('child_id', $timeBlock->child_id ?? '') == $child->id)) ? 'selected' : '' }}>
-                                        {{ $child->name }} ({{ $child->age }}y)
+                                        {{ $child->name }} ({{ $child->grade }})
                                     </option>
                                 @endforeach
                             </select>

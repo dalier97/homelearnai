@@ -102,7 +102,7 @@ test.describe('Authentication Flow', () => {
     const currentUrl = page.url();
     if (currentUrl.includes('/dashboard')) {
       // Laravel Breeze redirects to dashboard after successful registration
-      await expect(page.locator('h1, h2, .text-xl')).toContainText('Dashboard', { timeout: 15000 });
+      await expect(page.locator('h1, h2, .text-xl')).toContainText('Dashboard', { timeout: 10000 });
     } else if (currentUrl.includes('/register')) {
       // Check for Laravel validation errors
       const hasErrors = await page.locator('.text-red-600, .text-sm.text-red-600').count() > 0;
@@ -118,7 +118,7 @@ test.describe('Authentication Flow', () => {
         
         await elementHelper.waitForPageReady();
         // Verify successful login by checking for dashboard
-        await expect(page.locator('h1, h2, .text-xl')).toContainText('Dashboard', { timeout: 15000 });
+        await expect(page.locator('h1, h2, .text-xl')).toContainText('Dashboard', { timeout: 10000 });
       }
     } else if (currentUrl.includes('/email/verify')) {
       // Email verification required - this is a valid state for Laravel Breeze

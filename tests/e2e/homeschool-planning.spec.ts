@@ -24,26 +24,41 @@ test.describe('Homeschool Planning Workflow', () => {
       password: 'testpassword123'
     };
 
-    // Register and login
+    // Register using proper helper methods
     await page.goto('/register');
-    await page.fill('input[name="name"]', testUser.name);
-    await page.fill('input[name="email"]', testUser.email);
-    await page.fill('input[name="password"]', testUser.password);
-    await page.fill('input[name="password_confirmation"]', testUser.password);
-    await page.click('button[type="submit"]');
+    await elementHelper.waitForPageReady();
     
-    // Wait for redirect (either to dashboard or login)
-    await page.waitForLoadState('networkidle', { timeout: 10000 });
+    // Fill registration form using helper methods
+    await elementHelper.safeFill('input[name="name"]', testUser.name);
+    await elementHelper.safeFill('input[name="email"]', testUser.email);
+    await elementHelper.safeFill('input[name="password"]', testUser.password);
+    await elementHelper.safeFill('input[name="password_confirmation"]', testUser.password);
     
-    // If we're still on register page, try logging in
-    if (page.url().includes('/register')) {
+    // Submit registration with safe click
+    await elementHelper.safeClick('button[type="submit"]');
+    
+    // Wait for navigation and check result
+    await elementHelper.waitForPageReady();
+    
+    const currentUrl = page.url();
+    if (currentUrl.includes('/dashboard')) {
+      // Success - Laravel redirected to dashboard after registration
+      console.log('Registration successful, user logged in');
+    } else if (currentUrl.includes('/register')) {
+      // Registration may have failed, try to login instead
+      console.log('Registration failed, attempting login');
       await page.goto('/login');
-      await page.fill('input[name="email"]', testUser.email);
-      await page.fill('input[name="password"]', testUser.password);
-      await page.click('button[type="submit"]');
+      await elementHelper.waitForPageReady();
+      
+      await elementHelper.safeFill('input[name="email"]', testUser.email);
+      await elementHelper.safeFill('input[name="password"]', testUser.password);
+      await elementHelper.safeClick('button[type="submit"]');
+      
+      await elementHelper.waitForPageReady();
+    } else if (currentUrl.includes('/email/verify')) {
+      // Email verification required - this is fine for testing
+      console.log('Email verification required - continuing with test');
     }
-    
-    await page.waitForLoadState('networkidle', { timeout: 10000 });
   });
 
   test('complete planning workflow: child → subjects → units → topics → sessions → calendar', async ({ page }) => {
@@ -69,7 +84,7 @@ test.describe('Homeschool Planning Workflow', () => {
               'HX-Request': 'true',
               'HX-Target': 'children-list',
             },
-            data: {
+            form: {
               name: 'Alex',
               age: '8',
               independence_level: '2'
@@ -101,17 +116,17 @@ test.describe('Homeschool Planning Workflow', () => {
       } catch (e) {
         console.log('Attempting modal-based child creation as fallback');
         
-        await page.click('button:has-text("Add Child")');
+        await page.click('[data-testid="header-add-child-btn"]');
         
         try {
           // Wait for modal to load via HTMX and Alpine.js to initialize
-          await page.waitForSelector('#child-form-modal [x-data]', { timeout: 5000 });
+          await page.waitForSelector('#child-form-modal [data-testid="modal-content"]', { timeout: 10000 });
           await page.waitForTimeout(2000); // Allow Alpine.js and HTMX to fully initialize
           
           // Wait for form elements to be visible and interactive
-          await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 5000 });
-          await page.waitForSelector('#child-form-modal select[name="age"]', { timeout: 5000 });
-          await page.waitForSelector('#child-form-modal button[type="submit"]:has-text("Add Child")', { timeout: 5000 });
+          await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
+          await page.waitForSelector('#child-form-modal select[name="age"]', { timeout: 10000 });
+          await page.waitForSelector('#child-form-modal button[type="submit"]:has-text("Add Child")', { timeout: 10000 });
           
           await page.fill('#child-form-modal input[name="name"]', 'Alex');
           await page.selectOption('#child-form-modal select[name="age"]', '8');
@@ -129,14 +144,14 @@ test.describe('Homeschool Planning Workflow', () => {
     }
     
     // Check if child creation succeeded
-    const childExists = await page.locator('text=Alex').isVisible() || 
+    const childExists = await page.locator('#children-list h3:has-text("Alex")').isVisible() || 
                        await page.locator('#children-list > div[id^="child-"]').count() > 0;
     
     if (!childExists) {
       console.log('No children found, skipping workflow test that requires children');
       // Just verify the children page loads properly
       await expect(page.locator('h2')).toContainText('My Children');
-      await expect(page.locator('button:has-text("Add Child")').first()).toBeVisible();
+      await expect(page.locator('[data-testid="header-add-child-btn"], [data-testid="empty-state-add-child-btn"]').first()).toBeVisible();
       return;
     }
     
@@ -150,7 +165,7 @@ test.describe('Homeschool Planning Workflow', () => {
     ];
     
     for (const subject of subjects) {
-      await page.click('button:has-text("Add Subject")');
+      await page.locator('button:has-text("Add Subject")').first().click();
       await page.fill('input[name="name"]', subject.name);
       await page.selectOption('select[name="color"]', subject.color);
       await page.click('button:has-text("Save")');
@@ -264,12 +279,12 @@ test.describe('Homeschool Planning Workflow', () => {
     
     // Create child first
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     
     // Wait for child modal to be ready
-    await page.waitForSelector('#child-form-modal [x-data]', { timeout: 10000 });
+    await page.waitForSelector('#child-form-modal [data-testid="modal-content"]', { timeout: 10000 });
     await page.waitForTimeout(1000); // Allow Alpine.js to initialize
-    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 5000 });
+    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
     
     // Fill form fields within modal
     await page.fill('#child-form-modal input[name="name"]', 'Emma');
@@ -285,7 +300,7 @@ test.describe('Homeschool Planning Workflow', () => {
     
     // Wait for child to appear in the list as success indicator
     try {
-      await page.waitForSelector('h3:has-text("Emma")', { timeout: 5000 });
+      await page.waitForSelector('h3:has-text("Emma")', { timeout: 10000 });
     } catch (e) {
       // If child doesn't appear, at least wait for form to not be visible
       await page.waitForTimeout(2000); // Wait for modal to close
@@ -325,13 +340,13 @@ test.describe('Homeschool Planning Workflow', () => {
     
     // Setup: Create child and session
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     
     // Wait for modal to be ready
     // Wait for modal to load via HTMX and Alpine.js to initialize
-    await page.waitForSelector('#child-form-modal [x-data]', { timeout: 10000 });
+    await page.waitForSelector('#child-form-modal [data-testid="modal-content"]', { timeout: 10000 });
     await page.waitForTimeout(1000); // Allow Alpine.js to initialize
-    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 5000 });
+    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
     
     await page.fill('#child-form-modal input[name="name"]', 'Sam');
     await page.selectOption('#child-form-modal select[name="age"]', '10');
@@ -374,7 +389,7 @@ test.describe('Homeschool Planning Workflow', () => {
       try {
         // Try to create minimal test data
         await page.goto('/subjects');
-        await page.click('button:has-text("Add Subject")');
+        await page.locator('button:has-text("Add Subject")').first().click();
         await page.fill('input[name="name"]', 'Test Math');
         await page.selectOption('select[name="color"]', '#ef4444');
         await page.click('button:has-text("Save")');
@@ -454,7 +469,7 @@ test.describe('Homeschool Planning Workflow', () => {
       await skipButton.first().click();
       
       // Wait for skip day modal to load
-      await page.waitForSelector('#skip_date', { timeout: 5000 });
+      await page.waitForSelector('#skip_date', { timeout: 10000 });
       await page.waitForTimeout(1000);
       
       await page.fill('input[name="skip_date"]', '2024-01-15');
@@ -487,13 +502,13 @@ test.describe('Homeschool Planning Workflow', () => {
     
     // Create child with some completed sessions
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     
     // Wait for modal
     // Wait for modal to load via HTMX and Alpine.js to initialize
-    await page.waitForSelector('#child-form-modal [x-data]', { timeout: 10000 });
+    await page.waitForSelector('#child-form-modal [data-testid="modal-content"]', { timeout: 10000 });
     await page.waitForTimeout(1000); // Allow Alpine.js to initialize
-    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 5000 });
+    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
     
     await page.fill('#child-form-modal input[name="name"]', 'Jordan');
     await page.selectOption('#child-form-modal select[name="age"]', '14');
@@ -558,7 +573,7 @@ test.describe('Homeschool Planning Workflow', () => {
     
     if (hasChildren) {
       // If children exist, test the import form
-      await page.waitForSelector('select[name="child_id"]', { timeout: 5000 });
+      await page.waitForSelector('select[name="child_id"]', { timeout: 10000 });
       await expect(page.locator('input[type="file"]')).toBeVisible();
       console.log('Calendar import form loaded with children available');
     } else {
@@ -599,13 +614,13 @@ test.describe('Homeschool Planning Workflow', () => {
     
     // Test form validation
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     
     // Wait for modal
     // Wait for modal to load via HTMX and Alpine.js to initialize
-    await page.waitForSelector('#child-form-modal [x-data]', { timeout: 10000 });
+    await page.waitForSelector('#child-form-modal [data-testid="modal-content"]', { timeout: 10000 });
     await page.waitForTimeout(1000); // Allow Alpine.js to initialize
-    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 5000 });
+    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
     
     // Try to save without required fields (test validation)
     await page.click('#child-form-modal button[type="submit"]');
@@ -648,13 +663,13 @@ test.describe('Homeschool Planning Workflow', () => {
     
     // Create some data
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     
     // Wait for modal
     // Wait for modal to load via HTMX and Alpine.js to initialize
-    await page.waitForSelector('#child-form-modal [x-data]', { timeout: 10000 });
+    await page.waitForSelector('#child-form-modal [data-testid="modal-content"]', { timeout: 10000 });
     await page.waitForTimeout(1000); // Allow Alpine.js to initialize
-    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 5000 });
+    await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
     
     await page.fill('#child-form-modal input[name="name"]', 'Persistent Child');
     await page.selectOption('#child-form-modal select[name="age"]', '7');
@@ -684,7 +699,16 @@ test.describe('Homeschool Planning Workflow', () => {
     
     // Test subjects page works with the child
     await page.goto('/subjects');
-    await expect(page.locator('h2').filter({ hasText: 'Subjects' })).toBeVisible();
+    
+    // Check if we're on subjects list page or redirected to a specific subject
+    const currentUrl = page.url();
+    if (currentUrl.includes('/subjects/') && currentUrl !== '/subjects') {
+      // We're on a specific subject detail page
+      await expect(page.locator('h1')).toBeVisible();
+    } else {
+      // We're on the subjects list page
+      await expect(page.locator('h2').filter({ hasText: 'Subjects' })).toBeVisible();
+    }
     
     // Test planning board works
     await page.goto('/planning');
@@ -708,7 +732,7 @@ test.describe('Homeschool Planning Workflow', () => {
     
     // Create a child first
     await page.goto('/children');
-    await elementHelper.safeClick('button:has-text("Add Child")');
+    await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Planning Kid');
     await page.selectOption('#child-form-modal select[name="age"]', '9');

@@ -300,7 +300,7 @@ export class ChildHelper {
   async createChild(name: string, age: string, independenceLevel: string = '2'): Promise<void> {
     await this.page.goto('/children');
     
-    const addChildButton = this.page.locator('button:has-text("Add Child")');
+    const addChildButton = this.page.locator('[data-testid="header-add-child-btn"]');
     await addChildButton.click();
 
     await this.modalHelper.waitForModal('child-form-modal');

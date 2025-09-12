@@ -37,7 +37,7 @@ class KidsModeEnterExitTest extends TestCase
         // Create a test child
         $this->child = new Child([
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'independence_level' => 2,
         ]);
         $this->child->user_id = $this->userId;
@@ -175,7 +175,7 @@ class KidsModeEnterExitTest extends TestCase
         // Mock child belonging to different user
         $otherChild = new Child([
             'name' => 'Other Child',
-            'age' => 10,
+            'grade' => '5th',
             'independence_level' => 3,
         ]);
         $otherChild->user_id = 'other-user-id';

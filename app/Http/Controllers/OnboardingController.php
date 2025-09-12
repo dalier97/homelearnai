@@ -22,12 +22,12 @@ class OnboardingController extends Controller
     /**
      * Handle AJAX submission of children data (Phase 3)
      */
-    public function saveChildren(Request $request)
+    public function storeChild(Request $request)
     {
         $validated = $request->validate([
             'children' => 'required|array|min:1|max:5',
             'children.*.name' => 'required|string|max:255',
-            'children.*.age' => 'required|integer|min:3|max:25',
+            'children.*.grade' => 'required|string|in:PreK,K,1st,2nd,3rd,4th,5th,6th,7th,8th,9th,10th,11th,12th',
             'children.*.independence_level' => 'required|integer|in:1,2,3,4',
         ]);
 
@@ -50,7 +50,7 @@ class OnboardingController extends Controller
                 $child = Child::create([
                     'user_id' => $user->id,
                     'name' => $childData['name'],
-                    'age' => $childData['age'],
+                    'grade' => $childData['grade'],
                     'independence_level' => $childData['independence_level'],
                 ]);
 
@@ -85,9 +85,52 @@ class OnboardingController extends Controller
     }
 
     /**
+     * Return children data for the onboarding form
+     */
+    public function children(Request $request)
+    {
+        // Return empty array as children will be created during onboarding
+        // This endpoint might be used to load existing children if onboarding is resumed
+        $user = Auth::user();
+        if (! $user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        $children = $user->children()->get(['id', 'name', 'grade', 'independence_level']);
+
+        return response()->json([
+            'success' => true,
+            'children' => $children,
+        ]);
+    }
+
+    /**
+     * Return available subjects for the onboarding form
+     */
+    public function subjects(Request $request)
+    {
+        // Return predefined subjects that users can select from during onboarding
+        $predefinedSubjects = [
+            ['name' => 'Mathematics', 'color' => '#ef4444'],
+            ['name' => 'Science', 'color' => '#10b981'],
+            ['name' => 'Language Arts', 'color' => '#3b82f6'],
+            ['name' => 'History', 'color' => '#8b5cf6'],
+            ['name' => 'Art', 'color' => '#f59e0b'],
+            ['name' => 'Music', 'color' => '#ec4899'],
+            ['name' => 'Physical Education', 'color' => '#06b6d4'],
+            ['name' => 'Foreign Language', 'color' => '#84cc16'],
+        ];
+
+        return response()->json([
+            'success' => true,
+            'subjects' => $predefinedSubjects,
+        ]);
+    }
+
+    /**
      * Handle AJAX submission of subjects (Phase 4)
      */
-    public function saveSubjects(Request $request)
+    public function storeSubjects(Request $request)
     {
         $validated = $request->validate([
             'subjects' => 'required|array|min:1',

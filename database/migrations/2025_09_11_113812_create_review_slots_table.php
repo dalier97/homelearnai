@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('review_slots', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('child_id')->constrained()->onDelete('cascade');
+            $table->integer('day_of_week'); // 1-7 for Monday-Sunday
+            $table->time('start_time');
+            $table->time('end_time');
+            $table->enum('slot_type', ['micro', 'standard'])->default('micro');
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+
+            // Indexes for performance
+            $table->index(['child_id', 'day_of_week']);
+            $table->index(['child_id', 'is_active']);
+            $table->index(['day_of_week']);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('review_slots');
+    }
+};

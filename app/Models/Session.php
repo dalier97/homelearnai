@@ -2,206 +2,164 @@
 
 namespace App\Models;
 
-use App\Services\SupabaseClient;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class Session
+/**
+ * @property int $id
+ * @property int $topic_id
+ * @property int $child_id
+ * @property int $estimated_minutes
+ * @property string $status
+ * @property string $commitment_type
+ * @property int|null $scheduled_day_of_week
+ * @property string|null $scheduled_start_time
+ * @property string|null $scheduled_end_time
+ * @property \Carbon\Carbon|null $scheduled_date
+ * @property \Carbon\Carbon|null $skipped_from_date
+ * @property string|null $notes
+ * @property \Carbon\Carbon|null $completed_at
+ * @property string|null $evidence_notes
+ * @property array|null $evidence_photos
+ * @property string|null $evidence_voice_memo
+ * @property array|null $evidence_attachments
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property-read \App\Models\Topic $topic
+ * @property-read \App\Models\Child $child
+ */
+class Session extends Model
 {
-    public ?int $id = null;
+    protected $table = 'learning_sessions';
 
-    public int $topic_id;
+    protected $fillable = [
+        'topic_id',
+        'child_id',
+        'estimated_minutes',
+        'status',
+        'commitment_type',
+        'scheduled_day_of_week',
+        'scheduled_start_time',
+        'scheduled_end_time',
+        'scheduled_date',
+        'skipped_from_date',
+        'notes',
+        'completed_at',
+        'evidence_notes',
+        'evidence_photos',
+        'evidence_voice_memo',
+        'evidence_attachments',
+    ];
 
-    public int $child_id;
+    protected $casts = [
+        'estimated_minutes' => 'integer',
+        'scheduled_day_of_week' => 'integer',
+        'scheduled_date' => 'date',
+        'skipped_from_date' => 'date',
+        'completed_at' => 'datetime',
+        'evidence_photos' => 'array',
+        'evidence_attachments' => 'array',
+    ];
 
-    public int $estimated_minutes;
+    protected $attributes = [
+        'status' => 'backlog',
+        'commitment_type' => 'preferred',
+    ];
 
-    public string $status = 'backlog'; // backlog, planned, scheduled, done
-
-    public string $commitment_type = 'preferred'; // fixed, preferred, flexible
-
-    public ?int $scheduled_day_of_week = null; // 1-7 for Monday-Sunday
-
-    public ?string $scheduled_start_time = null; // HH:mm:ss format
-
-    public ?string $scheduled_end_time = null; // HH:mm:ss format
-
-    public ?Carbon $scheduled_date = null; // Specific date when scheduled
-
-    public ?Carbon $skipped_from_date = null; // Date when this session was skipped
-
-    public ?string $notes = null;
-
-    public ?Carbon $completed_at = null;
-
-    public ?Carbon $created_at = null;
-
-    public ?Carbon $updated_at = null;
-
-    // Evidence capture fields
-    public ?string $evidence_notes = null;
-
-    public ?array $evidence_photos = null; // Array of file paths/URLs
-
-    public ?string $evidence_voice_memo = null; // File path/URL for voice recording
-
-    public ?array $evidence_attachments = null; // Array of additional file paths
-
-    public function __construct(array $attributes = [])
+    /**
+     * Eloquent relationships
+     */
+    public function topic(): BelongsTo
     {
-        foreach ($attributes as $key => $value) {
-            if (property_exists($this, $key)) {
-                if (in_array($key, ['completed_at', 'scheduled_date', 'skipped_from_date', 'created_at', 'updated_at']) && $value) {
-                    $this->$key = Carbon::parse($value);
-                } elseif (in_array($key, ['evidence_photos', 'evidence_attachments']) && is_string($value)) {
-                    // Handle PostgreSQL array format from database
-                    $this->$key = $value ? json_decode($value, true) : null;
-                } else {
-                    $this->$key = $value;
-                }
-            }
-        }
+        return $this->belongsTo(Topic::class);
     }
 
-    public static function find(string $id, SupabaseClient $supabase): ?self
+    public function child(): BelongsTo
     {
-        $data = $supabase->from('sessions')
-            ->eq('id', $id)
-            ->single();
-
-        return $data ? new self($data) : null;
+        return $this->belongsTo(Child::class);
     }
 
-    public static function where(string $column, mixed $value, SupabaseClient $supabase): Collection
+    public function review(): HasOne
     {
-        return $supabase->from('sessions')
-            ->eq($column, $value)
+        return $this->hasOne(Review::class);
+    }
+
+    public function catchUpSessions(): HasMany
+    {
+        return $this->hasMany(CatchUpSession::class, 'original_session_id');
+    }
+
+    /**
+     * Scopes and query methods
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\Session>
+     */
+    public static function forChild(int $childId): Collection
+    {
+        return self::where('child_id', $childId)
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(fn ($item) => new self($item));
+            ->get();
     }
 
-    public static function forChild(int $childId, SupabaseClient $supabase): Collection
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\Session>
+     */
+    public static function forTopic(int $topicId): Collection
     {
-        return self::where('child_id', $childId, $supabase);
-    }
-
-    public static function forTopic(int $topicId, SupabaseClient $supabase): Collection
-    {
-        return self::where('topic_id', $topicId, $supabase);
-    }
-
-    public static function forChildAndStatus(int $childId, string $status, SupabaseClient $supabase): Collection
-    {
-        return $supabase->from('sessions')
-            ->eq('child_id', $childId)
-            ->eq('status', $status)
+        return self::where('topic_id', $topicId)
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(fn ($item) => new self($item));
+            ->get();
     }
 
-    public static function forChildAndDay(int $childId, int $dayOfWeek, SupabaseClient $supabase): Collection
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\Session>
+     */
+    public static function forChildAndStatus(int $childId, string $status): Collection
     {
-        return $supabase->from('sessions')
-            ->eq('child_id', $childId)
-            ->eq('scheduled_day_of_week', $dayOfWeek)
-            ->eq('status', 'scheduled')
+        return self::where('child_id', $childId)
+            ->where('status', $status)
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\Session>
+     */
+    public static function forChildAndDay(int $childId, int $dayOfWeek): Collection
+    {
+        return self::where('child_id', $childId)
+            ->where('scheduled_day_of_week', $dayOfWeek)
+            ->where('status', 'scheduled')
             ->orderBy('scheduled_start_time', 'asc')
-            ->get()
-            ->map(fn ($item) => new self($item));
+            ->get();
     }
 
-    public function save(SupabaseClient $supabase): bool
-    {
-        $data = [
-            'topic_id' => $this->topic_id,
-            'child_id' => $this->child_id,
-            'estimated_minutes' => $this->estimated_minutes,
-            'status' => $this->status,
-            'commitment_type' => $this->commitment_type,
-            'scheduled_day_of_week' => $this->scheduled_day_of_week,
-            'scheduled_start_time' => $this->scheduled_start_time,
-            'scheduled_end_time' => $this->scheduled_end_time,
-            'scheduled_date' => $this->scheduled_date?->format('Y-m-d'),
-            'skipped_from_date' => $this->skipped_from_date?->format('Y-m-d'),
-            'notes' => $this->notes,
-            'completed_at' => $this->completed_at?->toIso8601String(),
-            // Evidence fields
-            'evidence_notes' => $this->evidence_notes,
-            'evidence_photos' => $this->evidence_photos ? json_encode($this->evidence_photos) : null,
-            'evidence_voice_memo' => $this->evidence_voice_memo,
-            'evidence_attachments' => $this->evidence_attachments ? json_encode($this->evidence_attachments) : null,
-        ];
-
-        if ($this->id) {
-            // Update existing
-            $result = $supabase->from('sessions')
-                ->eq('id', $this->id)
-                ->update($data);
-        } else {
-            // Create new
-            $result = $supabase->from('sessions')->insert($data);
-            if ($result && isset($result[0]['id'])) {
-                $this->id = $result[0]['id'];
-                $this->created_at = Carbon::now();
-            }
-        }
-
-        return ! empty($result);
-    }
-
-    public function delete(SupabaseClient $supabase): bool
-    {
-        if (! $this->id) {
-            return false;
-        }
-
-        return $supabase->from('sessions')
-            ->eq('id', $this->id)
-            ->delete();
-    }
-
-    /**
-     * Get the topic this session belongs to
-     */
-    public function topic(SupabaseClient $supabase): ?Topic
-    {
-        return Topic::find((string) $this->topic_id, $supabase);
-    }
-
-    /**
-     * Get the child this session is for
-     */
-    public function child(SupabaseClient $supabase): ?Child
-    {
-        return Child::find((int) $this->child_id);
-    }
+    // Note: save() and delete() methods are now handled by Eloquent automatically
 
     /**
      * Get the unit this session belongs to (through topic)
      */
-    public function unit(SupabaseClient $supabase): ?Unit
+    public function unit(): ?Unit
     {
-        $topic = $this->topic($supabase);
-
-        return $topic ? $topic->unit : null;
+        return $this->topic->unit;
     }
 
     /**
      * Get the subject this session belongs to (through topic -> unit)
      */
-    public function subject(SupabaseClient $supabase): ?Subject
+    public function subject(): ?Subject
     {
-        $topic = $this->topic($supabase);
-
-        return $topic ? $topic->subject : null;
+        return $this->topic->subject;
     }
 
     /**
      * Update session status
      */
-    public function updateStatus(string $status, SupabaseClient $supabase): bool
+    public function updateStatus(string $status): bool
     {
         $this->status = $status;
 
@@ -211,13 +169,13 @@ class Session
             $this->completed_at = null;
         }
 
-        $success = $this->save($supabase);
+        $success = $this->save();
 
         // Automatically create review when session is completed
         if ($success && $status === 'done' && $this->completed_at) {
-            $existingReview = Review::forSession($this->id, $supabase);
+            $existingReview = Review::forSession($this->id);
             if (! $existingReview) {
-                Review::createFromSession($this, $supabase);
+                Review::createFromSession($this);
             }
         }
 
@@ -227,7 +185,7 @@ class Session
     /**
      * Schedule this session to a specific time slot
      */
-    public function scheduleToTimeSlot(int $dayOfWeek, string $startTime, string $endTime, SupabaseClient $supabase, ?Carbon $date = null): bool
+    public function scheduleToTimeSlot(int $dayOfWeek, string $startTime, string $endTime, ?Carbon $date = null): bool
     {
         $this->status = 'scheduled';
         $this->scheduled_day_of_week = $dayOfWeek;
@@ -235,13 +193,13 @@ class Session
         $this->scheduled_end_time = $endTime;
         $this->scheduled_date = $date;
 
-        return $this->save($supabase);
+        return $this->save();
     }
 
     /**
      * Move session back to planning status
      */
-    public function unschedule(SupabaseClient $supabase): bool
+    public function unschedule(): bool
     {
         $this->status = 'planned';
         $this->scheduled_day_of_week = null;
@@ -249,7 +207,7 @@ class Session
         $this->scheduled_end_time = null;
         $this->scheduled_date = null;
 
-        return $this->save($supabase);
+        return $this->save();
     }
 
     /**
@@ -329,10 +287,10 @@ class Session
     /**
      * Skip this session (move to catch-up and create replacement suggestions)
      */
-    public function skipDay(Carbon $originalDate, ?string $reason, SupabaseClient $supabase): CatchUpSession
+    public function skipDay(Carbon $originalDate, ?string $reason): CatchUpSession
     {
         // Create catch-up session
-        $catchUpSession = new CatchUpSession([
+        $catchUpSession = CatchUpSession::create([
             'original_session_id' => $this->id,
             'child_id' => $this->child_id,
             'topic_id' => $this->topic_id,
@@ -343,11 +301,9 @@ class Session
             'status' => 'pending',
         ]);
 
-        $catchUpSession->save($supabase);
-
         // Update this session with skipped date
         $this->skipped_from_date = $originalDate;
-        $this->save($supabase);
+        $this->save();
 
         return $catchUpSession;
     }
@@ -399,13 +355,7 @@ class Session
         };
     }
 
-    /**
-     * Get catch-up sessions for this original session
-     */
-    public function catchUpSessions(SupabaseClient $supabase): Collection
-    {
-        return CatchUpSession::where('original_session_id', $this->id, $supabase);
-    }
+    // Relationship defined above using Eloquent hasMany()
 
     /**
      * Check if session was skipped
@@ -426,7 +376,7 @@ class Session
     /**
      * Update commitment type
      */
-    public function updateCommitmentType(string $commitmentType, SupabaseClient $supabase): bool
+    public function updateCommitmentType(string $commitmentType): bool
     {
         if (! self::validateCommitmentType($commitmentType)) {
             throw new \InvalidArgumentException('Invalid commitment type');
@@ -434,7 +384,7 @@ class Session
 
         $this->commitment_type = $commitmentType;
 
-        return $this->save($supabase);
+        return $this->save();
     }
 
     /**
@@ -549,13 +499,7 @@ class Session
         return $count;
     }
 
-    /**
-     * Get review for this session
-     */
-    public function review(SupabaseClient $supabase): ?Review
-    {
-        return Review::forSession($this->id, $supabase);
-    }
+    // Relationship defined above using Eloquent hasOne()
 
     /**
      * Complete session with evidence
@@ -564,8 +508,7 @@ class Session
         ?string $notes,
         ?array $photos,
         ?string $voiceMemo,
-        ?array $attachments,
-        SupabaseClient $supabase
+        ?array $attachments
     ): bool {
         $this->status = 'done';
         $this->completed_at = Carbon::now();
@@ -583,13 +526,13 @@ class Session
             $this->evidence_attachments = $attachments;
         }
 
-        $success = $this->save($supabase);
+        $success = $this->save();
 
         // Automatically create review when session is completed
         if ($success) {
-            $existingReview = Review::forSession($this->id, $supabase);
+            $existingReview = Review::forSession($this->id);
             if (! $existingReview) {
-                Review::createFromSession($this, $supabase);
+                Review::createFromSession($this);
             }
         }
 

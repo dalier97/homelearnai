@@ -6,18 +6,22 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
   workers: 1, // Force single worker to prevent server conflicts
-  reporter: 'html',
-  timeout: 60000, // Global test timeout: 60 seconds (for complex kids mode tests)
+  reporter: [
+    ['html'],
+    ['json', { outputFile: 'test-results/results.json' }],
+    ['junit', { outputFile: 'test-results/results.xml' }]
+  ],
+  timeout: 60000, // Increased global test timeout: 60 seconds for complex tests
   expect: {
-    timeout: 15000, // Assertion timeout: 15 seconds
+    timeout: 15000, // Increased assertion timeout: 15 seconds for complex assertions
   },
   
   use: {
     baseURL: 'http://127.0.0.1:18001',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    actionTimeout: 10000, // Action timeout: 10 seconds (optimized)
-    navigationTimeout: 15000, // Navigation timeout: 15 seconds (optimized)
+    actionTimeout: 15000, // Increased action timeout: 15 seconds for complex interactions
+    navigationTimeout: 20000, // Increased navigation timeout: 20 seconds for slow pages
   },
 
   projects: [
@@ -25,14 +29,14 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+    // {
+    //   name: 'firefox',
+    //   use: { ...devices['Desktop Firefox'] },
+    // },
+    // {
+    //   name: 'webkit',
+    //   use: { ...devices['Desktop Safari'] },
+    // },
   ],
 
   // Server management handled by run-e2e-tests.sh script

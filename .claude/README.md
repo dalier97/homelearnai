@@ -37,6 +37,18 @@ This directory contains the Claude Code hooks configuration for automatic code q
 
 - **Environment Check**: Shows current environment and basic project info
 
+### Stop & SubagentStop Hooks (Run when agents finish)
+
+4. **Pre-commit Quality Gate** (`pre-commit-check.sh`)
+   - **Triggers**: When Claude Code main agent or subagent finishes responding
+   - **Actions**:
+     - PHP syntax validation and auto-formatting with Laravel Pint
+     - PHPStan static analysis (blocks if type errors found)
+     - JavaScript/TypeScript linting with lint-staged
+     - Same checks as git pre-commit hook
+   - **Timeout**: 60 seconds
+   - **Purpose**: Ensures code quality before committing changes
+
 ## 📁 File Structure
 
 ```
@@ -46,7 +58,8 @@ This directory contains the Claude Code hooks configuration for automatic code q
 └── hooks/
     ├── php-quality-check.sh       # PHP quality checks
     ├── js-quality-check.sh        # JS/TS quality checks
-    └── test-runner.sh             # Test runner
+    ├── test-runner.sh             # Test runner
+    └── pre-commit-check.sh        # Pre-commit quality gate (Stop hooks)
 ```
 
 ## 🛠️ Requirements
@@ -100,6 +113,9 @@ You can test the individual scripts manually:
 
 # Test runner
 .claude/hooks/test-runner.sh
+
+# Test pre-commit quality gate
+.claude/hooks/pre-commit-check.sh
 ```
 
 ## 📝 Environment Variables Available

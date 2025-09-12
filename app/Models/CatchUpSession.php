@@ -2,233 +2,177 @@
 
 namespace App\Models;
 
-use App\Services\SupabaseClient;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class CatchUpSession
+/**
+ * @property int $id
+ * @property int $original_session_id
+ * @property int $child_id
+ * @property int $topic_id
+ * @property int $estimated_minutes
+ * @property int $priority
+ * @property \Carbon\Carbon $missed_date
+ * @property string|null $reason
+ * @property int|null $reassigned_to_session_id
+ * @property string $status
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property-read \App\Models\Session $originalSession
+ * @property-read \App\Models\Session|null $reassignedToSession
+ * @property-read \App\Models\Child $child
+ * @property-read \App\Models\Topic $topic
+ */
+class CatchUpSession extends Model
 {
-    public ?int $id = null;
+    protected $fillable = [
+        'original_session_id',
+        'child_id',
+        'topic_id',
+        'estimated_minutes',
+        'priority',
+        'missed_date',
+        'reason',
+        'reassigned_to_session_id',
+        'status',
+    ];
 
-    public int $original_session_id;
+    protected $casts = [
+        'estimated_minutes' => 'integer',
+        'priority' => 'integer',
+        'missed_date' => 'date',
+    ];
 
-    public int $child_id;
+    protected $attributes = [
+        'priority' => 1,
+        'status' => 'pending',
+    ];
 
-    public int $topic_id;
-
-    public int $estimated_minutes;
-
-    public int $priority = 1; // 1=highest, 5=lowest
-
-    public Carbon $missed_date;
-
-    public ?string $reason = null;
-
-    public ?int $reassigned_to_session_id = null;
-
-    public string $status = 'pending'; // pending, reassigned, completed, cancelled
-
-    public ?Carbon $created_at = null;
-
-    public ?Carbon $updated_at = null;
-
-    public function __construct(array $attributes = [])
+    /**
+     * Eloquent relationships
+     */
+    public function originalSession(): BelongsTo
     {
-        foreach ($attributes as $key => $value) {
-            if (property_exists($this, $key)) {
-                if (in_array($key, ['missed_date', 'created_at', 'updated_at']) && $value) {
-                    $this->$key = Carbon::parse($value);
-                } else {
-                    $this->$key = $value;
-                }
-            }
-        }
+        return $this->belongsTo(Session::class, 'original_session_id');
     }
 
-    public static function find(string $id, SupabaseClient $supabase): ?self
+    public function reassignedToSession(): BelongsTo
     {
-        $data = $supabase->from('catch_up_sessions')
-            ->eq('id', $id)
-            ->single();
-
-        return $data ? new self($data) : null;
+        return $this->belongsTo(Session::class, 'reassigned_to_session_id');
     }
 
-    public static function where(string $column, mixed $value, SupabaseClient $supabase): Collection
+    public function child(): BelongsTo
     {
-        return $supabase->from('catch_up_sessions')
-            ->eq($column, $value)
+        return $this->belongsTo(Child::class);
+    }
+
+    public function topic(): BelongsTo
+    {
+        return $this->belongsTo(Topic::class);
+    }
+
+    /**
+     * Scopes and query methods
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\CatchUpSession>
+     */
+    public static function forChild(int $childId): Collection
+    {
+        return self::where('child_id', $childId)
             ->orderBy('priority', 'asc')
             ->orderBy('missed_date', 'desc')
-            ->get()
-            ->map(fn ($item) => new self($item));
+            ->get();
     }
 
-    public static function forChild(int $childId, SupabaseClient $supabase): Collection
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\CatchUpSession>
+     */
+    public static function forChildAndStatus(int $childId, string $status): Collection
     {
-        return self::where('child_id', $childId, $supabase);
-    }
-
-    public static function forChildAndStatus(int $childId, string $status, SupabaseClient $supabase): Collection
-    {
-        return $supabase->from('catch_up_sessions')
-            ->eq('child_id', $childId)
-            ->eq('status', $status)
+        return self::where('child_id', $childId)
+            ->where('status', $status)
             ->orderBy('priority', 'asc')
             ->orderBy('missed_date', 'desc')
-            ->get()
-            ->map(fn ($item) => new self($item));
+            ->get();
     }
 
-    public static function pending(int $childId, SupabaseClient $supabase): Collection
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\CatchUpSession>
+     */
+    public static function pending(int $childId): Collection
     {
-        return self::forChildAndStatus($childId, 'pending', $supabase);
+        return self::forChildAndStatus($childId, 'pending');
     }
 
-    public static function byPriority(int $childId, int $priority, SupabaseClient $supabase): Collection
+    /**
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\CatchUpSession>
+     */
+    public static function byPriority(int $childId, int $priority): Collection
     {
-        return $supabase->from('catch_up_sessions')
-            ->eq('child_id', $childId)
-            ->eq('priority', $priority)
+        return self::where('child_id', $childId)
+            ->where('priority', $priority)
             ->orderBy('missed_date', 'desc')
-            ->get()
-            ->map(fn ($item) => new self($item));
+            ->get();
     }
 
-    public function save(SupabaseClient $supabase): bool
-    {
-        $data = [
-            'original_session_id' => $this->original_session_id,
-            'child_id' => $this->child_id,
-            'topic_id' => $this->topic_id,
-            'estimated_minutes' => $this->estimated_minutes,
-            'priority' => $this->priority,
-            'missed_date' => $this->missed_date->format('Y-m-d'),
-            'reason' => $this->reason,
-            'reassigned_to_session_id' => $this->reassigned_to_session_id,
-            'status' => $this->status,
-        ];
+    // Note: save() and delete() methods are now handled by Eloquent automatically
 
-        if ($this->id) {
-            // Update existing
-            $result = $supabase->from('catch_up_sessions')
-                ->eq('id', $this->id)
-                ->update($data);
-        } else {
-            // Create new
-            $result = $supabase->from('catch_up_sessions')->insert($data);
-            if ($result && isset($result[0]['id'])) {
-                $this->id = $result[0]['id'];
-                $this->created_at = Carbon::now();
-            }
-        }
-
-        return ! empty($result);
-    }
-
-    public function delete(SupabaseClient $supabase): bool
-    {
-        if (! $this->id) {
-            return false;
-        }
-
-        return $supabase->from('catch_up_sessions')
-            ->eq('id', $this->id)
-            ->delete();
-    }
-
-    /**
-     * Get the original session this catch-up is for
-     */
-    public function originalSession(SupabaseClient $supabase): ?Session
-    {
-        return Session::find((string) $this->original_session_id, $supabase);
-    }
-
-    /**
-     * Get the session this catch-up was reassigned to
-     */
-    public function reassignedToSession(SupabaseClient $supabase): ?Session
-    {
-        if (! $this->reassigned_to_session_id) {
-            return null;
-        }
-
-        return Session::find((string) $this->reassigned_to_session_id, $supabase);
-    }
-
-    /**
-     * Get the topic this catch-up session is for
-     */
-    public function topic(SupabaseClient $supabase): ?Topic
-    {
-        return Topic::find((string) $this->topic_id, $supabase);
-    }
-
-    /**
-     * Get the child this catch-up session is for
-     */
-    public function child(SupabaseClient $supabase): ?Child
-    {
-        return Child::find((int) $this->child_id);
-    }
+    // Relationships defined above using Eloquent methods
 
     /**
      * Get the unit this catch-up belongs to (through topic)
      */
-    public function unit(SupabaseClient $supabase): ?Unit
+    public function unit(): ?Unit
     {
-        $topic = $this->topic($supabase);
-
-        return $topic ? $topic->unit : null;
+        return $this->topic->unit;
     }
 
     /**
      * Get the subject this catch-up belongs to (through topic -> unit)
      */
-    public function subject(SupabaseClient $supabase): ?Subject
+    public function subject(): ?Subject
     {
-        $topic = $this->topic($supabase);
-
-        return $topic ? $topic->subject : null;
+        return $this->topic->subject;
     }
 
     /**
      * Mark as reassigned to a specific session
      */
-    public function reassignToSession(int $sessionId, SupabaseClient $supabase): bool
+    public function reassignToSession(int $sessionId): bool
     {
         $this->reassigned_to_session_id = $sessionId;
         $this->status = 'reassigned';
 
-        return $this->save($supabase);
+        return $this->save();
     }
 
     /**
      * Mark as completed
      */
-    public function markCompleted(SupabaseClient $supabase): bool
+    public function markCompleted(): bool
     {
         $this->status = 'completed';
 
-        return $this->save($supabase);
+        return $this->save();
     }
 
     /**
      * Mark as cancelled
      */
-    public function markCancelled(string $reason, SupabaseClient $supabase): bool
+    public function markCancelled(string $reason): bool
     {
         $this->status = 'cancelled';
         $this->reason = $reason;
 
-        return $this->save($supabase);
+        return $this->save();
     }
 
     /**
      * Update priority (1=highest, 5=lowest)
      */
-    public function updatePriority(int $priority, SupabaseClient $supabase): bool
+    public function updatePriority(int $priority): bool
     {
         if ($priority < 1 || $priority > 5) {
             throw new \InvalidArgumentException('Priority must be between 1 and 5');
@@ -236,7 +180,7 @@ class CatchUpSession
 
         $this->priority = $priority;
 
-        return $this->save($supabase);
+        return $this->save();
     }
 
     /**

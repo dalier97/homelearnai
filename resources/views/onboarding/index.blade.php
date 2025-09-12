@@ -170,24 +170,24 @@
                                         <div x-show="childErrors[index] && childErrors[index].name" class="mt-1 text-sm text-red-600" x-text="childErrors[index] && childErrors[index].name"></div>
                                     </div>
 
-                                    <!-- Age -->
+                                    <!-- Grade -->
                                     <div>
-                                        <label :for="'child-age-' + index" class="block text-sm font-medium text-gray-700 mb-1">
-                                            {{ __('Age') }} <span class="text-red-500">*</span>
+                                        <label :for="'child-grade-' + index" class="block text-sm font-medium text-gray-700 mb-1">
+                                            {{ __('Grade') }} <span class="text-red-500">*</span>
                                         </label>
                                         <select 
-                                            :id="'child-age-' + index"
-                                            :name="'children[' + index + '][age]'"
-                                            x-model="child.age"
+                                            :id="'child-grade-' + index"
+                                            :name="'children[' + index + '][grade]'"
+                                            x-model="child.grade"
                                             required
-                                            :data-testid="'child-age-' + index"
+                                            :data-testid="'child-grade-' + index"
                                             class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                            <option value="">{{ __('Select age') }}</option>
-                                            @for($i = 3; $i <= 25; $i++)
-                                                <option value="{{ $i }}">{{ $i }} {{ __('years old') }}</option>
-                                            @endfor
+                                            <option value="">{{ __('Select grade') }}</option>
+                                            @foreach(\App\Models\Child::getGradeOptions() as $gradeValue => $gradeLabel)
+                                                <option value="{{ $gradeValue }}">{{ $gradeLabel }}</option>
+                                            @endforeach
                                         </select>
-                                        <div x-show="childErrors[index] && childErrors[index].age" class="mt-1 text-sm text-red-600" x-text="childErrors[index] && childErrors[index].age"></div>
+                                        <div x-show="childErrors[index] && childErrors[index].grade" class="mt-1 text-sm text-red-600" x-text="childErrors[index] && childErrors[index].grade"></div>
                                     </div>
                                 </div>
 
@@ -279,9 +279,9 @@
                                         <div>
                                             <h3 class="text-lg font-medium text-gray-900" x-text="child.name"></h3>
                                             <p class="text-sm text-gray-600">
-                                                <span x-text="child.age + ' {{ __('years old') }}'"></span>
+                                                <span x-text="child.grade + ' {{ __('Grade') }}'"></span>
                                                 <span class="mx-2">•</span>
-                                                <span x-text="getGradeLevelText(getGradeLevel(child.age))"></span>
+                                                <span x-text="getGradeLevelText(child.grade)"></span>
                                             </p>
                                         </div>
                                         <button 
@@ -300,10 +300,10 @@
                                     <!-- Recommended Subjects -->
                                     <div class="mb-6">
                                         <h4 class="text-sm font-medium text-gray-900 mb-3">{{ __('Recommended Subjects') }}</h4>
-                                        <p class="text-xs text-gray-500 mb-4">{{ __('Based on age, we suggest these subjects. Uncheck any you don\'t want.') }}</p>
+                                        <p class="text-xs text-gray-500 mb-4">{{ __('Based on grade, we suggest these subjects. Uncheck any you don\'t want.') }}</p>
                                         
                                         <div class="grid md:grid-cols-2 gap-3">
-                                            <template x-for="subject in getSubjectsForChildGrade(child.age)" :key="subject">
+                                            <template x-for="subject in getSubjectsForChildGrade(child.grade)" :key="subject">
                                                 <label class="flex items-center p-3 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors"
                                                        :class="isSubjectSelected(child.id, subject) ? 'border-blue-500 bg-blue-50' : 'border-gray-200'">
                                                     <input type="checkbox" 
@@ -438,7 +438,7 @@
                                         <div>
                                             <p class="font-medium text-gray-900" x-text="child.name"></p>
                                             <p class="text-sm text-gray-500">
-                                                <span x-text="child.age + ' {{ __('years old') }}'" ></span>
+                                                <span x-text="child.grade + ' {{ __('Grade') }}'" ></span>
                                                 <span class="mx-2">•</span>
                                                 <span x-text="getIndependenceLevelText(child.independence_level)"></span>
                                             </p>
@@ -601,7 +601,7 @@ function onboardingWizard() {
         children: [
             {
                 name: '',
-                age: '',
+                grade: '',
                 independence_level: 1
             }
         ],
@@ -662,8 +662,8 @@ function onboardingWizard() {
         
         // Computed properties
         get canProceedFromStep2() {
-            // At least one child must have name and age
-            return this.children.some(child => child.name && child.age);
+            // At least one child must have name and grade
+            return this.children.some(child => child.name && child.grade);
         },
         
         get canProceedFromStep3() {
@@ -686,7 +686,7 @@ function onboardingWizard() {
             if (this.children.length < 5) {
                 this.children.push({
                     name: '',
-                    age: '',
+                    grade: '',
                     independence_level: 1
                 });
                 this.childErrors.push({});
@@ -719,8 +719,8 @@ function onboardingWizard() {
                     isValid = false;
                 }
                 
-                if (!child.age || child.age === '') {
-                    errors.age = '{{ __("Child age is required") }}';
+                if (!child.grade || child.grade === '') {
+                    errors.grade = '{{ __("Child grade is required") }}';
                     isValid = false;
                 }
                 
@@ -742,7 +742,7 @@ function onboardingWizard() {
             children.forEach(child => {
                 // Initialize subjects data for each child
                 this.subjectsData[child.id] = {
-                    selected: [...this.getSubjectsForChildGrade(child.age)], // Pre-select all recommended subjects
+                    selected: [...this.getSubjectsForChildGrade(child.grade)], // Pre-select all recommended subjects
                     custom: [''],
                     skip: false
                 };
@@ -752,11 +752,15 @@ function onboardingWizard() {
             });
         },
         
-        getGradeLevel(age) {
-            if (age >= 3 && age <= 10) return 'elementary';
-            if (age >= 11 && age <= 13) return 'middle';  
-            if (age >= 14 && age <= 18) return 'high';
-            return 'custom'; // 19+
+        getGradeLevel(grade) {
+            const elementary = ['PreK', 'K', '1st', '2nd', '3rd', '4th', '5th'];
+            const middle = ['6th', '7th', '8th'];
+            const high = ['9th', '10th', '11th', '12th'];
+            
+            if (elementary.includes(grade)) return 'elementary';
+            if (middle.includes(grade)) return 'middle';  
+            if (high.includes(grade)) return 'high';
+            return 'custom';
         },
         
         getGradeLevelText(gradeLevel) {
@@ -768,8 +772,8 @@ function onboardingWizard() {
             }
         },
         
-        getSubjectsForChildGrade(age) {
-            const gradeLevel = this.getGradeLevel(age);
+        getSubjectsForChildGrade(grade) {
+            const gradeLevel = this.getGradeLevel(grade);
             return this.subjectTemplates[gradeLevel] || [];
         },
         
@@ -954,7 +958,7 @@ function onboardingWizard() {
             this.formSuccess = '';
             
             try {
-                const response = await fetch('{{ route("onboarding.children") }}', {
+                const response = await fetch('{{ route("onboarding.child.store") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -964,7 +968,7 @@ function onboardingWizard() {
                     body: JSON.stringify({
                         children: this.children.map(child => ({
                             name: child.name.trim(),
-                            age: parseInt(child.age),
+                            grade: child.grade,
                             independence_level: parseInt(child.independence_level)
                         }))
                     })

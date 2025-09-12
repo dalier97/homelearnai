@@ -47,7 +47,7 @@ test.describe('Onboarding Redirect', () => {
     
     // If we somehow got to onboarding without auth, that would be a security issue
     if (currentUrl.includes('/onboarding')) {
-      await expect(page.locator('h1')).toContainText('Welcome to Homeschool Hub!', { timeout: 15000 });
+      await expect(page.locator('h1')).toContainText('Welcome to Homeschool Hub!', { timeout: 10000 });
       await expect(page.locator('body')).toContainText('Onboarding Wizard Coming Soon');
       await expect(page.locator('body')).toContainText('Phase 1: Detection & Routing');
       await expect(page.locator('a[href*="/children/create"]')).toContainText('Add Your First Child');

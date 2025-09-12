@@ -82,7 +82,7 @@ test.describe('Onboarding Full Integration', () => {
     await page.getByTestId('next-button').click();
     
     // Wait for success and transition to step 3
-    await expect(page.getByTestId('form-success')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('form-success')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('step-3')).toBeVisible({ timeout: 10000 });
     
     // Wizard Step 3: Select Subjects
@@ -104,7 +104,7 @@ test.describe('Onboarding Full Integration', () => {
     await page.getByTestId('next-button').click();
     
     // Wait for success and transition to step 4
-    await expect(page.getByTestId('subjects-form-success')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('subjects-form-success')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('step-4')).toBeVisible({ timeout: 10000 });
     
     // Wizard Step 4: Review and Complete
@@ -127,10 +127,10 @@ test.describe('Onboarding Full Integration', () => {
     
     // Verify completion and redirect to dashboard
     await expect(page.locator('text=Completing Setup...')).toBeVisible();
-    await expect(page.locator('text=🎉 Setup complete! Welcome to your homeschool hub!')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('text=🎉 Setup complete! Welcome to your homeschool hub!')).toBeVisible({ timeout: 10000 });
     
     // Step 3: Verify dashboard integration
-    await page.waitForURL('/dashboard', { timeout: 15000 });
+    await page.waitForURL('/dashboard', { timeout: 10000 });
     
     // Verify child appears on dashboard
     await expect(page.locator('text=Emma Thompson')).toBeVisible({ timeout: 10000 });
@@ -195,7 +195,7 @@ test.describe('Onboarding Full Integration', () => {
     
     // Submit children
     await page.getByTestId('next-button').click();
-    await expect(page.getByTestId('form-success')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('form-success')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('step-3')).toBeVisible({ timeout: 10000 });
     
     // Verify all three children appear with appropriate grade levels
@@ -228,7 +228,7 @@ test.describe('Onboarding Full Integration', () => {
     
     // Submit subjects
     await page.getByTestId('next-button').click();
-    await expect(page.getByTestId('subjects-form-success')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('subjects-form-success')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('step-4')).toBeVisible({ timeout: 10000 });
     
     // Verify review shows all three children
@@ -239,7 +239,7 @@ test.describe('Onboarding Full Integration', () => {
     
     // Complete onboarding
     await page.getByTestId('complete-onboarding-button').click();
-    await page.waitForURL('/dashboard', { timeout: 15000 });
+    await page.waitForURL('/dashboard', { timeout: 10000 });
     
     // Verify all children appear on dashboard
     await expect(page.locator('text=Alice Johnson')).toBeVisible();
@@ -304,7 +304,7 @@ test.describe('Onboarding Full Integration', () => {
     
     // Submit subjects
     await page.getByTestId('next-button').click();
-    await expect(page.getByTestId('subjects-form-success')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('subjects-form-success')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('step-4')).toBeVisible({ timeout: 10000 });
     
     // Verify custom subjects appear in review
@@ -314,7 +314,7 @@ test.describe('Onboarding Full Integration', () => {
     
     // Complete onboarding
     await page.getByTestId('complete-onboarding-button').click();
-    await page.waitForURL('/dashboard', { timeout: 15000 });
+    await page.waitForURL('/dashboard', { timeout: 10000 });
     
     // Verify custom subjects are created in the system
     await page.goto('/subjects');
@@ -364,7 +364,7 @@ test.describe('Onboarding Full Integration', () => {
     
     // Submit children form
     await page.getByTestId('next-button').click();
-    await expect(page.getByTestId('form-success')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('form-success')).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('step-3')).toBeVisible({ timeout: 10000 });
     
     // Add custom subject
@@ -391,7 +391,7 @@ test.describe('Onboarding Full Integration', () => {
     
     // Complete onboarding
     await page.getByTestId('complete-onboarding-button').click();
-    await page.waitForURL('/dashboard', { timeout: 15000 });
+    await page.waitForURL('/dashboard', { timeout: 10000 });
     
     // Final verification on dashboard
     await expect(page.locator('text=Persistent Child')).toBeVisible();
@@ -451,7 +451,7 @@ test.describe('Onboarding Full Integration', () => {
     // Submit children (this may take longer with 5 children)
     await page.getByTestId('next-button').click();
     await expect(page.getByTestId('form-success')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('step-3')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('step-3')).toBeVisible({ timeout: 10000 });
     
     // Verify all children appear in subjects step
     for (let i = 0; i < 5; i++) {
@@ -469,8 +469,8 @@ test.describe('Onboarding Full Integration', () => {
     // Submit subjects (performance test - should complete within reasonable time)
     const startTime = Date.now();
     await page.getByTestId('next-button').click();
-    await expect(page.getByTestId('subjects-form-success')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByTestId('step-4')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('subjects-form-success')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('step-4')).toBeVisible({ timeout: 10000 });
     const endTime = Date.now();
     
     // Verify performance (should complete within 10 seconds)
@@ -492,7 +492,7 @@ test.describe('Onboarding Full Integration', () => {
     
     // Verify all children appear on dashboard
     for (const childName of childNames) {
-      await expect(page.locator(`text=${childName}`)).toBeVisible({ timeout: 5000 });
+      await expect(page.locator(`text=${childName}`)).toBeVisible({ timeout: 10000 });
     }
   });
 });

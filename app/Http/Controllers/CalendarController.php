@@ -5,39 +5,26 @@ namespace App\Http\Controllers;
 use App\Models\Child;
 use App\Models\ReviewSlot;
 use App\Models\TimeBlock;
-use App\Services\SupabaseClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
 
 class CalendarController extends Controller
 {
-    public function __construct(
-        private SupabaseClient $supabase
-    ) {}
-
     public function index(Request $request): View
     {
         $userId = auth()->id();
-        $accessToken = Session::get('supabase_token');
-
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
-
-        $children = Child::forUser($userId);
+        $children = Child::where('user_id', $userId)->orderBy('name')->get();
 
         // Default to first child or selected child
         $selectedChildId = $request->get('child_id', $children->first()?->id);
         $selectedChild = $selectedChildId ? Child::find($selectedChildId) : null;
 
         // Get time blocks for the selected child
-        $timeBlocks = $selectedChild ? $selectedChild->timeBlocks($this->supabase) : collect([]);
+        $timeBlocks = $selectedChild ? $selectedChild->timeBlocks : collect([]);
 
         // Get review slots for the selected child
-        $reviewSlots = $selectedChild ? ReviewSlot::forChild($selectedChild->id, $this->supabase) : collect([]);
+        $reviewSlots = $selectedChild ? ReviewSlot::forChild($selectedChild->id) : collect([]);
 
         // Organize time blocks and review slots by day for calendar view
         $timeBlocksByDay = [];
@@ -85,7 +72,7 @@ class CalendarController extends Controller
         }
 
         // Check for overlapping time blocks
-        $existingBlocks = TimeBlock::forChildAndDay($validated['child_id'], $validated['day_of_week'], $this->supabase);
+        $existingBlocks = TimeBlock::forChildAndDay($validated['child_id'], $validated['day_of_week']);
         $newBlock = new TimeBlock([
             'start_time' => $validated['start_time'].':00',
             'end_time' => $validated['end_time'].':00',
@@ -107,10 +94,10 @@ class CalendarController extends Controller
             'label' => $validated['label'],
         ]);
 
-        $timeBlock->save($this->supabase);
+        $timeBlock->save();
 
         // Return updated calendar for the specific day
-        $timeBlocksForDay = TimeBlock::forChildAndDay($validated['child_id'], $validated['day_of_week'], $this->supabase);
+        $timeBlocksForDay = TimeBlock::forChildAndDay($validated['child_id'], $validated['day_of_week']);
 
         return view('calendar.partials.day-column', [
             'day' => $validated['day_of_week'],
@@ -121,14 +108,14 @@ class CalendarController extends Controller
 
     public function edit(int $id): View
     {
-        $timeBlock = TimeBlock::find((string) $id, $this->supabase);
+        $timeBlock = TimeBlock::find($id);
 
         if (! $timeBlock) {
             abort(404);
         }
 
         // Verify the time block belongs to user's child
-        $child = $timeBlock->child($this->supabase);
+        $child = $timeBlock->child;
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
@@ -144,14 +131,14 @@ class CalendarController extends Controller
 
     public function update(Request $request, int $id): View|RedirectResponse
     {
-        $timeBlock = TimeBlock::find((string) $id, $this->supabase);
+        $timeBlock = TimeBlock::find($id);
 
         if (! $timeBlock) {
             abort(404);
         }
 
         // Verify the time block belongs to user's child
-        $child = $timeBlock->child($this->supabase);
+        $child = $timeBlock->child;
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
@@ -165,7 +152,7 @@ class CalendarController extends Controller
         ]);
 
         // Check for overlapping time blocks (excluding this one)
-        $existingBlocks = TimeBlock::forChildAndDay($validated['child_id'], $validated['day_of_week'], $this->supabase)
+        $existingBlocks = TimeBlock::forChildAndDay($validated['child_id'], $validated['day_of_week'])
             ->where('id', '!=', $id);
 
         $updatedBlock = new TimeBlock([
@@ -189,10 +176,10 @@ class CalendarController extends Controller
             }
         }
 
-        $timeBlock->save($this->supabase);
+        $timeBlock->save();
 
         // Return updated calendar for the specific day
-        $timeBlocksForDay = TimeBlock::forChildAndDay($validated['child_id'], $validated['day_of_week'], $this->supabase);
+        $timeBlocksForDay = TimeBlock::forChildAndDay($validated['child_id'], $validated['day_of_week']);
 
         return view('calendar.partials.day-column', [
             'day' => $validated['day_of_week'],
@@ -203,14 +190,14 @@ class CalendarController extends Controller
 
     public function destroy(int $id): View
     {
-        $timeBlock = TimeBlock::find((string) $id, $this->supabase);
+        $timeBlock = TimeBlock::find($id);
 
         if (! $timeBlock) {
             abort(404);
         }
 
         // Verify the time block belongs to user's child
-        $child = $timeBlock->child($this->supabase);
+        $child = $timeBlock->child;
         if (! $child || $child->user_id != auth()->id()) {
             abort(403);
         }
@@ -218,10 +205,10 @@ class CalendarController extends Controller
         $day = $timeBlock->day_of_week;
         $childId = $timeBlock->child_id;
 
-        $timeBlock->delete($this->supabase);
+        $timeBlock->delete();
 
         // Return updated calendar for the specific day
-        $timeBlocksForDay = TimeBlock::forChildAndDay($childId, $day, $this->supabase);
+        $timeBlocksForDay = TimeBlock::forChildAndDay($childId, $day);
 
         return view('calendar.partials.day-column', [
             'day' => $day,

@@ -307,11 +307,11 @@ class CacheService
         // Cache each child's commonly accessed data
         foreach ($children as $child) {
             // Cache sessions
-            $sessions = Session::forChild($child->id, $supabase);
+            $sessions = Session::forChild($child->id);
             $this->cacheChildSessions($child->id, $sessions);
 
             // Cache time blocks
-            $timeBlocks = $child->timeBlocks($supabase);
+            $timeBlocks = $child->timeBlocks;
             $this->cacheChildTimeBlocks($child->id, $timeBlocks);
         }
     }

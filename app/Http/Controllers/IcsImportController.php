@@ -4,16 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Child;
 use App\Services\IcsImportService;
-use App\Services\SupabaseClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
 
 class IcsImportController extends Controller
 {
     public function __construct(
-        private SupabaseClient $supabase,
         private IcsImportService $icsImportService
     ) {}
 
@@ -23,14 +20,7 @@ class IcsImportController extends Controller
     public function index(Request $request): View
     {
         $userId = auth()->id();
-        $accessToken = Session::get('supabase_token');
-
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
-
-        $children = Child::forUser($userId, $this->supabase);
+        $children = Child::where('user_id', $userId)->orderBy('name')->get();
         $selectedChildId = $request->get('child_id', $children->first()?->id);
 
         return view('calendar.import', [
@@ -51,12 +41,6 @@ class IcsImportController extends Controller
         ]);
 
         $userId = auth()->id();
-        $accessToken = Session::get('supabase_token');
-
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
 
         // Verify child belongs to user
         $child = Child::find($validated['child_id']);
@@ -99,12 +83,6 @@ class IcsImportController extends Controller
         }
 
         $userId = auth()->id();
-        $accessToken = Session::get('supabase_token');
-
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
 
         // Verify child belongs to user
         $child = Child::find($validated['child_id']);
@@ -121,7 +99,7 @@ class IcsImportController extends Controller
 
             // If HTMX request, return the calendar update
             if ($request->header('HX-Request')) {
-                $timeBlocks = $child->timeBlocks($this->supabase);
+                $timeBlocks = $child->timeBlocks;
                 $timeBlocksByDay = [];
                 foreach (range(1, 7) as $day) {
                     $timeBlocksByDay[$day] = $timeBlocks->where('day_of_week', $day);
@@ -160,12 +138,6 @@ class IcsImportController extends Controller
         }
 
         $userId = auth()->id();
-        $accessToken = Session::get('supabase_token');
-
-        // Ensure SupabaseClient has the user's access token for RLS
-        if ($accessToken) {
-            $this->supabase->setUserToken($accessToken);
-        }
 
         // Verify child belongs to user
         $child = Child::find($validated['child_id']);
@@ -182,7 +154,7 @@ class IcsImportController extends Controller
 
             // If HTMX request, return the calendar update
             if ($request->header('HX-Request')) {
-                $timeBlocks = $child->timeBlocks($this->supabase);
+                $timeBlocks = $child->timeBlocks;
                 $timeBlocksByDay = [];
                 foreach (range(1, 7) as $day) {
                     $timeBlocksByDay[$day] = $timeBlocks->where('day_of_week', $day);

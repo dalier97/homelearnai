@@ -36,12 +36,12 @@ class OnboardingFullWorkflowTest extends TestCase
             'children' => [
                 [
                     'name' => 'Emma Thompson',
-                    'age' => 8,
+                    'grade' => '3rd',
                     'independence_level' => 2,
                 ],
                 [
                     'name' => 'Oliver Thompson',
-                    'age' => 12,
+                    'grade' => '7th',
                     'independence_level' => 3,
                 ],
             ],
@@ -58,12 +58,12 @@ class OnboardingFullWorkflowTest extends TestCase
 
         $emma = $user->children()->where('name', 'Emma Thompson')->first();
         $this->assertNotNull($emma);
-        $this->assertEquals(8, $emma->age);
+        $this->assertEquals('3rd', $emma->grade);
         $this->assertEquals(2, $emma->independence_level);
 
         $oliver = $user->children()->where('name', 'Oliver Thompson')->first();
         $this->assertNotNull($oliver);
-        $this->assertEquals(12, $oliver->age);
+        $this->assertEquals('7th', $oliver->grade);
         $this->assertEquals(3, $oliver->independence_level);
 
         // Step 4: Submit subjects data
@@ -127,7 +127,7 @@ class OnboardingFullWorkflowTest extends TestCase
         // Unauthenticated request should be blocked by auth middleware
         $response = $this->postJson('/onboarding/children', [
             'children' => [
-                ['name' => 'Test Child', 'age' => 8, 'independence_level' => 1],
+                ['name' => 'Test Child', 'grade' => '3rd', 'independence_level' => 1],
             ],
         ]);
 
@@ -187,7 +187,7 @@ class OnboardingFullWorkflowTest extends TestCase
             'children' => [
                 [
                     'name' => '', // Empty name should fail
-                    'age' => 8,
+                    'grade' => '3rd',
                     'independence_level' => 2,
                 ],
             ],
@@ -195,12 +195,12 @@ class OnboardingFullWorkflowTest extends TestCase
 
         $response->assertStatus(422);
 
-        // Test age validation
+        // Test grade validation
         $response = $this->postJson('/onboarding/children', [
             'children' => [
                 [
                     'name' => 'Valid Name',
-                    'age' => 2, // Too young, should fail
+                    'grade' => 'Invalid', // Invalid grade, should fail
                     'independence_level' => 2,
                 ],
             ],

@@ -28,7 +28,7 @@ class ModelRelationshipsTest extends TestCase
         // Create a child for the user
         $child = Child::create([
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'user_id' => $user->id,
             'independence_level' => 2,
         ]);
@@ -117,14 +117,14 @@ class ModelRelationshipsTest extends TestCase
 
         $child1 = Child::create([
             'name' => 'Child 1',
-            'age' => 8,
+            'grade' => '3rd',
             'user_id' => $user->id,
             'independence_level' => 2,
         ]);
 
         $child2 = Child::create([
             'name' => 'Child 2',
-            'age' => 10,
+            'grade' => '5th',
             'user_id' => $user->id,
             'independence_level' => 3,
         ]);
@@ -190,7 +190,7 @@ class ModelRelationshipsTest extends TestCase
         $user = User::factory()->create();
         $child = Child::create([
             'name' => 'Test Child',
-            'age' => 10,
+            'grade' => '5th',
             'user_id' => $user->id,
             'independence_level' => 2,
         ]);
@@ -254,7 +254,7 @@ class ModelRelationshipsTest extends TestCase
         $user = User::factory()->create();
         $child = Child::create([
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'user_id' => $user->id,
             'independence_level' => 2,
         ]);
@@ -269,7 +269,7 @@ class ModelRelationshipsTest extends TestCase
         // Test that subjects are properly scoped to their child
         $anotherChild = Child::create([
             'name' => 'Another Child',
-            'age' => 10,
+            'grade' => '5th',
             'user_id' => $user->id,
             'independence_level' => 3,
         ]);
@@ -293,7 +293,7 @@ class ModelRelationshipsTest extends TestCase
         // Create a child using the relationship
         $child = $user->children()->create([
             'name' => 'Emma',
-            'age' => 9,
+            'grade' => '4th',
             'independence_level' => 2,
         ]);
 

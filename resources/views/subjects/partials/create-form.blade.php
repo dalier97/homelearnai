@@ -1,17 +1,23 @@
 <!-- Modal Overlay and Container -->
-<div class="fixed inset-0 z-40 overflow-y-auto" data-testid="subject-modal">
+<div class="fixed inset-0 z-40 overflow-y-auto" x-data="{ open: true }" x-show="open" data-testid="subject-modal" 
+     x-init="
+         $nextTick(() => {
+             $el.style.display = 'block';
+             $el.style.visibility = 'visible';
+         })
+     ">
     <!-- Background overlay -->
-    <div class="fixed inset-0 bg-black bg-opacity-50 z-40" onclick="document.getElementById('subject-modal').innerHTML = ''; document.getElementById('subject-modal').classList.add('hidden');"></div>
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-40" @click="open = false; $nextTick(() => { $el.closest('[data-testid=subject-modal]').innerHTML = ''; });"></div>
     
     <!-- Modal dialog -->
     <div class="flex min-h-screen items-center justify-center p-4 relative z-50">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full relative z-50" onclick="event.stopPropagation()" data-testid="modal-content">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full relative z-50" @click.stop data-testid="modal-content">
             <!-- Modal Header -->
             <div class="px-6 py-4 bg-gray-50 border-b">
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-medium text-gray-900">Add New Subject</h3>
                     <button 
-                        onclick="document.getElementById('subject-modal').innerHTML = ''; document.getElementById('subject-modal').classList.add('hidden');"
+                        @click="open = false; $nextTick(() => { $el.closest('[data-testid=subject-modal]').innerHTML = ''; });"
                         type="button" 
                         class="text-gray-400 hover:text-gray-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,7 +33,7 @@
                     hx-post="{{ route('subjects.store') }}"
                     hx-target="#subjects-list"
                     hx-swap="innerHTML"
-                    hx-on::after-request="console.log('Subject form submitted', event.detail); if(event.detail.xhr.status >= 200 && event.detail.xhr.status < 300) { setTimeout(() => { document.getElementById('subject-modal').innerHTML = ''; document.getElementById('subject-modal').classList.add('hidden'); }, 100); }"
+                    hx-on::after-request="console.log('Subject form submitted', event.detail); if(event.detail.xhr.status >= 200 && event.detail.xhr.status < 300) { setTimeout(() => { document.querySelector('[data-testid=subject-modal]').innerHTML = ''; }, 100); }"
                     hx-on::response-error="console.error('Subject form error:', event.detail)"
                     class="space-y-4"
                 >
@@ -70,7 +76,7 @@
                     <!-- Form Actions -->
                     <div class="flex justify-end space-x-3 pt-6 border-t">
                         <button 
-                            onclick="document.getElementById('subject-modal').innerHTML = ''; document.getElementById('subject-modal').classList.add('hidden');"
+                            @click="open = false; $nextTick(() => { $el.closest('[data-testid=subject-modal]').innerHTML = ''; });"
                             type="button" 
                             class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md">
                             Cancel

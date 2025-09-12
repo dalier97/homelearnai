@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 <div class="space-y-6">
     <!-- Header -->
     <div class="bg-white rounded-lg shadow-sm p-6">
@@ -13,6 +14,7 @@
                 hx-get="{{ route('children.create') }}"
                 hx-target="#child-form-modal"
                 hx-swap="innerHTML"
+                hx-on::after-request="htmx.process(document.getElementById('child-form-modal'))"
                 class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2"
                 data-testid="header-add-child-btn"
             >
@@ -50,7 +52,7 @@
                         <p class="text-sm font-medium text-green-600">{{ __('age_range') }}</p>
                         <p class="text-2xl font-bold text-green-900">
                             @if($children->count() > 0)
-                                {{ __('age_range_years', ['min' => $children->min('age'), 'max' => $children->max('age')]) }}
+                                {{ __('grade_range', ['min' => $children->pluck('grade')->sort()->first(), 'max' => $children->pluck('grade')->sort()->last()]) }}
                             @else
                                 --
                             @endif
@@ -79,6 +81,7 @@
     <div id="children-list" class="space-y-4">
         @include('children.partials.list')
     </div>
+</div>
 </div>
 
 <!-- Modal for Child Form -->

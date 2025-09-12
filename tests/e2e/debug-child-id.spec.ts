@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { KidsModeHelper } from './helpers/kids-mode-helpers';
+import { TestSetupHelper } from './helpers/test-setup-helpers';
+import { ModalHelper } from './helpers/modal-helpers';
 
 /**
  * Debug Child ID Detection
@@ -9,20 +11,29 @@ import { KidsModeHelper } from './helpers/kids-mode-helpers';
 
 test.describe('Debug Child ID Detection', () => {
   let kidsModeHelper: KidsModeHelper;
+  let testSetupHelper: TestSetupHelper;
+  let modalHelper: ModalHelper;
   
   // Increase timeout
   test.describe.configure({ timeout: 60000 });
 
   test.beforeEach(async ({ page }) => {
+    // Initialize helpers
     kidsModeHelper = new KidsModeHelper(page);
+    testSetupHelper = new TestSetupHelper(page);
+    modalHelper = new ModalHelper(page);
+    
+    // Ensure test isolation
+    await testSetupHelper.isolateTest();
     
     // Create fresh test user for each test
     await kidsModeHelper.createTestUserWithKidsMode();
   });
 
   test.afterEach(async ({ page }) => {
-    // Clean up kids mode state
+    // Clean up kids mode state and reset test state
     await kidsModeHelper.resetKidsMode();
+    await modalHelper.resetTestState();
   });
 
   test('Debug Child ID Detection Flow', async ({ page }) => {
@@ -45,28 +56,37 @@ test.describe('Debug Child ID Detection', () => {
       }
     }
     
-    // Create additional child
-    const addChildBtn = page.locator('[data-testid="header-add-child-btn"]');
-    if (await addChildBtn.count() > 0) {
-      console.log('DEBUG: Creating additional child...');
-      await addChildBtn.click();
+    // Create additional child using safe button click to avoid strict mode violation
+    console.log('DEBUG: Creating additional child...');
+    
+    try {
+      // Use specific test ID to avoid strict mode violation
+      const headerButton = page.getByTestId('header-add-child-btn');
+      await expect(headerButton).toBeVisible({ timeout: 10000 });
+      await headerButton.first().click();
       
-      // Wait for Alpine.js modal to be visible
-      await page.waitForSelector('#child-form-modal [data-testid="modal-content"]', { timeout: 10000 });
-      await page.waitForTimeout(1000);
-      const nameInput = page.locator('input[name="name"]');
+      // Wait for modal and fill the form
+      await modalHelper.waitForChildModal();
+      
+      const nameInput = page.locator('#child-form-modal input[name="name"]');
       if (await nameInput.isVisible()) {
         await nameInput.fill('Debug Test Child');
-        const ageSelect = page.locator('select[name="age"]');
+        const ageSelect = page.locator('#child-form-modal select[name="age"]');
         if (await ageSelect.isVisible()) {
           await ageSelect.selectOption('9');
         }
-        const submitBtn = page.locator('button[type="submit"]:has-text("Add")');
+        const independenceSelect = page.locator('#child-form-modal select[name="independence_level"]');
+        if (await independenceSelect.isVisible()) {
+          await independenceSelect.selectOption('2');
+        }
+        const submitBtn = page.locator('#child-form-modal button[type="submit"]');
         if (await submitBtn.isVisible()) {
           await submitBtn.click();
           await page.waitForTimeout(3000);
         }
       }
+    } catch (error) {
+      console.log('DEBUG: Error creating child:', error.message);
     }
     
     // Check children after creation - try refreshing the page

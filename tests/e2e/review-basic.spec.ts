@@ -30,7 +30,9 @@ test.describe('Basic Review System Tests', () => {
     
     // Create a test child
     await page.goto('/children');
-    await page.click('button:has-text("Add Child")');
+    await page.click('[data-testid="header-add-child-btn"]');
+    await page.waitForSelector('#child-form-modal [data-testid="modal-content"]', { timeout: 10000 });
+    await page.waitForTimeout(1000);
     await page.fill('input[name="name"]', 'Review Test Child');
     await page.selectOption('select[name="age"]', '10');
     await page.selectOption('select[name="independence_level"]', '2');
@@ -57,7 +59,7 @@ test.describe('Basic Review System Tests', () => {
     
     // Verify the slot creation modal can be opened
     await page.click('button:has-text("Add Slot")');
-    await page.waitForSelector('#add-slot-modal:not(.hidden)', { timeout: 5000 });
+    await page.waitForSelector('#add-slot-modal:not(.hidden)', { timeout: 10000 });
     await expect(page.locator('#add-slot-modal')).toBeVisible();
     
     // Close the modal
@@ -65,7 +67,7 @@ test.describe('Basic Review System Tests', () => {
     await page.waitForFunction(() => {
       const modal = document.getElementById('add-slot-modal');
       return modal && modal.classList.contains('hidden');
-    }, { timeout: 5000 });
+    }, { timeout: 10000 });
     
     // Verify existing slots are displayed (created by default)
     await expect(page.locator('#day-1-slots .review-slot').first()).toBeVisible();

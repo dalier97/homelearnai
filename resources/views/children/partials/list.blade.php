@@ -11,6 +11,7 @@
             hx-get="{{ route('children.create') }}"
             hx-target="#child-form-modal"
             hx-swap="innerHTML"
+            hx-on::after-request="htmx.process(document.getElementById('child-form-modal'))"
             class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
             data-testid="empty-state-add-child-btn"
         >

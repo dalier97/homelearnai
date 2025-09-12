@@ -1,10 +1,18 @@
 <!-- Modal Overlay -->
-<div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-40" x-data="{ open: true }" x-init="htmx.process($el)" data-testid="unit-create-modal">
-    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4 relative z-50" data-testid="modal-content">
+<div class="fixed inset-0 z-40 overflow-y-auto" 
+     data-testid="unit-create-modal"
+     id="unit-modal-overlay"
+     style="display: block;">
+    <!-- Background overlay -->
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 z-40" onclick="document.getElementById('unit-modal-overlay').remove();"></div>
+    
+    <!-- Modal dialog -->
+    <div class="flex min-h-screen items-center justify-center p-4 relative z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md relative z-50" data-testid="modal-content" onclick="event.stopPropagation();">
         <!-- Modal Header -->
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-medium text-gray-900">Add New Unit</h3>
-            <button type="button" @click="$event.target.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+            <button type="button" onclick="document.getElementById('unit-modal-overlay').remove();" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -12,13 +20,11 @@
         </div>
 
         <!-- Form -->
-        <form hx-post="{{ route('units.store', $subject->id) }}" 
+        <form data-testid="unit-form"
+              hx-post="{{ route('subjects.units.store', $subject->id) }}" 
               hx-target="#units-list"
               hx-swap="innerHTML"
-              hx-on::before-request="console.log('HTMX: Form submission starting...', event.detail)"
-              hx-on::after-request="console.log('HTMX: Form submission completed', event.detail); if(event.detail.xhr.status >= 200 && event.detail.xhr.status < 300) { setTimeout(() => { const modal = event.target.closest('.fixed'); if(modal) { console.log('Removing modal...'); modal.remove(); } }, 100); }"
-              hx-on::response-error="console.error('HTMX: Error occurred', event.detail)"
-              hx-headers='{"X-CSRF-TOKEN": "{{ csrf_token() }}"}'>
+              hx-on::after-request="if(event.detail.successful) { document.getElementById('unit-modal-overlay').remove(); }">
             @csrf
             
             <!-- Unit Name -->
@@ -28,6 +34,7 @@
                     type="text" 
                     id="name" 
                     name="name" 
+                    data-testid="unit-name-input"
                     required 
                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="{{ __('unit_name_example') }}">
@@ -39,6 +46,7 @@
                 <textarea 
                     id="description" 
                     name="description" 
+                    data-testid="unit-description-input"
                     rows="3"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="{{ __('unit_description_placeholder') }}"></textarea>
@@ -58,7 +66,7 @@
             <div class="flex justify-end space-x-3">
                 <button 
                     type="button" 
-                    @click="$event.target.closest('.fixed').remove()"
+                    onclick="document.getElementById('unit-modal-overlay').remove();"
                     class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md">
                     Cancel
                 </button>
@@ -70,5 +78,6 @@
                 </button>
             </div>
         </form>
+        </div>
     </div>
 </div>

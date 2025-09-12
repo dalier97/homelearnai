@@ -159,7 +159,7 @@ return [
         'description' => 'описание',
         'estimated_duration' => 'ориентировочная продолжительность',
         'target_completion_date' => 'целевая дата завершения',
-        'age' => 'возраст',
+        'grade' => 'класс',
         'independence_level' => 'уровень самостоятельности',
         'start_time' => 'время начала',
         'end_time' => 'время окончания',

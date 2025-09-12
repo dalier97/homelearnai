@@ -45,7 +45,7 @@
                         <div class="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <h4 class="font-medium">{{ $unit->title }}</h4>
+                                    <h4 class="font-medium">{{ $unit->name }}</h4>
                                     @if($unit->description)
                                         <p class="text-sm text-gray-600 mt-1">{{ $unit->description }}</p>
                                     @endif
@@ -57,8 +57,9 @@
                                 </div>
                                 <div class="flex gap-2">
                                     <a href="{{ route('units.show', ['unit' => $unit->id]) }}" 
+                                       data-testid="view-unit-{{ $unit->name }}"
                                        class="text-blue-600 hover:text-blue-700 text-sm">
-                                        {{ __('View') }}
+                                        {{ __('View Unit') }}
                                     </a>
                                     <a href="{{ route('units.edit', ['unit' => $unit->id]) }}" 
                                        class="text-gray-600 hover:text-gray-700 text-sm">

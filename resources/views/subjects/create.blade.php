@@ -17,7 +17,7 @@
         </div>
 
         <div class="bg-white rounded-lg shadow-sm border">
-            @include('subjects.partials.create-form', compact('colors', 'childId'))
+            @include('subjects.partials.standalone-create-form', compact('colors', 'childId'))
         </div>
     </div>
 </div>

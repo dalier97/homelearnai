@@ -45,7 +45,7 @@ class KidsModeMiddlewareUnitTest extends TestCase
         Session::put('kids_mode_active', true);
         Session::put('kids_mode_child_id', 123);
 
-        $request = Request::create('/dashboard/child/123/today', 'GET');
+        $request = Request::create('/dashboard/child-today/123', 'GET');
         $request->setRouteResolver(function () {
             $route = new \Illuminate\Routing\Route(['GET'], '/dashboard/child/{child_id}/today', []);
             $route->name('dashboard.child-today');
@@ -117,7 +117,7 @@ class KidsModeMiddlewareUnitTest extends TestCase
 
         // Assert
         $this->assertEquals(302, $response->getStatusCode());
-        $this->assertStringContainsString('dashboard/child/123/today', $response->headers->get('Location'));
+        $this->assertStringContainsString('dashboard/child-today/123', $response->headers->get('Location'));
     }
 
     public function test_kids_mode_middleware_blocks_planning_routes(): void
@@ -143,7 +143,7 @@ class KidsModeMiddlewareUnitTest extends TestCase
 
         // Assert
         $this->assertEquals(302, $response->getStatusCode());
-        $this->assertStringContainsString('dashboard/child/123/today', $response->headers->get('Location'));
+        $this->assertStringContainsString('dashboard/child-today/123', $response->headers->get('Location'));
     }
 
     public function test_kids_mode_middleware_blocks_children_routes(): void
@@ -169,7 +169,7 @@ class KidsModeMiddlewareUnitTest extends TestCase
 
         // Assert
         $this->assertEquals(302, $response->getStatusCode());
-        $this->assertStringContainsString('dashboard/child/123/today', $response->headers->get('Location'));
+        $this->assertStringContainsString('dashboard/child-today/123', $response->headers->get('Location'));
     }
 
     public function test_kids_mode_middleware_blocks_create_routes(): void
@@ -195,7 +195,7 @@ class KidsModeMiddlewareUnitTest extends TestCase
 
         // Assert
         $this->assertEquals(302, $response->getStatusCode());
-        $this->assertStringContainsString('dashboard/child/123/today', $response->headers->get('Location'));
+        $this->assertStringContainsString('dashboard/child-today/123', $response->headers->get('Location'));
     }
 
     public function test_kids_mode_middleware_allows_static_assets(): void
@@ -318,7 +318,7 @@ class KidsModeMiddlewareUnitTest extends TestCase
 
         // Assert
         $this->assertEquals(302, $response->getStatusCode());
-        $this->assertStringContainsString('dashboard/child/123/today', $response->headers->get('Location'));
+        $this->assertStringContainsString('dashboard/child-today/123', $response->headers->get('Location'));
     }
 
     public function test_not_in_kids_mode_middleware_handles_htmx_when_blocked(): void

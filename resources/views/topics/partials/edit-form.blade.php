@@ -1,10 +1,16 @@
 <!-- Modal Overlay -->
-<div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-40" x-data="{ open: true }" data-testid="topic-edit-modal">
-    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4 relative z-50" data-testid="modal-content">
+<div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-40" 
+     x-data="{ open: true }" 
+     x-show="open"
+     data-testid="topic-edit-modal"
+     style="display: flex !important;">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4 relative z-50" 
+         data-testid="modal-content"
+         @click.stop>
         <!-- Modal Header -->
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-medium text-gray-900">Edit Topic</h3>
-            <button type="button" @click="$event.target.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+            <button type="button" @click="open = false; document.getElementById('topic-modal').innerHTML = '';" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -73,7 +79,7 @@
             <div class="flex justify-end space-x-3">
                 <button 
                     type="button" 
-                    @click="$event.target.closest('.fixed').remove()"
+                    @click="open = false; document.getElementById('topic-modal').innerHTML = '';"
                     class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md">
                     Cancel
                 </button>

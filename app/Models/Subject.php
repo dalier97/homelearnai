@@ -153,6 +153,7 @@ class Subject extends Model
             '#eab308' => 'Yellow',
             '#10b981' => 'Green',
             '#3b82f6' => 'Blue',
+            '#06b6d4' => 'Cyan',
             '#6366f1' => 'Indigo',
             '#8b5cf6' => 'Purple',
             '#ec4899' => 'Pink',

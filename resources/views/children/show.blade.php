@@ -21,9 +21,9 @@
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">{{ $child->name }}</h1>
                     <div class="flex items-center space-x-4 text-gray-600">
-                        <span>{{ __('years_old', ['age' => $child->age]) }}</span>
+                        <span>{{ __('grade_level', ['grade' => $child->grade]) }}</span>
                         <span>•</span>
-                        <span>{{ ucfirst(str_replace('_', ' ', $child->getAgeGroup())) }}</span>
+                        <span>{{ ucfirst(str_replace('_', ' ', $child->getGradeGroup())) }}</span>
                     </div>
                 </div>
             </div>

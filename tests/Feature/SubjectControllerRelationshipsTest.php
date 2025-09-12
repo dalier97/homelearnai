@@ -22,7 +22,7 @@ class SubjectControllerRelationshipsTest extends TestCase
         $user = User::factory()->create();
         $child = $user->children()->create([
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'independence_level' => 2,
         ]);
 
@@ -61,7 +61,7 @@ class SubjectControllerRelationshipsTest extends TestCase
         $user = User::factory()->create();
         $child = $user->children()->create([
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'independence_level' => 2,
         ]);
 
@@ -97,7 +97,7 @@ class SubjectControllerRelationshipsTest extends TestCase
         $user = User::factory()->create();
         $child = $user->children()->create([
             'name' => 'Test Child',
-            'age' => 8,
+            'grade' => '3rd',
             'independence_level' => 2,
         ]);
 
@@ -141,13 +141,13 @@ class SubjectControllerRelationshipsTest extends TestCase
 
         $child1 = $user1->children()->create([
             'name' => 'Child 1',
-            'age' => 8,
+            'grade' => '3rd',
             'independence_level' => 2,
         ]);
 
         $child2 = $user2->children()->create([
             'name' => 'Child 2',
-            'age' => 10,
+            'grade' => '5th',
             'independence_level' => 3,
         ]);
 
