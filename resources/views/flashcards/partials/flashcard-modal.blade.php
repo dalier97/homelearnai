@@ -1,5 +1,5 @@
 <!-- Flashcard Modal -->
-<div id="flashcard-modal-overlay" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-40" x-data="{ open: true }" x-show="open" data-testid="flashcard-modal-overlay">
+<div id="flashcard-modal-overlay" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50" x-data="{ open: true }" x-show="open" data-testid="flashcard-modal-overlay">
     <div id="flashcard-modal-content" class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto relative z-50" data-testid="flashcard-modal">
         <div class="px-6 py-4 border-b border-gray-200">
             <div class="flex items-center justify-between">

@@ -34,7 +34,7 @@ test.describe('Basic Review System Tests', () => {
     await page.waitForSelector('#child-form-modal [data-testid="modal-content"]', { timeout: 10000 });
     await page.waitForTimeout(1000);
     await page.fill('input[name="name"]', 'Review Test Child');
-    await page.selectOption('select[name="age"]', '10');
+    await page.selectOption('select[name="grade"]', '5th');
     await page.selectOption('select[name="independence_level"]', '2');
     await page.click('button[type="submit"]:has-text("Add Child")');
     

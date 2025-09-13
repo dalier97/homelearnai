@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Child;
 use App\Models\KidsModeAuditLog;
 use App\Models\User;
+use App\Models\UserPreferences;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -93,9 +94,17 @@ class KidsModeController extends Controller
             ->where('user_id', $userId)
             ->first();
 
-        // Get user preferences using Eloquent
-        $user = User::findOrFail($userId);
-        $userPrefs = $user->getPreferences();
+        // Get user preferences directly from database to avoid caching issues
+        $userPrefs = UserPreferences::where('user_id', $userId)->first();
+        if (! $userPrefs) {
+            $userPrefs = UserPreferences::create([
+                'user_id' => $userId,
+                'kids_mode_pin' => null,
+                'kids_mode_pin_salt' => null,
+                'kids_mode_pin_attempts' => 0,
+                'kids_mode_pin_locked_until' => null,
+            ]);
+        }
 
         // Check PIN setup and lock status
         $hasPinSetup = $userPrefs->hasPinSetup();

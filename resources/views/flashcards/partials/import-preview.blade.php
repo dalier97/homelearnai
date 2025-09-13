@@ -203,6 +203,7 @@
                 <form hx-post="{{ route('units.flashcards.import.execute', $unit->id) }}" 
                       hx-target="#flashcards-list" 
                       hx-swap="innerHTML"
+                      hx-on::after-request="document.getElementById('flashcard-modal-overlay')?.remove()"
                       class="inline">
                     @csrf
                     <input type="hidden" name="import_method" value="{{ $importMethod }}">
@@ -212,8 +213,7 @@
                     <button 
                         type="submit" 
                         class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-colors"
-                        hx-confirm="Are you sure you want to import {{ count($cards) }} flashcard(s) to {{ $unit->name }}?"
-                        onclick="document.getElementById('import-modal-backdrop').remove()">
+                        hx-confirm="Are you sure you want to import {{ count($cards) }} flashcard(s) to {{ $unit->name }}?">
                         Import {{ count($cards) }} Flashcard(s)
                     </button>
                 </form>

@@ -12,22 +12,10 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
-        <style>
-            .rounded-md { border-radius: 0.375rem; }
-            .border-gray-300 { border: 1px solid #d1d5db; }
-            .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
-            .text-red-600 { color: #dc2626; }
-            .text-sm { font-size: 0.875rem; }
-            .block { display: block; }
-            .mt-1 { margin-top: 0.25rem; }
-            .mt-4 { margin-top: 1rem; }
-            .w-full { width: 100%; }
-            .bg-indigo-600 { background-color: #4f46e5; }
-            .text-white { color: white; }
-            .px-4 { padding-left: 1rem; padding-right: 1rem; }
-            .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-            .ml-3 { margin-left: 0.75rem; }
-        </style>
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        
+        <!-- Page Styles -->
+        @stack('styles')
     </head>
     <body class="font-sans text-gray-900 antialiased">
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
@@ -41,5 +29,8 @@
 
             @yield('content')
         </div>
+        
+        <!-- Page Scripts -->
+        @stack('scripts')
     </body>
 </html>

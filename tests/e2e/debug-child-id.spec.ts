@@ -71,7 +71,7 @@ test.describe('Debug Child ID Detection', () => {
       const nameInput = page.locator('#child-form-modal input[name="name"]');
       if (await nameInput.isVisible()) {
         await nameInput.fill('Debug Test Child');
-        const ageSelect = page.locator('#child-form-modal select[name="age"]');
+        const ageSelect = page.locator('#child-form-modal select[name="grade"]');
         if (await ageSelect.isVisible()) {
           await ageSelect.selectOption('9');
         }

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Http\Middleware\KidsMode;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 use Tests\TestCase;
@@ -21,22 +20,19 @@ class KidsModeMiddlewareTest extends TestCase
         // Register test routes for middleware testing
         Route::get('/test/parent-only', function () {
             return response('parent-only-content');
-        })->middleware('not-in-kids-mode');
+        })->middleware(['web', 'not-in-kids-mode']);
 
         Route::get('/test/always-accessible', function () {
             return response('always-accessible-content');
-        });
+        })->middleware('web');
 
         Route::get('/test/child-today/{child_id}', function ($childId) {
             return response("child-today-{$childId}");
-        })->name('dashboard.child-today');
+        })->name('dashboard.child-today')->middleware('web');
 
         Route::get('/test/kids-mode-exit', function () {
             return response('exit-screen');
-        })->name('kids-mode.exit');
-
-        // Apply the KidsMode middleware globally to test routes as well
-        $this->app['router']->pushMiddlewareToGroup('web', \App\Http\Middleware\KidsMode::class);
+        })->name('kids-mode.exit')->middleware('web');
     }
 
     public function test_kids_mode_middleware_allows_access_when_not_in_kids_mode(): void
@@ -83,7 +79,7 @@ class KidsModeMiddlewareTest extends TestCase
         // Create a test route that matches blocked patterns with middleware applied
         Route::get('/dashboard/parent', function () {
             return response('parent-dashboard');
-        })->middleware(\App\Http\Middleware\KidsMode::class);
+        })->middleware('web');
 
         // Arrange: In kids mode
         Session::put('kids_mode_active', true);
@@ -102,7 +98,7 @@ class KidsModeMiddlewareTest extends TestCase
         // Create a test route that matches blocked patterns
         Route::get('/planning/index', function () {
             return response('planning-board');
-        });
+        })->middleware('web');
 
         // Arrange: In kids mode
         Session::put('kids_mode_active', true);
@@ -130,15 +126,15 @@ class KidsModeMiddlewareTest extends TestCase
         // Create a test route that simulates static assets
         Route::get('/css/app.css', function () {
             return response('css-content', 200, ['Content-Type' => 'text/css']);
-        });
+        })->middleware('web');
 
         Route::get('/js/app.js', function () {
             return response('js-content', 200, ['Content-Type' => 'application/javascript']);
-        });
+        })->middleware('web');
 
         Route::get('/images/test.png', function () {
             return response('image-content', 200, ['Content-Type' => 'image/png']);
-        });
+        })->middleware('web');
 
         // Act & Assert: Should allow access to static assets
         $response = $this->get('/css/app.css');
@@ -160,11 +156,11 @@ class KidsModeMiddlewareTest extends TestCase
         // Create test API routes
         Route::get('/api/translations/en', function () {
             return response()->json(['welcome' => 'Welcome']);
-        });
+        })->middleware('web');
 
         Route::post('/api/user/locale', function () {
             return response()->json(['status' => 'updated']);
-        });
+        })->middleware('web');
 
         // Act & Assert: Should allow access to allowed API routes
         $response = $this->get('/api/translations/en');
@@ -196,7 +192,7 @@ class KidsModeMiddlewareTest extends TestCase
 
         // Assert: Should redirect to child today page with error
         $response->assertRedirect();
-        $this->assertStringContainsString('dashboard/child/123/today', $response->headers->get('Location'));
+        $this->assertStringContainsString('dashboard/child-today/123', $response->headers->get('Location'));
         $response->assertSessionHas('error');
     }
 
@@ -218,7 +214,7 @@ class KidsModeMiddlewareTest extends TestCase
             'message' => 'Please exit kids mode to access this feature',
         ]);
         $response->assertHeader('HX-Redirect');
-        $this->assertStringContainsString('dashboard/child/123/today', $response->headers->get('HX-Redirect'));
+        $this->assertStringContainsString('dashboard/child-today/123', $response->headers->get('HX-Redirect'));
     }
 
     public function test_kids_mode_middleware_blocks_routes_with_action_keywords(): void
@@ -226,19 +222,19 @@ class KidsModeMiddlewareTest extends TestCase
         // Create test routes with action keywords
         Route::get('/test/subjects/create', function () {
             return response('create-subject');
-        });
+        })->middleware('web');
 
         Route::get('/test/units/123/edit', function () {
             return response('edit-unit');
-        });
+        })->middleware('web');
 
         Route::post('/test/topics/store', function () {
             return response('store-topic');
-        });
+        })->middleware('web');
 
         Route::delete('/test/children/456/destroy', function () {
             return response('destroy-child');
-        });
+        })->middleware('web');
 
         // Arrange: In kids mode
         Session::put('kids_mode_active', true);
@@ -256,15 +252,15 @@ class KidsModeMiddlewareTest extends TestCase
         // Create test routes for review completion (should be allowed)
         Route::post('/test/reviews/complete/123', function () {
             return response('review-completed');
-        });
+        })->middleware('web');
 
         Route::post('/test/sessions/456/complete', function () {
             return response('session-completed');
-        });
+        })->middleware('web');
 
         Route::post('/test/reviews/process/789', function () {
             return response('review-processed');
-        });
+        })->middleware('web');
 
         // Arrange: In kids mode
         Session::put('kids_mode_active', true);
@@ -289,23 +285,23 @@ class KidsModeMiddlewareTest extends TestCase
         // Create test routes for specific parent-only functionality
         Route::get('/test/dashboard/parent', function () {
             return response('parent-dashboard');
-        });
+        })->middleware('web');
 
         Route::get('/test/children/create', function () {
             return response('create-child');
-        });
+        })->middleware('web');
 
         Route::get('/test/planning/index', function () {
             return response('planning-board');
-        });
+        })->middleware('web');
 
         Route::get('/test/calendar/import', function () {
             return response('calendar-import');
-        });
+        })->middleware('web');
 
         Route::get('/test/kids-mode/settings/pin', function () {
             return response('pin-settings');
-        });
+        })->middleware('web');
 
         // Arrange: In kids mode
         Session::put('kids_mode_active', true);

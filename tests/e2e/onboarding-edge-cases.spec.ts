@@ -158,7 +158,7 @@ test.describe('Onboarding Edge Cases', () => {
     
     // Add initial child data
     await page.getByTestId('child-name-0').fill('Original Name');
-    await page.selectOption('[data-testid="child-age-0"]', '8');
+    await page.selectOption('[data-testid="child-grade-0"]', '8');
     await page.selectOption('[data-testid="child-independence-0"]', '2');
     
     // Step 2 -> 3
@@ -196,7 +196,7 @@ test.describe('Onboarding Edge Cases', () => {
     // Add a second child
     await page.getByTestId('add-another-child').click();
     await page.getByTestId('child-name-1').fill('Second Child');
-    await page.selectOption('[data-testid="child-age-1"]', '10');
+    await page.selectOption('[data-testid="child-grade-1"]', '10');
     
     // Navigate forward to verify changes persist
     await page.getByTestId('next-button').click();
@@ -267,7 +267,7 @@ test.describe('Onboarding Edge Cases', () => {
     
     // Fill age but clear name
     await page.getByTestId('child-name-0').clear();
-    await page.selectOption('[data-testid="child-age-0"]', '8');
+    await page.selectOption('[data-testid="child-grade-0"]', '8');
     await page.getByTestId('next-button').click();
     
     // Should show name validation error again
@@ -336,7 +336,7 @@ test.describe('Onboarding Edge Cases', () => {
     
     // Test first special character name
     await page.getByTestId('child-name-0').fill(testNames[0]);
-    await page.selectOption('[data-testid="child-age-0"]', '8');
+    await page.selectOption('[data-testid="child-grade-0"]', '8');
     await page.selectOption('[data-testid="child-independence-0"]', '2');
     
     // Add more children with special names
@@ -411,7 +411,7 @@ test.describe('Onboarding Edge Cases', () => {
     await expect(page.getByTestId('step-2')).toBeVisible({ timeout: 10000 });
     
     await page.getByTestId('child-name-0').fill('Refresh Child');
-    await page.selectOption('[data-testid="child-age-0"]', '9');
+    await page.selectOption('[data-testid="child-grade-0"]', '9');
     await page.selectOption('[data-testid="child-independence-0"]', '3');
     
     await page.getByTestId('next-button').click();
@@ -493,7 +493,7 @@ test.describe('Onboarding Edge Cases', () => {
     
     // Fill form and submit
     await page.getByTestId('child-name-0').fill('Error Test Child');
-    await page.selectOption('[data-testid="child-age-0"]', '8');
+    await page.selectOption('[data-testid="child-grade-0"]', '8');
     await page.getByTestId('next-button').click();
     
     // Should show server error message
@@ -549,7 +549,7 @@ test.describe('Onboarding Edge Cases', () => {
     await expect(page.getByTestId('step-2')).toBeVisible({ timeout: 10000 });
     
     await page.getByTestId('child-name-0').fill('Timeout Child');
-    await page.selectOption('[data-testid="child-age-0"]', '8');
+    await page.selectOption('[data-testid="child-grade-0"]', '8');
     
     await page.getByTestId('next-button').click();
     await expect(page.getByTestId('step-3')).toBeVisible({ timeout: 10000 });
@@ -621,7 +621,7 @@ test.describe('Onboarding Edge Cases', () => {
     
     // Fill first child
     await page.getByTestId('child-name-0').fill('Child 1');
-    await page.selectOption('[data-testid="child-age-0"]', '6');
+    await page.selectOption('[data-testid="child-grade-0"]', '6');
     
     // Add children up to maximum
     for (let i = 1; i < maxChildren; i++) {

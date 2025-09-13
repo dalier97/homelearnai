@@ -52,10 +52,22 @@ class KidsModePinUISimpleTest extends TestCase
         // This test checks if the navigation includes the kids mode settings link
         $response = $this->get(route('dashboard'));
 
-        // Look for the kids mode settings translation key in the HTML
+        // Handle potential redirect (e.g., onboarding)
+        if ($response->status() === 302) {
+            $response = $this->get($response->headers->get('Location'));
+        }
+
+        $response->assertOk();
+
+        // Look for the kids mode settings link in the navigation
+        $content = $response->getContent();
+        $translation = __('kids_mode_settings');
+
         $this->assertTrue(
-            str_contains($response->getContent(), __('kids_mode_settings')) ||
-            str_contains($response->getContent(), 'kids-mode.settings')
+            str_contains($content, $translation) ||
+            str_contains($content, 'kids-mode.settings') ||
+            str_contains($content, '/kids-mode/settings'),
+            'Expected to find Kids Mode Settings link in navigation'
         );
     }
 

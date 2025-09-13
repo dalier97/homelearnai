@@ -305,7 +305,14 @@ export class ChildHelper {
 
     await this.modalHelper.waitForModal('child-form-modal');
     await this.modalHelper.fillModalField('child-form-modal', 'name', name);
-    await this.page.selectOption('#child-form-modal select[name="age"]', age);
+    // Map age to grade for form selection
+    const ageToGrade: Record<string, string> = {
+      '5': 'K', '6': '1st', '7': '2nd', '8': '3rd', '9': '4th',
+      '10': '5th', '11': '6th', '12': '7th', '13': '8th', '14': '9th',
+      '15': '10th', '16': '11th', '17': '12th', '18': '12th'
+    };
+    const grade = ageToGrade[age] || '5th';
+    await this.page.selectOption('#child-form-modal select[name="grade"]', grade);
     await this.page.selectOption('#child-form-modal select[name="independence_level"]', independenceLevel);
     await this.modalHelper.submitModalForm('child-form-modal');
   }

@@ -62,7 +62,7 @@ test.describe('Milestone 2: Unit Screen Flashcard Integration', () => {
       await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
       
       await page.fill('#child-form-modal input[name="name"]', 'Test Child');
-      await page.selectOption('#child-form-modal select[name="age"]', '10');
+      await page.selectOption('#child-form-modal select[name="grade"]', '5th');
       await page.selectOption('#child-form-modal select[name="independence_level"]', '2');
       await page.click('#child-form-modal button[type="submit"]');
       await page.waitForTimeout(2000);

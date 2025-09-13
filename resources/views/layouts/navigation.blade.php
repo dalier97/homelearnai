@@ -53,6 +53,11 @@
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
+                        <!-- Kids Mode Settings -->
+                        <x-dropdown-link href="/kids-mode/settings">
+                            {{ __('kids_mode_settings') }}
+                        </x-dropdown-link>
+
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -112,6 +117,11 @@
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="route('profile.edit')">
                     {{ __('Profile') }}
+                </x-responsive-nav-link>
+
+                <!-- Kids Mode Settings -->
+                <x-responsive-nav-link href="/kids-mode/settings">
+                    {{ __('kids_mode_settings') }}
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->

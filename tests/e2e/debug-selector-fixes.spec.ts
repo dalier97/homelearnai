@@ -63,13 +63,13 @@ test.describe('Debug Selector Fixes', () => {
     // Verify modal content is visible
     await expect(page.locator('#child-form-modal [data-testid="modal-content"]')).toBeVisible();
     await expect(page.locator('#child-form-modal input[name="name"]')).toBeVisible();
-    await expect(page.locator('#child-form-modal select[name="age"]')).toBeVisible();
+    await expect(page.locator('#child-form-modal select[name="grade"]')).toBeVisible();
     
     console.log('Modal successfully opened with correct selectors!');
     
     // Fill and submit the form to test the complete flow
     await page.fill('#child-form-modal input[name="name"]', 'Test Child');
-    await page.selectOption('#child-form-modal select[name="age"]', '8');
+    await page.selectOption('#child-form-modal select[name="grade"]', '3rd');
     await page.selectOption('#child-form-modal select[name="independence_level"]', '2');
     
     console.log('Submitting form...');

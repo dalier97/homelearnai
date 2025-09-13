@@ -70,9 +70,14 @@ test.describe('Internationalization (i18n)', () => {
     // Navigate to register page
     await page.goto('/register');
     
+    // Wait for translations to load (with timeout)
+    await page.waitForFunction(() => {
+      return typeof window.translationsLoaded === 'function' && window.translationsLoaded();
+    }, { timeout: 10000 });
+    
     // Wait for page to load and check that translations are available in JavaScript
     const translationsAvailable = await page.evaluate(() => {
-      return typeof window.translations === 'object' && window.translations !== null;
+      return typeof window.translations === 'object' && window.translations !== null && Object.keys(window.translations).length > 0;
     });
     
     expect(translationsAvailable).toBe(true);

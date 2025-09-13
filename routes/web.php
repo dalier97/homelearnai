@@ -227,6 +227,25 @@ Route::middleware('auth')->group(function () {
 
     // Locale switching
     Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
+
+    // Translation files for JavaScript
+    Route::get('/lang/{locale}.json', function ($locale) {
+        // Validate locale to prevent directory traversal
+        if (! in_array($locale, ['en', 'ru'])) {
+            abort(404);
+        }
+
+        $path = lang_path("{$locale}.json");
+
+        if (! file_exists($path)) {
+            abort(404);
+        }
+
+        return response()->file($path, [
+            'Content-Type' => 'application/json',
+            'Cache-Control' => 'public, max-age=3600',
+        ]);
+    })->name('translations.json');
 });
 
 require __DIR__.'/auth.php';

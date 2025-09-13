@@ -1,5 +1,5 @@
 <!-- Advanced Import Flashcards Modal -->
-<div class="fixed inset-0 bg-gray-600 bg-opacity-50 z-40 flex items-center justify-center p-4" x-data="{ open: true }" x-show="open" data-testid="advanced-import-modal">
+<div class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center p-4" x-data="{ open: true }" x-show="open" data-testid="advanced-import-modal">
     <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto relative z-50" data-testid="modal-content">
         <!-- Modal Header -->
         <div class="flex items-center justify-between p-6 border-b">

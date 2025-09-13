@@ -60,7 +60,7 @@ test.describe('Quick Start Subjects', () => {
     // Wait for child modal to be ready
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Emma Quick Start');
-    await page.selectOption('#child-form-modal select[name="age"]', '7');
+    await page.selectOption('#child-form-modal select[name="grade"]', '2nd');
     await page.selectOption('#child-form-modal select[name="independence_level"]', '2');
     await modalHelper.submitModalForm('child-form-modal');
 
@@ -161,7 +161,7 @@ test.describe('Quick Start Subjects', () => {
     await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Alex Middle School');
-    await page.selectOption('#child-form-modal select[name="age"]', '12');
+    await page.selectOption('#child-form-modal select[name="grade"]', '7th');
     await modalHelper.submitModalForm('child-form-modal');
 
     // Navigate to subjects and start Quick Start
@@ -230,7 +230,7 @@ test.describe('Quick Start Subjects', () => {
     await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Jordan High School');
-    await page.selectOption('#child-form-modal select[name="age"]', '16');
+    await page.selectOption('#child-form-modal select[name="grade"]', '11th');
     await modalHelper.submitModalForm('child-form-modal');
 
     // Navigate to subjects and start Quick Start
@@ -292,7 +292,7 @@ test.describe('Quick Start Subjects', () => {
     await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Sam Custom');
-    await page.selectOption('#child-form-modal select[name="age"]', '10');
+    await page.selectOption('#child-form-modal select[name="grade"]', '5th');
     await modalHelper.submitModalForm('child-form-modal');
 
     // Start Quick Start
@@ -347,7 +347,7 @@ test.describe('Quick Start Subjects', () => {
     await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Validation Test');
-    await page.selectOption('#child-form-modal select[name="age"]', '8');
+    await page.selectOption('#child-form-modal select[name="grade"]', '3rd');
     await modalHelper.submitModalForm('child-form-modal');
 
     // Start Quick Start
@@ -398,7 +398,7 @@ test.describe('Quick Start Subjects', () => {
     await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Existing Subjects Test');
-    await page.selectOption('#child-form-modal select[name="age"]', '9');
+    await page.selectOption('#child-form-modal select[name="grade"]', '4th');
     await modalHelper.submitModalForm('child-form-modal');
 
     // Create a regular subject first  
@@ -455,7 +455,7 @@ test.describe('Quick Start Subjects', () => {
     await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Modal Test');
-    await page.selectOption('#child-form-modal select[name="age"]', '6');
+    await page.selectOption('#child-form-modal select[name="grade"]', '1st');
     await modalHelper.submitModalForm('child-form-modal');
 
     // Open Quick Start modal
@@ -488,7 +488,7 @@ test.describe('Quick Start Subjects', () => {
     await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Color Test');
-    await page.selectOption('#child-form-modal select[name="age"]', '11');
+    await page.selectOption('#child-form-modal select[name="grade"]', '6th');
     await modalHelper.submitModalForm('child-form-modal');
 
     // Use Quick Start with specific subjects that have predefined colors

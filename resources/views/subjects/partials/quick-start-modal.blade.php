@@ -1,5 +1,5 @@
 <!-- Modal Overlay and Container -->
-<div class="fixed inset-0 z-40 overflow-y-auto" data-testid="quick-start-modal">
+<div class="fixed inset-0 z-50 overflow-y-auto" data-testid="quick-start-modal">
     <!-- Background overlay -->
     <div class="fixed inset-0 bg-black bg-opacity-50 z-40" onclick="document.getElementById('subject-modal').innerHTML = ''; document.getElementById('subject-modal').classList.add('hidden');"></div>
     

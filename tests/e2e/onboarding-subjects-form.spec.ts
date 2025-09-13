@@ -24,7 +24,7 @@ test.describe('Onboarding Subjects Form', () => {
     // Complete Step 2 (Children) - Add one child
     await expect(page.locator('[data-testid="step-2"]')).toBeVisible();
     await page.fill('[data-testid="child-name-0"]', 'Test Child');
-    await page.selectOption('[data-testid="child-age-0"]', '8');
+    await page.selectOption('[data-testid="child-grade-0"]', '8');
     await page.selectOption('[data-testid="child-independence-0"]', '2');
     
     // Submit children and wait for step 3
@@ -158,7 +158,7 @@ test.describe('Onboarding Subjects Form', () => {
     // Add another child
     await page.click('[data-testid="add-another-child"]');
     await page.fill('[data-testid="child-name-1"]', 'Older Child');
-    await page.selectOption('[data-testid="child-age-1"]', '15');
+    await page.selectOption('[data-testid="child-grade-1"]', '15');
     await page.selectOption('[data-testid="child-independence-1"]', '3');
     
     // Go to subjects step
@@ -204,7 +204,7 @@ test.describe('Onboarding Subjects Form', () => {
     await page.click('[data-testid="previous-button"]');
     await page.click('[data-testid="add-another-child"]');
     await page.fill('[data-testid="child-name-1"]', 'Second Child');
-    await page.selectOption('[data-testid="child-age-1"]', '12');
+    await page.selectOption('[data-testid="child-grade-1"]', '12');
     await page.click('[data-testid="next-button"]');
     
     // First child should be expanded by default

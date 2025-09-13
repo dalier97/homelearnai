@@ -61,7 +61,7 @@ test.describe('Flashcard Import System E2E Tests', () => {
       await modalHelper.waitForChildModal();
       
       await page.fill('#child-form-modal input[name="name"]', 'Import Test Child');
-      await page.selectOption('#child-form-modal select[name="age"]', '12');
+      await page.selectOption('#child-form-modal select[name="grade"]', '7th');
       await page.selectOption('#child-form-modal select[name="independence_level"]', '2');
       await page.click('#child-form-modal button[type="submit"]');
       await page.waitForTimeout(2000);
@@ -243,15 +243,14 @@ test.describe('Flashcard Import System E2E Tests', () => {
         console.log('Direct import mode - checking for completion');
       }
       
-      // Wait for import success message to appear
-      await page.waitForSelector('text=Import Successful!', { timeout: 10000 });
+      // Wait for import to complete - modal should close automatically
+      await page.waitForSelector('[data-testid="flashcard-modal-overlay"]', { state: 'hidden', timeout: 10000 });
+      
+      // Wait for flashcard count to be updated (should show 3 imported flashcards)  
+      await page.waitForSelector('text=Flashcards (3)', { timeout: 10000 });
       await page.waitForTimeout(1000);
       
-      // Close the modal manually (since it doesn't auto-close)
-      await page.click('#flashcard-modal-overlay button.text-gray-400');
-      
-      // Wait for modal to close and import to complete
-      await page.waitForSelector('[data-testid="flashcard-modal-overlay"]', { state: 'hidden', timeout: 10000 });
+      // Modal should close automatically after import
       
       // Reload page to ensure flashcard list is updated (HTMX target may not be refreshing correctly)
       await page.reload();
@@ -311,15 +310,14 @@ test.describe('Flashcard Import System E2E Tests', () => {
         console.log('Direct import mode - checking for completion');
       }
       
-      // Wait for import success message to appear
-      await page.waitForSelector('text=Import Successful!', { timeout: 10000 });
+      // Wait for import to complete - modal should close automatically
+      await page.waitForSelector('[data-testid="flashcard-modal-overlay"]', { state: 'hidden', timeout: 10000 });
+      
+      // Wait for flashcard count to be updated
+      await page.waitForSelector('text=Flashcards (2)', { timeout: 10000 });
       await page.waitForTimeout(1000);
       
-      // Close the modal manually (since it doesn't auto-close)
-      await page.click('#flashcard-modal-overlay button.text-gray-400');
-      
-      // Wait for modal to close and import to complete
-      await page.waitForSelector('[data-testid="flashcard-modal-overlay"]', { state: 'hidden', timeout: 10000 });
+      // Modal should close automatically after import
       
       // Reload page to ensure flashcard list is updated (HTMX target may not be refreshing correctly)
       await page.reload();
@@ -377,15 +375,14 @@ test.describe('Flashcard Import System E2E Tests', () => {
         console.log('Direct import mode - checking for completion');
       }
       
-      // Wait for import success message to appear
-      await page.waitForSelector('text=Import Successful!', { timeout: 10000 });
+      // Wait for import to complete - modal should close automatically
+      await page.waitForSelector('[data-testid="flashcard-modal-overlay"]', { state: 'hidden', timeout: 10000 });
+      
+      // Wait for flashcard count to be updated
+      await page.waitForSelector('text=Flashcards (2)', { timeout: 10000 });
       await page.waitForTimeout(1000);
       
-      // Close the modal manually (since it doesn't auto-close)
-      await page.click('#flashcard-modal-overlay button.text-gray-400');
-      
-      // Wait for modal to close and import to complete
-      await page.waitForSelector('[data-testid="flashcard-modal-overlay"]', { state: 'hidden', timeout: 10000 });
+      // Modal should close automatically after import
       
       // Reload page to ensure flashcard list is updated (HTMX target may not be refreshing correctly)
       await page.reload();
@@ -545,7 +542,7 @@ test.describe('Flashcard Import System E2E Tests', () => {
         'Count test 1?, Answer 1',
         'Count test 2?, Answer 2',
         'Count test 3?, Answer 3',
-      ].join('\\n');
+      ].join('\n');
       
       await page.fill('textarea[name="import_text"]', countTestData);
       const previewButton = page.locator('button:has-text("Preview Import")').last();
@@ -553,9 +550,10 @@ test.describe('Flashcard Import System E2E Tests', () => {
       await previewButton.click();
       await page.waitForTimeout(3000);
       
-      const previewExists = await page.locator('text=Preview, text=cards will be imported').count() > 0;
+      const previewExists = await page.locator('text=Ready to import').count() > 0;
       if (previewExists) {
-        await page.click('button:has-text("Confirm Import"), button:has-text("Import")');
+        // Click the correct import button that matches the template: "Import X Flashcard(s)"
+        await page.click('button[type="submit"]:has-text("Import")');
         await page.waitForTimeout(3000);
       }
       

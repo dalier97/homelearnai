@@ -935,15 +935,23 @@ class FlashcardController extends Controller
                 'manual_import'
             );
 
-            // Return updated flashcards list with import results
+            // Invalidate cache after import
+            $this->cacheService->invalidateUnitCache($unitId);
+
+            // Return updated flashcards list with count update
             $flashcards = $unit->flashcards()
                 ->where('is_active', true)
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
 
-            return view('flashcards.partials.flashcard-list', compact('flashcards', 'unit'))
-                ->with('htmx_trigger', 'flashcardsImported')
-                ->with('import_result', $importResult);
+            $flashcardCount = $unit->flashcards()->where('is_active', true)->count();
+
+            // Include OOB update for the flashcard count in header (same as storeView method)
+            $listView = view('flashcards.partials.flashcard-list', compact('flashcards', 'unit'))->render();
+            $countUpdate = '<span class="ml-2 text-sm font-normal text-gray-600" id="flashcard-count" hx-swap-oob="true">('.$flashcardCount.')</span>';
+
+            return response($listView.$countUpdate)
+                ->header('HX-Trigger', 'flashcardsImported');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             $errors = collect($e->validator->errors()->all())->implode('<br>');

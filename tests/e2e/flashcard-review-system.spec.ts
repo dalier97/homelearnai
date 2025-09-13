@@ -57,7 +57,7 @@ test.describe('Flashcard Review System E2E Tests', () => {
       await modalHelper.waitForChildModal();
       
       await page.fill('#child-form-modal input[name="name"]', 'Review Test Child');
-      await page.selectOption('#child-form-modal select[name="age"]', '10');
+      await page.selectOption('#child-form-modal select[name="grade"]', '5th');
       await page.selectOption('#child-form-modal select[name="independence_level"]', '3');
       await page.click('#child-form-modal button[type="submit"]');
       await page.waitForTimeout(2000);

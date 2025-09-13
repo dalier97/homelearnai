@@ -72,7 +72,7 @@ test.describe('Complete Flashcard System E2E Tests', () => {
         
         if (modalVisible) {
           await page.fill('#child-form-modal input[name="name"]', 'Test Child');
-          await page.selectOption('#child-form-modal select[name="age"]', '10');
+          await page.selectOption('#child-form-modal select[name="grade"]', '5th');
           await page.selectOption('#child-form-modal select[name="independence_level"]', '2');
           await page.click('#child-form-modal button[type="submit"]');
           await page.waitForTimeout(3000);
@@ -96,7 +96,7 @@ test.describe('Complete Flashcard System E2E Tests', () => {
           const modalNowVisible = await page.locator('#child-form-modal').isVisible();
           if (modalNowVisible) {
             await page.fill('#child-form-modal input[name="name"]', 'Test Child');
-            await page.selectOption('#child-form-modal select[name="age"]', '10');
+            await page.selectOption('#child-form-modal select[name="grade"]', '5th');
             await page.selectOption('#child-form-modal select[name="independence_level"]', '2');
             await page.click('#child-form-modal button[type="submit"]');
             await page.waitForTimeout(3000);
@@ -138,7 +138,7 @@ test.describe('Complete Flashcard System E2E Tests', () => {
         await page.waitForTimeout(1000);
         
         await page.fill('#child-form-modal input[name="name"]', 'Test Child');
-        await page.selectOption('#child-form-modal select[name="age"]', '10');
+        await page.selectOption('#child-form-modal select[name="grade"]', '5th');
         await page.selectOption('#child-form-modal select[name="independence_level"]', '2');
         await page.click('#child-form-modal button[type="submit"]');
         await page.waitForTimeout(3000);

@@ -632,10 +632,17 @@ export class KidsModeHelper {
       await expect(nameInput).toBeVisible({ timeout: 3000 });
       await nameInput.fill(childName);
       
-      const ageSelect = this.page.locator('select[name="age"]').first();
-      if (await ageSelect.isVisible()) {
-        await ageSelect.selectOption(age.toString());
-        console.log(`Selected age: ${age}`);
+      // Map age to grade for form selection
+      const ageToGrade: Record<string, string> = {
+        '5': 'K', '6': '1st', '7': '2nd', '8': '3rd', '9': '4th',
+        '10': '5th', '11': '6th', '12': '7th', '13': '8th', '14': '9th',
+        '15': '10th', '16': '11th', '17': '12th', '18': '12th'
+      };
+      const grade = ageToGrade[age.toString()] || '5th';
+      const gradeSelect = this.page.locator('select[name="grade"]').first();
+      if (await gradeSelect.isVisible()) {
+        await gradeSelect.selectOption(grade);
+        console.log(`Selected grade: ${grade} (for age ${age})`);
       }
       
       // Look for submit button with various selectors
@@ -1124,7 +1131,14 @@ export class KidsModeHelper {
       
       // Fill the child form
       await this.page.fill('input[name="name"]', childName);
-      await this.page.selectOption('select[name="age"]', age.toString());
+      // Map age to grade for form selection
+      const ageToGrade: Record<string, string> = {
+        '5': 'K', '6': '1st', '7': '2nd', '8': '3rd', '9': '4th',
+        '10': '5th', '11': '6th', '12': '7th', '13': '8th', '14': '9th',
+        '15': '10th', '16': '11th', '17': '12th', '18': '12th'
+      };
+      const grade = ageToGrade[age.toString()] || '5th';
+      await this.page.selectOption('select[name="grade"]', grade);
       await this.page.selectOption('select[name="independence_level"]', '2'); // Default independence level
       
       // Submit the child form

@@ -42,26 +42,14 @@ class KidsModePinUITest extends TestCase
     /** @test */
     public function it_displays_pin_settings_page_correctly_when_no_pin_is_set()
     {
-        // Mock the SupabaseClient to return no PIN setup
-        $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
-            $mock->shouldReceive('from')
-                ->with('user_preferences')
-                ->andReturnSelf();
-            $mock->shouldReceive('select')
-                ->with('kids_mode_pin, kids_mode_pin_salt, kids_mode_pin_attempts, kids_mode_pin_locked_until')
-                ->andReturnSelf();
-            $mock->shouldReceive('eq')
-                ->with('user_id', $this->userId)
-                ->andReturnSelf();
-            $mock->shouldReceive('single')
-                ->andReturn([
-                    'kids_mode_pin' => null,
-                    'kids_mode_pin_salt' => null,
-                    'kids_mode_pin_attempts' => 0,
-                    'kids_mode_pin_locked_until' => null,
-                ]);
-        });
+        // Ensure user preferences have no PIN setup (default state)
+        $preferences = $this->user->getPreferences();
+        $preferences->update([
+            'kids_mode_pin' => null,
+            'kids_mode_pin_salt' => null,
+            'kids_mode_pin_attempts' => 0,
+            'kids_mode_pin_locked_until' => null,
+        ]);
 
         $response = $this->get(route('kids-mode.settings'));
 
@@ -75,26 +63,14 @@ class KidsModePinUITest extends TestCase
     /** @test */
     public function it_displays_pin_settings_page_correctly_when_pin_is_set()
     {
-        // Mock the SupabaseClient to return existing PIN setup
-        $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
-            $mock->shouldReceive('from')
-                ->with('user_preferences')
-                ->andReturnSelf();
-            $mock->shouldReceive('select')
-                ->with('kids_mode_pin, kids_mode_pin_salt, kids_mode_pin_attempts, kids_mode_pin_locked_until')
-                ->andReturnSelf();
-            $mock->shouldReceive('eq')
-                ->with('user_id', $this->userId)
-                ->andReturnSelf();
-            $mock->shouldReceive('single')
-                ->andReturn([
-                    'kids_mode_pin' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-                    'kids_mode_pin_salt' => 'test-salt',
-                    'kids_mode_pin_attempts' => 0,
-                    'kids_mode_pin_locked_until' => null,
-                ]);
-        });
+        // Set up user preferences with PIN using UserPreferences model
+        $preferences = $this->user->getPreferences();
+        $preferences->update([
+            'kids_mode_pin' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+            'kids_mode_pin_salt' => 'test-salt',
+            'kids_mode_pin_attempts' => 0,
+            'kids_mode_pin_locked_until' => null,
+        ]);
 
         $response = $this->get(route('kids-mode.settings'));
 
@@ -175,37 +151,54 @@ class KidsModePinUITest extends TestCase
         Session::put('kids_mode_active', true);
         Session::put('kids_mode_child_id', $this->child->id);
 
-        // Mock child data and PIN check
-        $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
+        // Ensure user preferences have no PIN setup (use Eloquent, not Supabase)
+        $preferences = $this->user->getPreferences();
+        $preferences->update([
+            'kids_mode_pin' => null,
+            'kids_mode_pin_salt' => null,
+            'kids_mode_pin_attempts' => 0,
+            'kids_mode_pin_locked_until' => null,
+        ]);
 
-            // Child will be found via database using real data
+        // Refresh the preferences to ensure the update is reflected
+        $preferences->fresh();
 
-            // Mock user preferences lookup (no PIN)
-            $mock->shouldReceive('from')
-                ->with('user_preferences')
-                ->andReturnSelf();
-            $mock->shouldReceive('select')
-                ->with('kids_mode_pin, kids_mode_pin_salt, kids_mode_pin_attempts, kids_mode_pin_locked_until')
-                ->andReturnSelf();
-            $mock->shouldReceive('eq')
-                ->with('user_id', $this->userId)
-                ->andReturnSelf();
-            $mock->shouldReceive('single')
-                ->andReturn([
-                    'kids_mode_pin' => null,
-                    'kids_mode_pin_salt' => null,
-                    'kids_mode_pin_attempts' => 0,
-                    'kids_mode_pin_locked_until' => null,
-                ]);
-        });
+        // Debug: Verify the preferences were actually updated
+        $preferences->refresh();
+        $this->assertNull($preferences->kids_mode_pin, 'PIN should be null after update');
+        $this->assertFalse($preferences->hasPinSetup(), 'hasPinSetup should return false');
+
+        // Before making the request, let's verify the user preferences in the database directly
+        $dbPrefs = \DB::table('user_preferences')->where('user_id', $this->user->id)->first();
+        $this->assertNotNull($dbPrefs, 'UserPreferences should exist in database');
+        $this->assertNull($dbPrefs->kids_mode_pin, 'kids_mode_pin should be null in database');
 
         $response = $this->get(route('kids-mode.exit'));
 
         $response->assertStatus(200);
-        $response->assertSee(__('PIN Not Set'));
-        $response->assertSee(__('A parent needs to set up a PIN first'));
-        $response->assertDontSee('pin-entry-container');
+
+        // Debug: Let's see what's actually in the response
+        $content = $response->getContent();
+
+        // Look for our debug values in the HTML comment
+        if (preg_match('/has_pin_setup=(true|false), is_locked=(true|false)/', $content, $matches)) {
+            $debugHasPinSetup = $matches[1] === 'true';
+            $debugIsLocked = $matches[2] === 'true';
+            $this->assertFalse($debugHasPinSetup, 'Template should receive has_pin_setup = false');
+            $this->assertFalse($debugIsLocked, 'Template should receive is_locked = false');
+        }
+
+        $this->assertStringContainsString('PIN Not Set', $content, 'Should contain PIN Not Set message');
+        $this->assertStringContainsString('A parent needs to set up a PIN first', $content, 'Should contain setup message');
+
+        // Check if pin-entry-container appears as an HTML element (not just in JavaScript)
+        // Look for the actual div element, not the string in JavaScript
+        if (preg_match('/<div[^>]*id="pin-entry-container"/', $content)) {
+            $this->fail('Template is showing pin-entry-container HTML element when it should show "PIN Not Set".');
+        }
+
+        // But we should NOT see the actual PIN entry HTML structure
+        $this->assertStringNotContainsString('<div id="error-message"', $content, 'Should not contain PIN entry error message div');
     }
 
     /** @test */
@@ -241,37 +234,26 @@ class KidsModePinUITest extends TestCase
 
         $lockoutTime = now()->addMinutes(3);
 
-        // Mock child data and locked PIN check
-        $this->mock(\App\Services\SupabaseClient::class, function ($mock) use ($lockoutTime) {
-            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
-
-            // Child will be found via database using real data
-
-            // Mock user preferences lookup (locked account)
-            $mock->shouldReceive('from')
-                ->with('user_preferences')
-                ->andReturnSelf();
-            $mock->shouldReceive('select')
-                ->with('kids_mode_pin, kids_mode_pin_salt, kids_mode_pin_attempts, kids_mode_pin_locked_until')
-                ->andReturnSelf();
-            $mock->shouldReceive('eq')
-                ->with('user_id', $this->userId)
-                ->andReturnSelf();
-            $mock->shouldReceive('single')
-                ->andReturn([
-                    'kids_mode_pin' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-                    'kids_mode_pin_salt' => 'test-salt',
-                    'kids_mode_pin_attempts' => 5,
-                    'kids_mode_pin_locked_until' => $lockoutTime->toISOString(),
-                ]);
-        });
+        // Set up user preferences with locked account using Eloquent
+        $preferences = $this->user->getPreferences();
+        $preferences->update([
+            'kids_mode_pin' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+            'kids_mode_pin_salt' => 'test-salt',
+            'kids_mode_pin_attempts' => 5,
+            'kids_mode_pin_locked_until' => $lockoutTime,
+        ]);
 
         $response = $this->get(route('kids-mode.exit'));
 
         $response->assertStatus(200);
         $response->assertSee(__('Account Locked'));
         $response->assertSee(__('too_many_attempts'));
-        $response->assertDontSee('pin-entry-container');
+
+        // Check that the PIN entry HTML element is not present (not just the string in JavaScript)
+        $content = $response->getContent();
+        if (preg_match('/<div[^>]*id="pin-entry-container"/', $content)) {
+            $this->fail('Template is showing pin-entry-container HTML element when account is locked.');
+        }
     }
 
     /** @test */

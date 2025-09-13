@@ -75,7 +75,7 @@ test.describe('Onboarding Full Integration', () => {
     
     // Add single child with elementary age
     await page.getByTestId('child-name-0').fill('Emma Thompson');
-    await page.selectOption('[data-testid="child-age-0"]', '8');
+    await page.selectOption('[data-testid="child-grade-0"]', '8');
     await page.selectOption('[data-testid="child-independence-0"]', '2'); // Basic
     
     // Submit children form
@@ -178,19 +178,19 @@ test.describe('Onboarding Full Integration', () => {
     
     // Add first child - Elementary
     await page.getByTestId('child-name-0').fill('Alice Johnson');
-    await page.selectOption('[data-testid="child-age-0"]', '7');
+    await page.selectOption('[data-testid="child-grade-0"]', '7');
     await page.selectOption('[data-testid="child-independence-0"]', '1'); // Needs Help
     
     // Add second child - Middle School
     await page.getByTestId('add-another-child').click();
     await page.getByTestId('child-name-1').fill('Bob Johnson');
-    await page.selectOption('[data-testid="child-age-1"]', '12');
+    await page.selectOption('[data-testid="child-grade-1"]', '12');
     await page.selectOption('[data-testid="child-independence-1"]', '3'); // Intermediate
     
     // Add third child - High School
     await page.getByTestId('add-another-child').click();
     await page.getByTestId('child-name-2').fill('Charlie Johnson');
-    await page.selectOption('[data-testid="child-age-2"]', '16');
+    await page.selectOption('[data-testid="child-grade-2"]', '16');
     await page.selectOption('[data-testid="child-independence-2"]', '4'); // Independent
     
     // Submit children
@@ -277,7 +277,7 @@ test.describe('Onboarding Full Integration', () => {
     await expect(page.getByTestId('step-2')).toBeVisible({ timeout: 10000 });
     
     await page.getByTestId('child-name-0').fill('Creative Kid');
-    await page.selectOption('[data-testid="child-age-0"]', '10');
+    await page.selectOption('[data-testid="child-grade-0"]', '10');
     await page.selectOption('[data-testid="child-independence-0"]', '3');
     
     await page.getByTestId('next-button').click();
@@ -354,13 +354,13 @@ test.describe('Onboarding Full Integration', () => {
     
     // Fill out child information
     await page.getByTestId('child-name-0').fill('Persistent Child');
-    await page.selectOption('[data-testid="child-age-0"]', '9');
+    await page.selectOption('[data-testid="child-grade-0"]', '9');
     await page.selectOption('[data-testid="child-independence-0"]', '2');
     
     // Add another child
     await page.getByTestId('add-another-child').click();
     await page.getByTestId('child-name-1').fill('Another Child');
-    await page.selectOption('[data-testid="child-age-1"]', '11');
+    await page.selectOption('[data-testid="child-grade-1"]', '11');
     
     // Submit children form
     await page.getByTestId('next-button').click();
@@ -433,7 +433,7 @@ test.describe('Onboarding Full Integration', () => {
     
     // Fill first child
     await page.getByTestId('child-name-0').fill(childNames[0]);
-    await page.selectOption('[data-testid="child-age-0"]', ages[0]);
+    await page.selectOption('[data-testid="child-grade-0"]', ages[0]);
     await page.selectOption('[data-testid="child-independence-0"]', '2');
     
     // Add remaining 4 children

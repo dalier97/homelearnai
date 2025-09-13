@@ -50,7 +50,7 @@ test.describe('Onboarding Review and Completion', () => {
         
         // Fill in child information
         await page.fill('[data-testid="child-name-0"]', 'Emma');
-        await page.selectOption('[data-testid="child-age-0"]', '8');
+        await page.selectOption('[data-testid="child-grade-0"]', '8');
         await page.selectOption('[data-testid="child-independence-0"]', '2');
         
         // Submit children form
@@ -112,7 +112,7 @@ test.describe('Onboarding Review and Completion', () => {
         
         // Add child
         await page.fill('[data-testid="child-name-0"]', 'John');
-        await page.selectOption('[data-testid="child-age-0"]', '10');
+        await page.selectOption('[data-testid="child-grade-0"]', '10');
         await page.click('[data-testid="next-button"]'); // Step 2 -> 3
         
         // Wait for step 3 and submit with default subjects
@@ -151,7 +151,7 @@ test.describe('Onboarding Review and Completion', () => {
         
         // Add child
         await page.fill('[data-testid="child-name-0"]', 'Test Child');
-        await page.selectOption('[data-testid="child-age-0"]', '7');
+        await page.selectOption('[data-testid="child-grade-0"]', '7');
         await page.click('[data-testid="next-button"]'); // Step 2 -> 3
         
         // Wait for step 3 and submit with default subjects
@@ -182,7 +182,7 @@ test.describe('Onboarding Review and Completion', () => {
         await page.click('[data-testid="next-button"]'); // Step 1 -> 2
         
         await page.fill('[data-testid="child-name-0"]', 'Final Test Child');
-        await page.selectOption('[data-testid="child-age-0"]', '6');
+        await page.selectOption('[data-testid="child-grade-0"]', '6');
         await page.click('[data-testid="next-button"]'); // Step 2 -> 3
         
         await expect(page.locator('[data-testid="step-3"]')).toBeVisible({ timeout: 10000 });
@@ -207,13 +207,13 @@ test.describe('Onboarding Review and Completion', () => {
         
         // Step 2: Add multiple children
         await page.fill('[data-testid="child-name-0"]', 'Alice');
-        await page.selectOption('[data-testid="child-age-0"]', '9');
+        await page.selectOption('[data-testid="child-grade-0"]', '9');
         await page.selectOption('[data-testid="child-independence-0"]', '3');
         
         // Add second child
         await page.click('[data-testid="add-another-child"]');
         await page.fill('[data-testid="child-name-1"]', 'Bob');
-        await page.selectOption('[data-testid="child-age-1"]', '12');
+        await page.selectOption('[data-testid="child-grade-1"]', '12');
         await page.selectOption('[data-testid="child-independence-1"]', '4');
         
         await page.click('[data-testid="next-button"]'); // Step 2 -> 3
@@ -261,7 +261,7 @@ test.describe('Onboarding Review and Completion', () => {
         
         // Complete child setup
         await page.fill('[data-testid="child-name-0"]', 'Progress Test');
-        await page.selectOption('[data-testid="child-age-0"]', '5');
+        await page.selectOption('[data-testid="child-grade-0"]', '5');
         await page.click('[data-testid="next-button"]');
         
         // Move to step 3 - all previous steps should be active

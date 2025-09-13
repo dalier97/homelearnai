@@ -37,7 +37,7 @@ test.describe('Dashboard Golden Paths - Complete User Experience', () => {
     await expect(page.getByRole('link', { name: /Manage Children/i })).toBeVisible();
     await page.getByRole('link', { name: /Manage Children/i }).click();
     await expect(page).toHaveURL('/children');
-    await expect(page.getByText(/Children/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /My Children/i })).toBeVisible();
     
     // Return to dashboard
     await page.goto('/dashboard');

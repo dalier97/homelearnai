@@ -1,5 +1,5 @@
 <!-- Modal Overlay -->
-<div class="fixed inset-0 z-40 overflow-y-auto" 
+<div class="fixed inset-0 z-50 overflow-y-auto" 
      data-testid="unit-create-modal"
      id="unit-modal-overlay"
      style="display: block;">

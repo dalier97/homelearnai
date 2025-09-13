@@ -125,11 +125,11 @@ test.describe('Homeschool Planning Workflow', () => {
           
           // Wait for form elements to be visible and interactive
           await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
-          await page.waitForSelector('#child-form-modal select[name="age"]', { timeout: 10000 });
+          await page.waitForSelector('#child-form-modal select[name="grade"]', { timeout: 10000 });
           await page.waitForSelector('#child-form-modal button[type="submit"]:has-text("Add Child")', { timeout: 10000 });
           
           await page.fill('#child-form-modal input[name="name"]', 'Alex');
-          await page.selectOption('#child-form-modal select[name="age"]', '8');
+          await page.selectOption('#child-form-modal select[name="grade"]', '3rd');
           await page.selectOption('#child-form-modal select[name="independence_level"]', '2');
           
           await page.click('#child-form-modal button[type="submit"]:has-text("Add Child")');
@@ -288,7 +288,7 @@ test.describe('Homeschool Planning Workflow', () => {
     
     // Fill form fields within modal
     await page.fill('#child-form-modal input[name="name"]', 'Emma');
-    await page.selectOption('#child-form-modal select[name="age"]', '12');
+    await page.selectOption('#child-form-modal select[name="grade"]', '7th');
     await page.selectOption('#child-form-modal select[name="independence_level"]', '3');
     
     // Submit form
@@ -349,7 +349,7 @@ test.describe('Homeschool Planning Workflow', () => {
     await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
     
     await page.fill('#child-form-modal input[name="name"]', 'Sam');
-    await page.selectOption('#child-form-modal select[name="age"]', '10');
+    await page.selectOption('#child-form-modal select[name="grade"]', '5th');
     await page.click('#child-form-modal button[type="submit"]');
     
     // Wait for HTMX completion and modal to close
@@ -511,7 +511,7 @@ test.describe('Homeschool Planning Workflow', () => {
     await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
     
     await page.fill('#child-form-modal input[name="name"]', 'Jordan');
-    await page.selectOption('#child-form-modal select[name="age"]', '14');
+    await page.selectOption('#child-form-modal select[name="grade"]', '9th');
     await page.click('#child-form-modal button[type="submit"]');
     
     // Wait for HTMX completion and modal to close
@@ -630,7 +630,7 @@ test.describe('Homeschool Planning Workflow', () => {
     
     // Test with actual values
     await page.fill('#child-form-modal input[name="name"]', 'Test Child');
-    await page.selectOption('#child-form-modal select[name="age"]', '5'); // Valid age
+    await page.selectOption('#child-form-modal select[name="grade"]', 'K'); // Valid age
     await page.click('#child-form-modal button[type="submit"]');
     
     // Wait for HTMX completion and modal to close
@@ -672,7 +672,7 @@ test.describe('Homeschool Planning Workflow', () => {
     await page.waitForSelector('#child-form-modal input[name="name"]', { timeout: 10000 });
     
     await page.fill('#child-form-modal input[name="name"]', 'Persistent Child');
-    await page.selectOption('#child-form-modal select[name="age"]', '7');
+    await page.selectOption('#child-form-modal select[name="grade"]', '2nd');
     await page.click('#child-form-modal button[type="submit"]');
     
     // Wait for HTMX completion and modal to close
@@ -735,7 +735,7 @@ test.describe('Homeschool Planning Workflow', () => {
     await elementHelper.safeClick('[data-testid="header-add-child-btn"]');
     await modalHelper.waitForModal('child-form-modal');
     await modalHelper.fillModalField('child-form-modal', 'name', 'Planning Kid');
-    await page.selectOption('#child-form-modal select[name="age"]', '9');
+    await page.selectOption('#child-form-modal select[name="grade"]', '4th');
     await modalHelper.submitModalForm('child-form-modal');
     
     // Set up PIN for kids mode

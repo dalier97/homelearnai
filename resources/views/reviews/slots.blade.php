@@ -29,7 +29,7 @@
     </div>
 
     {{-- Add Slot Modal (initially hidden) --}}
-    <div id="add-slot-modal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-40" data-testid="add-slot-modal">
+    <div id="add-slot-modal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50" data-testid="add-slot-modal">
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 relative z-50" data-testid="modal-content">
             <div class="px-6 py-4 border-b border-gray-200">
                 <h3 class="text-lg font-semibold text-gray-900">{{ __('add_review_slot') }}</h3>

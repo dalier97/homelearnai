@@ -103,7 +103,7 @@ test.describe('Homeschool Planning - Simplified Tests', () => {
     
     // Fill child form
     await modalHelper.fillModalField('child-form-modal', 'name', 'Test Child');
-    await page.selectOption('#child-form-modal select[name="age"]', '8');
+    await page.selectOption('#child-form-modal select[name="grade"]', '3rd');
     await page.selectOption('#child-form-modal select[name="independence_level"]', '2');
     
     // Submit form

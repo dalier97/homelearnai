@@ -170,7 +170,7 @@ export class TestSetupHelper {
     // Step 2: Children
     await expect(this.page.getByTestId('step-2')).toBeVisible({ timeout: 5000 });
     await this.page.getByTestId('child-name-0').fill('Shared Test Child');
-    await this.page.selectOption('[data-testid="child-age-0"]', '10');
+    await this.page.selectOption('[data-testid="child-grade-0"]', '7th');
     await this.page.selectOption('[data-testid="child-independence-0"]', '2');
     
     await this.page.getByTestId('next-button').click();
@@ -222,13 +222,20 @@ export class TestSetupHelper {
   async quickLogin(userData: TestUser): Promise<void> {
     console.log(`Quick login for: ${userData.email}`);
     
-    await this.page.goto('/login', { waitUntil: 'networkidle' });
-    await this.page.fill('input[name="email"]', userData.email);
-    await this.page.fill('input[name="password"]', userData.password);
-    await this.page.click('button[type="submit"]');
+    // Check if already logged in by trying to go to dashboard
+    await this.page.goto('/dashboard', { waitUntil: 'networkidle' });
     
-    await this.page.waitForURL('/dashboard', { timeout: 8000 });
-    console.log('Quick login successful');
+    // If we're redirected to login, then we need to log in
+    const currentUrl = this.page.url();
+    if (currentUrl.includes('/login') || currentUrl.includes('/register')) {
+      await this.page.fill('input[name="email"]', userData.email);
+      await this.page.fill('input[name="password"]', userData.password);
+      await this.page.click('button[type="submit"]');
+      
+      await this.page.waitForURL('/dashboard', { timeout: 8000 });
+    }
+    
+    console.log('Quick login successful (or already logged in)');
   }
 
   /**

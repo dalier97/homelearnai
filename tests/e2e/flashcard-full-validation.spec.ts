@@ -64,7 +64,7 @@ test.describe('Milestone 2: Complete Flashcard Integration Validation', () => {
     
     // Fill the form
     await page.fill('[data-testid="child-modal-overlay"] input[name="name"]', 'Validation Child');
-    await page.selectOption('[data-testid="child-modal-overlay"] select[name="age"]', '10');
+    await page.selectOption('[data-testid="child-modal-overlay"] select[name="grade"]', '5th');
     await page.selectOption('[data-testid="child-modal-overlay"] select[name="independence_level"]', '2');
     await page.click('[data-testid="child-modal-overlay"] button[type="submit"]');
     await page.waitForTimeout(2000);
@@ -82,7 +82,7 @@ test.describe('Milestone 2: Complete Flashcard Integration Validation', () => {
     
     // STEP 3: Create Unit
     console.log('STEP 3: Creating unit...');
-    await page.click('text=Validation Mathematics');
+    await page.click('button:has-text("View Subject")');
     await page.locator('button:has-text("Add Unit")').first().click();
     await page.waitForSelector('[data-testid="unit-create-modal"], #unit-create-modal', { timeout: 10000 });
     await page.fill('input[name="name"]', 'Flashcard Unit');

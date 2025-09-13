@@ -91,7 +91,7 @@ test.describe('Kids Mode - Basic Functionality', () => {
       const nameInput = page.locator('input[name="name"]');
       if (await nameInput.isVisible()) {
         await nameInput.fill('Nav Test Child');
-        const ageSelect = page.locator('select[name="age"]');
+        const ageSelect = page.locator('select[name="grade"]');
         if (await ageSelect.isVisible()) {
           await ageSelect.selectOption('8');
         }
@@ -214,7 +214,7 @@ test.describe('Kids Mode - Basic Functionality', () => {
       const nameInput = page.locator('input[name="name"]');
       if (await nameInput.isVisible()) {
         await nameInput.fill('Exit Test Child');
-        const ageSelect = page.locator('select[name="age"]');
+        const ageSelect = page.locator('select[name="grade"]');
         if (await ageSelect.isVisible()) {
           await ageSelect.selectOption('9');
         }
@@ -280,7 +280,7 @@ test.describe('Kids Mode - Basic Functionality', () => {
       const nameInput = page.locator('input[name="name"]');
       if (await nameInput.isVisible()) {
         await nameInput.fill('Dashboard Test Kid');
-        const ageSelect = page.locator('select[name="age"]');
+        const ageSelect = page.locator('select[name="grade"]');
         if (await ageSelect.isVisible()) {
           await ageSelect.selectOption('8');
         }
@@ -379,7 +379,7 @@ test.describe('Kids Mode - Basic Functionality', () => {
       const nameInput = page.locator('input[name="name"]');
       if (await nameInput.isVisible()) {
         await nameInput.fill('Mobile Test Child');
-        const ageSelect = page.locator('select[name="age"]');
+        const ageSelect = page.locator('select[name="grade"]');
         if (await ageSelect.isVisible()) {
           await ageSelect.selectOption('7');
         }

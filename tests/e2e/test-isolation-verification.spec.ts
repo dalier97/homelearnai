@@ -55,7 +55,7 @@ test.describe('Test Isolation Verification', () => {
     
     // Fill and submit form
     await page.fill('#child-form-modal input[name="name"]', 'Test Child 1');
-    await page.selectOption('#child-form-modal select[name="age"]', '8');
+    await page.selectOption('#child-form-modal select[name="grade"]', '3rd');
     await page.selectOption('#child-form-modal select[name="independence_level"]', '1');
     await page.click('#child-form-modal button[type="submit"]');
     await page.waitForTimeout(2000);
@@ -82,7 +82,7 @@ test.describe('Test Isolation Verification', () => {
     await modalHelper.waitForChildModal();
     
     await page.fill('#child-form-modal input[name="name"]', 'Test Child 2');
-    await page.selectOption('#child-form-modal select[name="age"]', '10');
+    await page.selectOption('#child-form-modal select[name="grade"]', '5th');
     await page.selectOption('#child-form-modal select[name="independence_level"]', '2');
     await page.click('#child-form-modal button[type="submit"]');
     await page.waitForTimeout(2000);
@@ -97,7 +97,7 @@ test.describe('Test Isolation Verification', () => {
     await modalHelper.waitForChildModal();
     
     await page.fill('#child-form-modal input[name="name"]', 'Nav Test Child');
-    await page.selectOption('#child-form-modal select[name="age"]', '12');
+    await page.selectOption('#child-form-modal select[name="grade"]', '7th');
     await page.selectOption('#child-form-modal select[name="independence_level"]', '2');
     await page.click('#child-form-modal button[type="submit"]');
     await page.waitForTimeout(2000);

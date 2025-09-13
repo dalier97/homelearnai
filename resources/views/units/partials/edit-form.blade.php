@@ -1,5 +1,5 @@
 <!-- Modal Overlay -->
-<div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-40" x-data="{ open: true }" data-testid="unit-edit-modal">
+<div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50" x-data="{ open: true }" data-testid="unit-edit-modal">
     <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4 relative z-50" data-testid="modal-content">
         <!-- Modal Header -->
         <div class="flex items-center justify-between mb-4">

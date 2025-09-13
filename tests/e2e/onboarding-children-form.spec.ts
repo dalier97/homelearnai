@@ -39,7 +39,7 @@ test.describe('Onboarding Children Form', () => {
         
         // Verify all required fields are present
         await expect(page.getByTestId('child-name-0')).toBeVisible();
-        await expect(page.getByTestId('child-age-0')).toBeVisible();
+        await expect(page.getByTestId('child-grade-0')).toBeVisible();
         await expect(page.getByTestId('child-independence-0')).toBeVisible();
         
         // Verify remove button is NOT visible for single child
@@ -109,7 +109,7 @@ test.describe('Onboarding Children Form', () => {
         await expect(page.locator('text=Child age is required')).toBeVisible();
         
         // Fill age as well
-        await page.getByTestId('child-age-0').selectOption('8');
+        await page.getByTestId('child-grade-0').selectOption('8');
         
         // Now should not show validation errors for this child
         await expect(page.locator('text=Child name is required')).not.toBeVisible();
@@ -118,7 +118,7 @@ test.describe('Onboarding Children Form', () => {
     test('successfully submits single child with all fields', async ({ page }) => {
         // Fill out the child form
         await page.getByTestId('child-name-0').fill('Emma Thompson');
-        await page.getByTestId('child-age-0').selectOption('10');
+        await page.getByTestId('child-grade-0').selectOption('10');
         await page.getByTestId('child-independence-0').selectOption('2');
         
         // Submit the form
@@ -138,17 +138,17 @@ test.describe('Onboarding Children Form', () => {
         
         // Fill out first child
         await page.getByTestId('child-name-0').fill('Alice Johnson');
-        await page.getByTestId('child-age-0').selectOption('12');
+        await page.getByTestId('child-grade-0').selectOption('12');
         await page.getByTestId('child-independence-0').selectOption('3');
         
         // Fill out second child
         await page.getByTestId('child-name-1').fill('Bob Johnson');
-        await page.getByTestId('child-age-1').selectOption('8');
+        await page.getByTestId('child-grade-1').selectOption('8');
         await page.getByTestId('child-independence-1').selectOption('1');
         
         // Fill out third child
         await page.getByTestId('child-name-2').fill('Charlie Johnson');
-        await page.getByTestId('child-age-2').selectOption('15');
+        await page.getByTestId('child-grade-2').selectOption('15');
         await page.getByTestId('child-independence-2').selectOption('4');
         
         // Submit the form
@@ -164,7 +164,7 @@ test.describe('Onboarding Children Form', () => {
     test('shows loading state during submission', async ({ page }) => {
         // Fill out the form
         await page.getByTestId('child-name-0').fill('Test Child');
-        await page.getByTestId('child-age-0').selectOption('7');
+        await page.getByTestId('child-grade-0').selectOption('7');
         
         // Submit and check for loading state
         await page.getByTestId('next-button').click();
@@ -191,13 +191,13 @@ test.describe('Onboarding Children Form', () => {
     test('preserves form data when navigating between steps', async ({ page }) => {
         // Fill out child data
         await page.getByTestId('child-name-0').fill('Preserved Child');
-        await page.getByTestId('child-age-0').selectOption('11');
+        await page.getByTestId('child-grade-0').selectOption('11');
         await page.getByTestId('child-independence-0').selectOption('3');
         
         // Add a second child
         await page.getByTestId('add-another-child').click();
         await page.getByTestId('child-name-1').fill('Second Child');
-        await page.getByTestId('child-age-1').selectOption('9');
+        await page.getByTestId('child-grade-1').selectOption('9');
         
         // Navigate back to step 1
         await page.getByTestId('previous-button').click();
@@ -209,11 +209,11 @@ test.describe('Onboarding Children Form', () => {
         
         // Verify data is still there
         await expect(page.getByTestId('child-name-0')).toHaveValue('Preserved Child');
-        await expect(page.getByTestId('child-age-0')).toHaveValue('11');
+        await expect(page.getByTestId('child-grade-0')).toHaveValue('11');
         await expect(page.getByTestId('child-independence-0')).toHaveValue('3');
         
         await expect(page.getByTestId('child-name-1')).toHaveValue('Second Child');
-        await expect(page.getByTestId('child-age-1')).toHaveValue('9');
+        await expect(page.getByTestId('child-grade-1')).toHaveValue('9');
     });
 
     test('handles server validation errors gracefully', async ({ page }) => {
@@ -230,7 +230,7 @@ test.describe('Onboarding Children Form', () => {
         
         // Fill out form
         await page.getByTestId('child-name-0').fill('Test Child');
-        await page.getByTestId('child-age-0').selectOption('8');
+        await page.getByTestId('child-grade-0').selectOption('8');
         
         // Submit form
         await page.getByTestId('next-button').click();
@@ -251,7 +251,7 @@ test.describe('Onboarding Children Form', () => {
         await expect(page.getByTestId('next-button')).toBeDisabled();
         
         // Fill age as well
-        await page.getByTestId('child-age-0').selectOption('8');
+        await page.getByTestId('child-grade-0').selectOption('8');
         
         // Now should be enabled
         await expect(page.getByTestId('next-button')).not.toBeDisabled();

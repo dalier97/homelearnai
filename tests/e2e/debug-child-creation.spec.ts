@@ -67,7 +67,7 @@ test.describe('Debug Child Creation for Import Tests', () => {
     await page.fill('[data-testid="child-modal-overlay"] input[name="name"]', 'Debug Test Child');
     console.log('Filled child name');
     
-    await page.selectOption('[data-testid="child-modal-overlay"] select[name="age"]', '12');
+    await page.selectOption('[data-testid="child-modal-overlay"] select[name="grade"]', '7th');
     console.log('Selected age');
     
     await page.selectOption('[data-testid="child-modal-overlay"] select[name="independence_level"]', '2');

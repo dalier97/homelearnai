@@ -59,7 +59,7 @@
 </div>
 
 <!-- Review Session Modal -->
-<div id="review-session-modal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-40 relative" data-testid="review-session-modal">
+<div id="review-session-modal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 relative" data-testid="review-session-modal">
     <!-- Modal content will be loaded here -->
 </div>
 

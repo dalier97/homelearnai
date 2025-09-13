@@ -42,7 +42,7 @@ async function completeOnboarding(page: any, childName: string = 'Test Child') {
   // Step 2: Children
   await expect(page.getByTestId('step-2')).toBeVisible({ timeout: 10000 });
   await page.getByTestId('child-name-0').fill(childName);
-  await page.selectOption('[data-testid="child-age-0"]', '10');
+  await page.selectOption('[data-testid="child-grade-0"]', '5th');
   await page.selectOption('[data-testid="child-independence-0"]', '2');
   
   // Submit children form
@@ -359,9 +359,17 @@ test.describe('Curriculum Management - Subjects, Units, Topics', () => {
     await page.selectOption('select[name="child_id"]', childId);
     await page.click('button[type="submit"]');
     
-    // Wait for redirect and get subject ID
+    // Wait for redirect to subjects index page
     await page.waitForLoadState('networkidle');
-    const subjectId = page.url().split('/subjects/')[1]?.split('/')[0] || page.url().split('/').pop();
+    await page.waitForURL('**/subjects**');
+    
+    // Find the created subject and get its ID from the link
+    await page.waitForSelector('a:has-text("History")', { timeout: 10000 });
+    const subjectLink = await page.locator('a:has-text("History")').first().getAttribute('href');
+    const subjectId = subjectLink?.match(/\/subjects\/(\d+)/)?.[1];
+    if (!subjectId) {
+      throw new Error('Could not extract subject ID from created subject');
+    }
     console.log('Subject created with ID:', subjectId);
     
     // Step 2: Create unit directly via URL
@@ -692,7 +700,15 @@ test.describe('Curriculum Management - Subjects, Units, Topics', () => {
     await page.selectOption('select[name="child_id"]', childId);
     await page.click('button[type="submit"]');
     
-    const subjectId = page.url().split('/').pop();
+    // Wait for redirect to subjects index page and get the subject ID from the link
+    await page.waitForLoadState('networkidle');
+    await page.waitForURL('**/subjects**');
+    await page.waitForSelector('a:has-text("Route Test Subject")', { timeout: 10000 });
+    const subjectLink = await page.locator('a:has-text("Route Test Subject")').first().getAttribute('href');
+    const subjectId = subjectLink?.match(/\/subjects\/(\d+)/)?.[1];
+    if (!subjectId) {
+      throw new Error('Could not extract subject ID from created subject');
+    }
     
     // Test unit create route
     await page.goto(`/subjects/${subjectId}/units/create`);
