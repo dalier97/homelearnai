@@ -393,14 +393,15 @@ class FlashcardPrintControllerTest extends TestCase
                 'margin' => 'normal',
             ]);
 
-        // CSRF protection returns 419 for unauthenticated form requests
-        $response->assertStatus(419);
+        // With CSRF disabled, test should now work properly
+        $response->assertStatus(200);
+        $response->assertHeader('Content-Type', 'application/pdf');
 
-        // Since the request is blocked by CSRF, we can't test the Content-Disposition header
-        // This test would need to be updated to either:
-        // 1. Use proper CSRF tokens, or
-        // 2. Test the controller method directly
-        $this->assertTrue(true, 'Test updated to handle CSRF protection');
+        // Test that the filename includes the unit name (formatted for filename)
+        $contentDisposition = $response->headers->get('Content-Disposition');
+        $this->assertStringContainsString('flashcards-', $contentDisposition);
+        $this->assertStringContainsString('.pdf', $contentDisposition);
+        $this->assertStringContainsString('index', $contentDisposition);
     }
 
     public function test_handles_large_flashcard_sets(): void

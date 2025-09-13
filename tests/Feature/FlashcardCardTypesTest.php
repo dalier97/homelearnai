@@ -23,11 +23,6 @@ class FlashcardCardTypesTest extends TestCase
     {
         parent::setUp();
 
-        // Enable session middleware but disable unnecessary middleware for testing
-        $this->withoutMiddleware([
-            \App\Http\Middleware\VerifyCsrfToken::class,
-        ]);
-
         $this->user = User::factory()->create();
         $this->subject = Subject::factory()->for($this->user)->create();
         $this->unit = Unit::factory()->for($this->subject)->create();

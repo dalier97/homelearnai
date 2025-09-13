@@ -108,8 +108,8 @@ class FlashcardControllerTest extends TestCase
         ];
 
         $response = $this->postJson("/api/units/{$this->unit->id}/flashcards", $flashcardData);
-        // Note: CSRF middleware is firing before auth middleware, so we get 419 instead of 401
-        $response->assertStatus(419); // CSRF mismatch for unauthenticated API requests
+        // With CSRF disabled in tests, unauthenticated requests correctly return 401
+        $response->assertStatus(401); // Unauthorized for unauthenticated API requests
     }
 
     public function test_store_creates_flashcard_successfully(): void

@@ -17,6 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\VerifyCsrfToken::class
         );
 
+        // Also ensure we replace any VerifyCsrfToken middleware
+        $middleware->replace(
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+            \App\Http\Middleware\VerifyCsrfToken::class
+        );
+
         // Register middleware aliases for route-specific usage
         $middleware->alias([
             'kids-mode' => \App\Http\Middleware\KidsMode::class,

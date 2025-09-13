@@ -66,20 +66,10 @@ class KidsModeEnterExitTest extends TestCase
             ->method('from')
             ->willReturnSelf();
 
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('select')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('eq')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('single')
-            ->willReturn(['kids_mode_pin' => Hash::make('1234')]);
+        // Set up PIN in the user preferences instead of mocking Supabase
+        $preferences = $this->user->getPreferences();
+        $preferences->kids_mode_pin = Hash::make('1234');
+        $preferences->save();
 
         // Children data is already set up in setUp() method via $this->child
 
