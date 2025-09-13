@@ -630,7 +630,7 @@ test.describe('Homeschool Planning Workflow', () => {
     
     // Test with actual values
     await page.fill('#child-form-modal input[name="name"]', 'Test Child');
-    await page.selectOption('#child-form-modal select[name="grade"]', 'K'); // Valid age
+    await page.selectOption('#child-form-modal select[name="grade"]', 'K'); // Valid grade
     await page.click('#child-form-modal button[type="submit"]');
     
     // Wait for HTMX completion and modal to close

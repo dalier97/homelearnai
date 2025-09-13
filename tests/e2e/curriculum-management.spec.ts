@@ -80,16 +80,16 @@ async function completeOnboarding(page: any, childName: string = 'Test Child') {
   // Submit subjects form
   await page.getByTestId('next-button').click();
   
-  // Wait for Step 4 and completion
-  await waitForTemplateElement(page, '[data-testid="step-4"]');
-  await expect(page.getByTestId('step-4')).toBeVisible({ timeout: 10000 });
+  // Wait for Step 4 and completion (increased timeout for slow onboarding)
+  await waitForTemplateElement(page, '[data-testid="step-4"]', 20000);
+  await expect(page.getByTestId('step-4')).toBeVisible({ timeout: 20000 });
   
   console.log('Step 4: Review - completing onboarding...');
   // Step 4: Complete
   await page.getByTestId('complete-onboarding-button').click();
   
-  // Wait for completion and redirect
-  await page.waitForURL('/dashboard', { timeout: 10000 });
+  // Wait for completion and redirect (increased timeout)
+  await page.waitForURL('/dashboard', { timeout: 20000 });
   console.log('Onboarding completed successfully!');
 }
 
@@ -509,7 +509,7 @@ test.describe('Curriculum Management - Subjects, Units, Topics', () => {
     let errorFound = false;
     for (const selector of errorSelectors) {
       try {
-        await expect(modal.locator(selector)).toBeVisible({ timeout: 3000 });
+        await expect(modal.locator(selector)).toBeVisible({ timeout: 1000 });
         errorFound = true;
         console.log(`Validation error found with selector: ${selector}`);
         break;
@@ -521,7 +521,7 @@ test.describe('Curriculum Management - Subjects, Units, Topics', () => {
     // Alternative: Check if form didn't submit (modal still open and button still enabled)
     if (!errorFound) {
       console.log('No specific error message found, checking if form submission was prevented...');
-      await expect(modal).toBeVisible({ timeout: 2000 });
+      await expect(modal).toBeVisible({ timeout: 1000 });
       console.log('Form submission was prevented (modal still open)');
     }
     

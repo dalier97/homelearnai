@@ -271,6 +271,7 @@ window.loadChildUnitsForPreview = async function(childId) {
                         <span class="text-sm text-gray-600">{{ __('Independence:') }}</span>
                         <select hx-put="{{ route('dashboard.independence-level', $child->id) }}" 
                                 hx-include="this"
+                                hx-swap="none"
                                 name="independence_level"
                                 class="text-sm border-0 bg-transparent text-gray-900 font-medium focus:ring-0">
                             @for($i = 1; $i <= 4; $i++)

@@ -1,64 +1,18 @@
 import { test, expect } from '@playwright/test';
 import { ModalHelper, ElementHelper } from './helpers/modal-helpers';
+import { quickTestLogin } from './helpers/test-setup-helpers';
 
 test.describe('Optimized Homeschool Planning Workflow', () => {
   let modalHelper: ModalHelper;
   let elementHelper: ElementHelper;
-  
-  // Simple authentication helper that avoids onboarding
-  async function fastLogin(page) {
-    console.log('Fast login using known test user...');
-    
-    // Try login with a persistent test user (created manually in DB)
-    await page.goto('/login', { waitUntil: 'networkidle' });
-    
-    // Use the test@example.com user that should exist from other tests
-    await page.fill('input[name="email"]', 'test@example.com');
-    await page.fill('input[name="password"]', 'password123');
-    await page.click('button[type="submit"]');
-    
-    // Wait for redirect - either dashboard or onboarding
-    const result = await Promise.race([
-      page.waitForURL('/dashboard', { timeout: 10000 }).then(() => 'dashboard'),
-      page.waitForURL('/onboarding', { timeout: 10000 }).then(() => 'onboarding'),
-      page.waitForTimeout(5000).then(() => 'timeout')
-    ]);
-    
-    if (result === 'onboarding') {
-      console.log('User needs onboarding - skipping it quickly...');
-      // Skip onboarding rapidly
-      await page.getByTestId('skip-button').click();
-      await page.waitForURL('/dashboard', { timeout: 10000 });
-    } else if (result === 'timeout') {
-      console.log('Login failed, trying registration...');
-      await page.goto('/register');
-      const uniqueEmail = `speedtest-${Date.now()}@example.com`;
-      
-      await page.fill('input[name="name"]', 'Speed Test User');
-      await page.fill('input[name="email"]', uniqueEmail);
-      await page.fill('input[name="password"]', 'password123');
-      await page.fill('input[name="password_confirmation"]', 'password123');
-      await page.click('button[type="submit"]');
-      
-      await Promise.race([
-        page.waitForURL('/dashboard', { timeout: 10000 }),
-        page.waitForURL('/onboarding', { timeout: 10000 }).then(async () => {
-          await page.getByTestId('skip-button').click();
-          await page.waitForURL('/dashboard', { timeout: 10000 });
-        })
-      ]);
-    }
-    
-    console.log('Fast login completed');
-  }
 
   test.beforeEach(async ({ page }) => {
     // Initialize helpers
     modalHelper = new ModalHelper(page);
     elementHelper = new ElementHelper(page);
     
-    // Fast authentication
-    await fastLogin(page);
+    // Use the optimized test login
+    await quickTestLogin(page);
     
     // Ensure clean state
     await modalHelper.forceCloseModals();

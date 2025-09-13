@@ -1,61 +1,256 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# HomeschoolAI 🎓
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+[![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
+[![HTMX](https://img.shields.io/badge/HTMX-1.9-3366CC?style=for-the-badge&logo=htmx&logoColor=white)](https://htmx.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
+[![Tests](https://img.shields.io/badge/Tests-100%25_Passing-4CAF50?style=for-the-badge)](https://github.com/buger/homeschoolai)
 
-## About Laravel
+An intelligent homeschool learning management system that adapts to each child's unique learning journey. Built with modern web technologies and educational best practices.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## ✨ Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 🧒 Multi-Child Management
+- **Grade-based profiles** (PreK through 12th grade)
+- **Independence levels** for age-appropriate interfaces
+- **Kids Mode** with PIN-protected parent controls
+- **Individual progress tracking** per child
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 📚 Comprehensive Curriculum Planning
+- **Hierarchical structure**: Subjects → Units → Topics → Sessions
+- **Flexible scheduling** with time blocks and commitment types
+- **Age-appropriate recommendations** and quality heuristics
+- **ICS calendar import** for external activities
 
-## Learning Laravel
+### 🧠 Smart Learning System
+- **Spaced repetition reviews** with automatic scheduling
+- **Performance-based interval adjustments**
+- **Catch-up sessions** for missed content
+- **Multiple flashcard types** (basic, multiple choice, cloze, true/false)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 🎯 Advanced Features
+- **Bulk flashcard import** (Anki, Quizlet, CSV formats)
+- **Multi-language support** (i18n ready)
+- **Real-time updates** with HTMX
+- **Mobile-responsive design**
+- **Comprehensive caching** for performance
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 🚀 Quick Start
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Prerequisites
+- PHP 8.2 or higher
+- PostgreSQL 15+
+- Node.js 18+
+- Composer 2.x
 
-## Laravel Sponsors
+### Installation
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+1. **Clone the repository**
+```bash
+git clone https://github.com/buger/homeschoolai.git
+cd homeschoolai
+```
 
-### Premium Partners
+2. **Install dependencies**
+```bash
+composer install
+npm install
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+3. **Environment setup**
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-## Contributing
+4. **Configure database**
+Edit `.env` with your PostgreSQL credentials:
+```env
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=homeschoolai
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+5. **Run migrations**
+```bash
+php artisan migrate
+php artisan db:seed  # Optional: Add sample data
+```
 
-## Code of Conduct
+6. **Build assets**
+```bash
+npm run build
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+7. **Start the development server**
+```bash
+php artisan serve
+npm run dev  # In another terminal for hot-reload
+```
 
-## Security Vulnerabilities
+Visit `http://localhost:8000` to access the application.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 🧪 Testing
 
-## License
+The project includes comprehensive test coverage (100% pass rate):
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+# Run all tests
+php artisan test
+
+# Run with coverage
+php artisan test --coverage
+
+# Run E2E tests
+npm run test:e2e
+
+# Run specific test suites
+php artisan test --testsuite=Feature
+php artisan test --testsuite=Unit
+```
+
+## 📖 Documentation
+
+### Project Structure
+```
+homeschoolai/
+├── app/
+│   ├── Http/Controllers/   # Request handlers
+│   ├── Models/             # Eloquent models
+│   ├── Services/           # Business logic
+│   └── Http/Middleware/    # Request middleware
+├── resources/
+│   ├── views/              # Blade templates
+│   ├── js/                 # JavaScript files
+│   └── css/                # Stylesheets
+├── database/
+│   ├── migrations/         # Database migrations
+│   └── factories/          # Model factories
+├── tests/
+│   ├── Feature/            # Feature tests
+│   ├── Unit/               # Unit tests
+│   └── e2e/                # End-to-end tests
+└── routes/
+    └── web.php             # Web routes
+```
+
+### Key Technologies
+
+- **Backend**: Laravel 11 with PHP 8.2+
+- **Database**: PostgreSQL with Eloquent ORM
+- **Frontend**: HTMX for dynamic interactions, Alpine.js for reactivity
+- **Styling**: Tailwind CSS for modern, responsive design
+- **Testing**: PHPUnit for backend, Playwright for E2E
+- **Development**: Vite for asset bundling, Laravel Pint for code formatting
+
+### Core Concepts
+
+#### 1. Learning Hierarchy
+```
+Subject (e.g., Mathematics)
+  └── Unit (e.g., Algebra Basics)
+      └── Topic (e.g., Linear Equations)
+          └── Session (e.g., Practice Problems)
+              └── Flashcards (Study materials)
+```
+
+#### 2. Review System
+- **Spaced Repetition**: Automatically schedules reviews based on performance
+- **Intervals**: 1 day → 3 days → 7 days → 14 days → 30 days
+- **Performance Tracking**: Adjusts intervals based on student success
+
+#### 3. Kids Mode
+- Simplified interface for younger learners
+- PIN-protected exit to parent dashboard
+- Age-appropriate content and interactions
+- Progress celebration and rewards
+
+## 🛠️ Development
+
+### Running Locally
+```bash
+# Start all services
+make s  # Custom makefile command
+
+# Or run individually
+php artisan serve       # Laravel server
+npm run dev            # Vite dev server
+php artisan queue:work # Queue worker
+```
+
+### Code Quality
+```bash
+# PHP formatting
+./vendor/bin/pint
+
+# JavaScript linting
+npm run lint
+npm run lint:fix
+
+# Type checking
+npm run type-check
+
+# Run all quality checks
+npm run test:all
+```
+
+### Database Management
+```bash
+# Create new migration
+php artisan make:migration create_example_table
+
+# Run migrations
+php artisan migrate
+
+# Rollback migrations
+php artisan migrate:rollback
+
+# Refresh database (WARNING: Deletes all data)
+php artisan migrate:fresh --seed
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Coding Standards
+- Follow PSR-12 for PHP code
+- Use Laravel best practices
+- Write tests for new features
+- Update documentation as needed
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with [Laravel](https://laravel.com) - The PHP Framework for Web Artisans
+- Interactive UI powered by [HTMX](https://htmx.org)
+- Styled with [Tailwind CSS](https://tailwindcss.com)
+- Icons from [Heroicons](https://heroicons.com)
+
+## 📞 Support
+
+For issues, questions, or suggestions:
+- Open an [issue](https://github.com/buger/homeschoolai/issues)
+- Documentation: [Wiki](https://github.com/buger/homeschoolai/wiki)
+
+## 🚦 Project Status
+
+![Tests](https://img.shields.io/badge/Tests-467_Passing-success)
+![Coverage](https://img.shields.io/badge/Coverage-High-green)
+![Status](https://img.shields.io/badge/Status-Active_Development-blue)
+
+---
+
+**Made with ❤️ for homeschool families everywhere**

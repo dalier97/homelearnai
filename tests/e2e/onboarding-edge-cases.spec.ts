@@ -343,7 +343,7 @@ test.describe('Onboarding Edge Cases', () => {
     for (let i = 1; i < Math.min(testNames.length, 5); i++) {
       await page.getByTestId('add-another-child').click();
       await page.getByTestId(`child-name-${i}`).fill(testNames[i]);
-      await page.selectOption(`[data-testid="child-age-${i}"]`, '9');
+      await page.selectOption(`[data-testid="child-grade-${i}"]`, '4th');
       await page.selectOption(`[data-testid="child-independence-${i}"]`, '2');
     }
     
@@ -627,7 +627,7 @@ test.describe('Onboarding Edge Cases', () => {
     for (let i = 1; i < maxChildren; i++) {
       await page.getByTestId('add-another-child').click();
       await page.getByTestId(`child-name-${i}`).fill(`Child ${i + 1}`);
-      await page.selectOption(`[data-testid="child-age-${i}"]`, '7');
+      await page.selectOption(`[data-testid="child-grade-${i}"]`, '2nd');
     }
     
     // Verify add button is no longer available
@@ -643,7 +643,7 @@ test.describe('Onboarding Edge Cases', () => {
     // Add child back
     await page.getByTestId('add-another-child').click();
     await page.getByTestId('child-name-4').fill('Child 5 Again');
-    await page.selectOption('[data-testid="child-age-4"]', '8');
+    await page.selectOption('[data-testid="child-grade-4"]', '3rd');
     
     // Submit children
     await page.getByTestId('next-button').click();

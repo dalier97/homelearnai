@@ -37,7 +37,7 @@ test.describe('Onboarding Redirect', () => {
     if (currentUrl.includes('/login')) {
       // We're not authenticated, which means the middleware is working
       // This is actually the expected behavior for unauthenticated users
-      await expect(page.locator('body')).toContainText('Sign in to Homeschool Hub');
+      await expect(page.locator('body')).toContainText('Log in');
       
       // For this test, we'll skip the complex registration and focus on testing
       // the redirect logic by using the auth test pattern
@@ -62,7 +62,7 @@ test.describe('Onboarding Redirect', () => {
     
     // Should redirect to login for unauthenticated users
     await expect(page).toHaveURL(/\/login/, { timeout: 10000 });
-    await expect(page.locator('body')).toContainText('Sign in to Homeschool Hub');
+    await expect(page.locator('body')).toContainText('Log in');
     
     // Also test dashboard redirect
     await page.goto('/dashboard');  

@@ -46,6 +46,7 @@ class DashboardController extends Controller
                 'dashboard_data' => [],
                 'pin_is_set' => $pinIsSet,
                 'show_add_children_cta' => true,
+                'week_start' => Carbon::now()->startOfWeek(),
             ]);
         }
 

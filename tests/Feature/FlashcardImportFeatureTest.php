@@ -145,8 +145,9 @@ class FlashcardImportFeatureTest extends TestCase
             ]);
 
         $response->assertOk();
-        $response->assertViewIs('flashcards.partials.flashcard-list');
-        $response->assertViewHas('import_result');
+
+        // Check that HTMX trigger header is set for successful import
+        $response->assertHeader('HX-Trigger', 'flashcardsImported');
 
         // Check that flashcards were created in database
         $flashcards = Flashcard::where('unit_id', $this->unit->id)->get();
@@ -308,10 +309,13 @@ class FlashcardImportFeatureTest extends TestCase
         $flashcards = Flashcard::where('unit_id', $this->unit->id)->get();
         $this->assertCount(2, $flashcards); // Only the valid ones
 
-        $importResult = $response->viewData('import_result');
-        $this->assertEquals(2, $importResult['imported']);
-        $this->assertEquals(0, $importResult['failed']); // Invalid cards are filtered during parsing
-        $this->assertTrue($importResult['success']); // Success because some cards were imported
+        // Check that HTMX trigger header is set for successful import
+        $response->assertHeader('HX-Trigger', 'flashcardsImported');
+
+        // Verify the actual flashcard content was imported correctly
+        $questions = $flashcards->pluck('question')->sort()->values()->toArray();
+        $this->assertContains('Valid question 1', $questions);
+        $this->assertContains('Valid question 2', $questions);
     }
 
     /** @test */
@@ -347,12 +351,18 @@ class FlashcardImportFeatureTest extends TestCase
 
         $response->assertOk();
 
+        // Check that HTMX trigger header is set for successful import
+        $response->assertHeader('HX-Trigger', 'flashcardsImported');
+
+        // Verify flashcards were actually created in database
         $flashcards = Flashcard::where('unit_id', $this->unit->id)->get();
         $this->assertCount(50, $flashcards);
 
-        $importResult = $response->viewData('import_result');
-        $this->assertEquals(50, $importResult['imported']);
-        $this->assertEquals(0, $importResult['failed']);
-        $this->assertTrue($importResult['success']);
+        // Verify all flashcards have correct content
+        $expectedQuestions = collect(range(1, 50))->map(fn ($i) => "Question {$i}")->toArray();
+        $actualQuestions = $flashcards->pluck('question')->toArray();
+        sort($actualQuestions);
+        sort($expectedQuestions);
+        $this->assertEquals($expectedQuestions, $actualQuestions);
     }
 }

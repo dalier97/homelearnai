@@ -137,9 +137,9 @@ class KidsModePinUISimpleTest extends TestCase
             'pin' => '12a4', // Invalid: contains letter
         ]);
 
-        // The controller returns 400 (Bad Request) for PIN not set up or validation errors
-        $response->assertStatus(400);
-        $response->assertJsonStructure(['error']);
+        // The controller returns 422 (Validation Error) for invalid PIN format
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['pin']);
     }
 
     public function test_exit_pin_validation_requires_4_digits()

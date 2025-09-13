@@ -7,8 +7,8 @@ async function loginUser(page, email: string, password: string) {
   await page.fill('input[name="email"]', email);
   await page.fill('input[name="password"]', password);
   await page.click('button[type="submit"]');
-  // Wait for navigation - could go to dashboard or children page
-  await page.waitForURL(/(dashboard|children)/, { timeout: 10000 });
+  // Wait for navigation - could go to onboarding, dashboard or children page
+  await page.waitForURL(/(onboarding|dashboard|children)/, { timeout: 10000 });
 }
 
 // Helper function to register a new user
@@ -19,8 +19,8 @@ async function registerUser(page, email: string, password: string, name: string)
   await page.fill('input[name="password"]', password);
   await page.fill('input[name="password_confirmation"]', password);
   await page.click('button[type="submit"]');
-  // Wait for either dashboard or login page (in case email confirmation is required)
-  await page.waitForURL(/(dashboard|login)/);
+  // Wait for either onboarding, dashboard or login page (in case email confirmation is required)
+  await page.waitForURL(/(onboarding|dashboard|login)/);
 }
 
 // Helper function to change language

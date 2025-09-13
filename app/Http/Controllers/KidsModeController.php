@@ -130,7 +130,7 @@ class KidsModeController extends Controller
         }
 
         $request->validate([
-            'pin' => 'required|string|size:4',
+            'pin' => 'required|string|size:4|regex:/^[0-9]{4}$/',
         ]);
 
         $userId = auth()->id();

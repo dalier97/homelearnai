@@ -14,7 +14,7 @@ import { ModalHelper, ElementHelper } from './modal-helpers';
 
 export interface ChildData {
   name: string;
-  age: string;
+  grade: string;
   independence: '1' | '2' | '3' | '4'; // Needs Help, Basic, Intermediate, Independent
 }
 
@@ -193,7 +193,7 @@ export class OnboardingHelper {
    */
   async addChild(child: ChildData, index: number): Promise<void> {
     await this.page.getByTestId(`child-name-${index}`).fill(child.name);
-    await this.page.selectOption(`[data-testid="child-age-${index}"]`, child.age);
+    await this.page.selectOption(`[data-testid="child-grade-${index}"]`, child.grade);
     await this.page.selectOption(`[data-testid="child-independence-${index}"]`, child.independence);
     
     // Verify the child was added correctly
@@ -212,7 +212,7 @@ export class OnboardingHelper {
     // Verify all children are displayed
     for (const child of children) {
       await expect(this.page.locator(`text=${child.name}`)).toBeVisible();
-      await expect(this.page.locator(`text=${child.age} years old`)).toBeVisible();
+      await expect(this.page.locator(`text=${child.grade}`)).toBeVisible();
     }
     
     // Configure subjects for each child
@@ -349,14 +349,14 @@ export class OnboardingHelper {
     // Check each child appears
     for (const child of children) {
       await expect(this.page.locator(`text=${child.name}`)).toBeVisible();
-      await expect(this.page.locator(`text=${child.age} years old`)).toBeVisible();
+      await expect(this.page.locator(`text=${child.grade}`)).toBeVisible();
       
       // Check independence level display
       const independenceLabels = {
-        '1': 'Needs Help',
+        '1': 'Guided',
         '2': 'Basic',
         '3': 'Intermediate', 
-        '4': 'Independent'
+        '4': 'Advanced'
       };
       const expectedLabel = independenceLabels[child.independence];
       await expect(this.page.locator(`text=${expectedLabel}`)).toBeVisible();
@@ -447,7 +447,7 @@ export class OnboardingHelper {
       // Should show validation errors
       await expect(this.page.getByTestId('form-error')).toBeVisible();
       await expect(this.page.locator('text=Child name is required')).toBeVisible();
-      await expect(this.page.locator('text=Child age is required')).toBeVisible();
+      await expect(this.page.locator('text=Child grade is required')).toBeVisible();
     } else if (step === 3) {
       // Uncheck all subjects and try to submit
       const checkboxes = this.page.locator('input[type="checkbox"]:not([name*="skip"])');
@@ -469,7 +469,7 @@ export class OnboardingHelper {
     const children: ChildData[] = [
       {
         name: 'Emma Thompson',
-        age: '8',
+        grade: '3rd',
         independence: '2'
       }
     ];
@@ -491,17 +491,17 @@ export class OnboardingHelper {
     const children: ChildData[] = [
       {
         name: 'Alice Johnson',
-        age: '7',
+        grade: '2nd',
         independence: '1'
       },
       {
         name: 'Bob Johnson', 
-        age: '12',
+        grade: '7th',
         independence: '3'
       },
       {
         name: 'Charlie Johnson',
-        age: '16',
+        grade: '11th',
         independence: '4'
       }
     ];
@@ -531,7 +531,7 @@ export class OnboardingHelper {
     const children: ChildData[] = [
       {
         name: 'Creative Kid',
-        age: '10',
+        grade: '5th',
         independence: '3'
       }
     ];

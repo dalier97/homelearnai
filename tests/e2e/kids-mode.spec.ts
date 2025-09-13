@@ -396,8 +396,8 @@ test.describe('Kids Mode - Complete Functionality', () => {
     await page.goto('/children');
     
     const additionalChildrenData = [
-      { name: 'Alice', age: '8' },
-      { name: 'Bob', age: '10' },
+      { name: 'Alice', grade: '3rd' },
+      { name: 'Bob', grade: '5th' },
     ];
     
     // Add additional children (we already have "Test Child" from setupPin)
@@ -409,7 +409,7 @@ test.describe('Kids Mode - Complete Functionality', () => {
       await page.waitForTimeout(500); // Brief pause for modal to stabilize
       
       await modalHelper.fillModalField('child-form-modal', 'name', childData.name);
-      await page.selectOption('#child-form-modal select[name="grade"]', childData.age);
+      await page.selectOption('#child-form-modal select[name="grade"]', childData.grade);
       await modalHelper.submitModalForm('child-form-modal');
     }
     

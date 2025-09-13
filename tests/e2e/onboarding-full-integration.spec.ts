@@ -73,9 +73,9 @@ test.describe('Onboarding Full Integration', () => {
     // Wizard Step 2: Add Children
     await expect(page.getByTestId('step-2')).toBeVisible({ timeout: 10000 });
     
-    // Add single child with elementary age
+    // Add single child with elementary grade
     await page.getByTestId('child-name-0').fill('Emma Thompson');
-    await page.selectOption('[data-testid="child-grade-0"]', '8');
+    await page.selectOption('[data-testid="child-grade-0"]', '3rd');
     await page.selectOption('[data-testid="child-independence-0"]', '2'); // Basic
     
     // Submit children form
@@ -88,7 +88,7 @@ test.describe('Onboarding Full Integration', () => {
     // Wizard Step 3: Select Subjects
     await expect(page.getByTestId('child-subjects-0')).toBeVisible();
     await expect(page.locator('text=Emma Thompson')).toBeVisible();
-    await expect(page.locator('text=8 years old')).toBeVisible();
+    await expect(page.locator('text=3rd Grade')).toBeVisible();
     await expect(page.locator('text=Elementary (K-5)')).toBeVisible();
     
     // Verify pre-selected subjects for 8-year-old
@@ -113,7 +113,7 @@ test.describe('Onboarding Full Integration', () => {
     // Verify children summary
     await expect(page.locator('h3:has-text("1 Child Added")')).toBeVisible();
     await expect(page.locator('text=Emma Thompson')).toBeVisible();
-    await expect(page.locator('text=8 years old')).toBeVisible();
+    await expect(page.locator('text=3rd Grade')).toBeVisible();
     await expect(page.locator('text=Basic')).toBeVisible();
     
     // Verify subjects summary
@@ -178,19 +178,19 @@ test.describe('Onboarding Full Integration', () => {
     
     // Add first child - Elementary
     await page.getByTestId('child-name-0').fill('Alice Johnson');
-    await page.selectOption('[data-testid="child-grade-0"]', '7');
+    await page.selectOption('[data-testid="child-grade-0"]', '2nd');
     await page.selectOption('[data-testid="child-independence-0"]', '1'); // Needs Help
     
     // Add second child - Middle School
     await page.getByTestId('add-another-child').click();
     await page.getByTestId('child-name-1').fill('Bob Johnson');
-    await page.selectOption('[data-testid="child-grade-1"]', '12');
+    await page.selectOption('[data-testid="child-grade-1"]', '7th');
     await page.selectOption('[data-testid="child-independence-1"]', '3'); // Intermediate
     
     // Add third child - High School
     await page.getByTestId('add-another-child').click();
     await page.getByTestId('child-name-2').fill('Charlie Johnson');
-    await page.selectOption('[data-testid="child-grade-2"]', '16');
+    await page.selectOption('[data-testid="child-grade-2"]', '11th');
     await page.selectOption('[data-testid="child-independence-2"]', '4'); // Independent
     
     // Submit children
@@ -200,15 +200,15 @@ test.describe('Onboarding Full Integration', () => {
     
     // Verify all three children appear with appropriate grade levels
     await expect(page.locator('text=Alice Johnson')).toBeVisible();
-    await expect(page.locator('text=7 years old')).toBeVisible();
+    await expect(page.locator('text=2nd Grade')).toBeVisible();
     await expect(page.locator('text=Elementary (K-5)')).toBeVisible();
     
     await expect(page.locator('text=Bob Johnson')).toBeVisible();
-    await expect(page.locator('text=12 years old')).toBeVisible();
+    await expect(page.locator('text=7th Grade')).toBeVisible();
     await expect(page.locator('text=Middle School (6-8)')).toBeVisible();
     
     await expect(page.locator('text=Charlie Johnson')).toBeVisible();
-    await expect(page.locator('text=16 years old')).toBeVisible();
+    await expect(page.locator('text=11th Grade')).toBeVisible();
     await expect(page.locator('text=High School (9-12)')).toBeVisible();
     
     // Verify different recommended subjects for different ages
@@ -277,7 +277,7 @@ test.describe('Onboarding Full Integration', () => {
     await expect(page.getByTestId('step-2')).toBeVisible({ timeout: 10000 });
     
     await page.getByTestId('child-name-0').fill('Creative Kid');
-    await page.selectOption('[data-testid="child-grade-0"]', '10');
+    await page.selectOption('[data-testid="child-grade-0"]', '5th');
     await page.selectOption('[data-testid="child-independence-0"]', '3');
     
     await page.getByTestId('next-button').click();
@@ -354,13 +354,13 @@ test.describe('Onboarding Full Integration', () => {
     
     // Fill out child information
     await page.getByTestId('child-name-0').fill('Persistent Child');
-    await page.selectOption('[data-testid="child-grade-0"]', '9');
+    await page.selectOption('[data-testid="child-grade-0"]', '4th');
     await page.selectOption('[data-testid="child-independence-0"]', '2');
     
     // Add another child
     await page.getByTestId('add-another-child').click();
     await page.getByTestId('child-name-1').fill('Another Child');
-    await page.selectOption('[data-testid="child-grade-1"]', '11');
+    await page.selectOption('[data-testid="child-grade-1"]', '6th');
     
     // Submit children form
     await page.getByTestId('next-button').click();
@@ -429,18 +429,18 @@ test.describe('Onboarding Full Integration', () => {
     
     // Add maximum number of children (5)
     const childNames = ['Max Child 1', 'Max Child 2', 'Max Child 3', 'Max Child 4', 'Max Child 5'];
-    const ages = ['6', '8', '10', '14', '17'];
+    const grades = ['1st', '3rd', '5th', '8th', '12th'];
     
     // Fill first child
     await page.getByTestId('child-name-0').fill(childNames[0]);
-    await page.selectOption('[data-testid="child-grade-0"]', ages[0]);
+    await page.selectOption('[data-testid="child-grade-0"]', grades[0]);
     await page.selectOption('[data-testid="child-independence-0"]', '2');
     
     // Add remaining 4 children
     for (let i = 1; i < 5; i++) {
       await page.getByTestId('add-another-child').click();
       await page.getByTestId(`child-name-${i}`).fill(childNames[i]);
-      await page.selectOption(`[data-testid="child-age-${i}"]`, ages[i]);
+      await page.selectOption(`[data-testid="child-grade-${i}"]`, grades[i]);
       await page.selectOption(`[data-testid="child-independence-${i}"]`, '3');
     }
     
