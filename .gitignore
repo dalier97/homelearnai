@@ -1,8 +1,8 @@
 *.log
 .DS_Store
 .env
-.env.backup
-.env.production
+.env.*
+!.env.example
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -26,8 +26,29 @@ Thumbs.db
 # Test artifacts and debugging
 test-results/
 playwright-report/
-auth-failure-debug.png
+*.png
+debug-*
 .vow-*
+cookies.txt
+test-results.*
+*_test_results.txt
 
-# Brand and business documents
+# Temporary scripts and fixes
+fix-*.sh
+fix_*.sh
+env-switch.sh
+complete-migration.sh
+test-setup.sh
+test-performance-*.cjs
+
+# Development documentation
+*_IMPLEMENTATION*.md
+*_REPORT*.md
+MILESTONE*.md
+DEBUG_GUIDE.md
+TESTING_GUIDE.md
+SPEC.md
+SUPABASE*.md
+flashcards.md
+i18n.md
 brand.md
