@@ -29,10 +29,11 @@ class AuthRoutesTest extends TestCase
      */
     public function test_route_names_are_correctly_configured()
     {
-        // Breeze route names - use relative URLs
-        $this->assertEquals('http://localhost:8000/login', route('login'));
-        $this->assertEquals('http://localhost:8000/register', route('register'));
-        $this->assertEquals('http://localhost:8000/logout', route('logout'));
+        // Breeze route names - use configured APP_URL
+        $appUrl = config('app.url');
+        $this->assertEquals($appUrl.'/login', route('login'));
+        $this->assertEquals($appUrl.'/register', route('register'));
+        $this->assertEquals($appUrl.'/logout', route('logout'));
     }
 
     /**
