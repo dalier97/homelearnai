@@ -746,12 +746,10 @@ class FlashcardExportService
         // Format-specific validation
         switch ($format) {
             case 'anki':
-                if (isset($options['deck_name'])) {
-                    if (empty(trim($options['deck_name']))) {
-                        $errors[] = 'Deck name cannot be empty';
-                    } elseif (strlen($options['deck_name']) > 100) {
-                        $errors[] = 'Deck name cannot exceed 100 characters';
-                    }
+                if (! isset($options['deck_name']) || empty(trim($options['deck_name']))) {
+                    $errors[] = 'Deck name cannot be empty';
+                } elseif (strlen($options['deck_name']) > 100) {
+                    $errors[] = 'Deck name cannot exceed 100 characters';
                 }
                 break;
 

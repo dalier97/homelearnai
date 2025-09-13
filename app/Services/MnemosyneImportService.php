@@ -213,8 +213,8 @@ class MnemosyneImportService
     {
         try {
             // Mnemosyne sometimes uses different field names in item format
-            $question = $this->getXmlValue($itemXml, ['text', 'question', 'front']);
-            $answer = $this->getXmlValue($itemXml, ['answer', 'back', 'solution']);
+            $question = $this->getXmlValue($itemXml, ['text', 'question', 'front', 'q']);
+            $answer = $this->getXmlValue($itemXml, ['answer', 'back', 'solution', 'a']);
 
             // Sometimes the entire content is in a single field, separated by delimiters
             if (empty($answer) && ! empty($question)) {

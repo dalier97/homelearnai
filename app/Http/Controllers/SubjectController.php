@@ -123,7 +123,7 @@ class SubjectController extends Controller
                     return view('subjects.partials.subjects-list', compact('subjects', 'showQuickStart', 'selectedChild'));
                 }
 
-                return redirect()->route('subjects.show', $subject->id)->with('success', 'Subject created successfully.');
+                return redirect()->route('subjects.index')->with('success', 'Subject created successfully.');
             } else {
                 throw new \Exception('Failed to save subject');
             }

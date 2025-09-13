@@ -21,10 +21,15 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'password',
-        ]);
+        // Create user preferences to prevent dashboard errors
+        $user->getPreferences();
+
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->post('/login', [
+                'email' => $user->email,
+                'password' => 'password',
+                '_token' => 'test-token',
+            ]);
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
@@ -46,7 +51,9 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->post('/logout');
+        $response = $this->actingAs($user)
+            ->withSession(['_token' => 'test-token'])
+            ->post('/logout', ['_token' => 'test-token']);
 
         $this->assertGuest();
         $response->assertRedirect('/');

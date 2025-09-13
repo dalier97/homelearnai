@@ -25,7 +25,11 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $this->withSession(['_token' => 'test-token'])
+            ->post('/forgot-password', [
+                'email' => $user->email,
+                '_token' => 'test-token',
+            ]);
 
         Notification::assertSentTo($user, ResetPassword::class);
     }
@@ -36,7 +40,11 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $this->withSession(['_token' => 'test-token'])
+            ->post('/forgot-password', [
+                'email' => $user->email,
+                '_token' => 'test-token',
+            ]);
 
         Notification::assertSentTo($user, ResetPassword::class, function ($notification) {
             $response = $this->get('/reset-password/'.$notification->token);
@@ -53,15 +61,21 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', ['email' => $user->email]);
+        $this->withSession(['_token' => 'test-token'])
+            ->post('/forgot-password', [
+                'email' => $user->email,
+                '_token' => 'test-token',
+            ]);
 
         Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
-            $response = $this->post('/reset-password', [
-                'token' => $notification->token,
-                'email' => $user->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
-            ]);
+            $response = $this->withSession(['_token' => 'test-token'])
+                ->post('/reset-password', [
+                    'token' => $notification->token,
+                    'email' => $user->email,
+                    'password' => 'password',
+                    'password_confirmation' => 'password',
+                    '_token' => 'test-token',
+                ]);
 
             $response
                 ->assertSessionHasNoErrors()

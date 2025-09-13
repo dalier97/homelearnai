@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Child;
+use App\Models\User;
 use App\Services\SupabaseClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -15,33 +16,31 @@ class KidsModeEnterExitTest extends TestCase
 
     protected $supabaseClient;
 
-    protected $userId;
-
-    protected $accessToken;
+    protected $user;
 
     protected $child;
+
+    protected $accessToken;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->supabaseClient = $this->app->make(SupabaseClient::class);
-        $this->userId = 'test-user-'.uniqid();
-        $this->accessToken = 'test-token-'.uniqid();
 
-        // Mock session data
-        Session::put('user_id', $this->userId);
-        Session::put('supabase_token', $this->accessToken);
-        Session::put('user', ['id' => $this->userId, 'email' => 'test@example.com']);
+        // Create and authenticate user
+        $this->user = User::factory()->create();
+        $this->actingAs($this->user);
 
-        // Create a test child
-        $this->child = new Child([
+        // Set up test access token
+        $this->accessToken = 'test-access-token-123';
+
+        // Create a test child using the user relationship
+        $this->child = $this->user->children()->create([
             'name' => 'Test Child',
             'grade' => '3rd',
             'independence_level' => 2,
         ]);
-        $this->child->user_id = $this->userId;
-        $this->child->id = rand(1000, 9999);
 
         // Mock the SupabaseClient for testing
         $this->mockSupabaseClient();
@@ -77,9 +76,7 @@ class KidsModeEnterExitTest extends TestCase
             ->method('single')
             ->willReturn(['kids_mode_pin' => Hash::make('1234')]);
 
-        // Mock children data
-        Child::shouldReceive('forUser')
-            ->andReturn(collect([$this->child]));
+        // Children data is already set up in setUp() method via $this->child
 
         $response = $this->get(route('dashboard.parent'));
 
@@ -114,9 +111,7 @@ class KidsModeEnterExitTest extends TestCase
             ->method('single')
             ->willReturn(['kids_mode_pin' => null]);
 
-        // Mock children data
-        Child::shouldReceive('forUser')
-            ->andReturn(collect([$this->child]));
+        // Children data is already set up in setUp() method via $this->child
 
         $response = $this->get(route('dashboard.parent'));
 
@@ -135,9 +130,7 @@ class KidsModeEnterExitTest extends TestCase
             ->method('setUserToken')
             ->with($this->accessToken);
 
-        Child::shouldReceive('find')
-            ->with($this->child->id, $this->supabaseClient)
-            ->andReturn($this->child);
+        // Child will be found via database using real data
 
         $response = $this->post(route('kids-mode.enter', $this->child->id));
 
@@ -155,10 +148,7 @@ class KidsModeEnterExitTest extends TestCase
     /** @test */
     public function cannot_enter_kids_mode_for_non_existent_child(): void
     {
-        // Mock child not found
-        Child::shouldReceive('find')
-            ->with(99999, $this->supabaseClient)
-            ->andReturn(null);
+        // Test with non-existent child ID (99999)
 
         $response = $this->post(route('kids-mode.enter', 99999));
 
@@ -172,18 +162,13 @@ class KidsModeEnterExitTest extends TestCase
     /** @test */
     public function cannot_enter_kids_mode_for_other_users_child(): void
     {
-        // Mock child belonging to different user
-        $otherChild = new Child([
+        // Create a child for another user (unauthorized access test)
+        $otherChild = Child::create([
+            'user_id' => User::factory()->create()->id,
             'name' => 'Other Child',
-            'grade' => '5th',
-            'independence_level' => 3,
+            'grade' => '4th',
+            'independence_level' => 2,
         ]);
-        $otherChild->user_id = 'other-user-id';
-        $otherChild->id = rand(1000, 9999);
-
-        Child::shouldReceive('find')
-            ->with($otherChild->id, $this->supabaseClient)
-            ->andReturn($otherChild);
 
         $response = $this->post(route('kids-mode.enter', $otherChild->id));
 
@@ -197,9 +182,7 @@ class KidsModeEnterExitTest extends TestCase
     /** @test */
     public function kids_mode_enter_returns_json_for_ajax_requests(): void
     {
-        Child::shouldReceive('find')
-            ->with($this->child->id, $this->supabaseClient)
-            ->andReturn($this->child);
+        // Child will be found via database using real data
 
         $response = $this->postJson(route('kids-mode.enter', $this->child->id));
 
@@ -373,9 +356,7 @@ class KidsModeEnterExitTest extends TestCase
         Session::put('kids_mode_child_name', $this->child->name);
 
         // Mock child and PIN setup
-        Child::shouldReceive('find')
-            ->with($this->child->id, $this->supabaseClient)
-            ->andReturn($this->child);
+        // Child will be found via database using real data
 
         $this->supabaseClient
             ->expects($this->any())

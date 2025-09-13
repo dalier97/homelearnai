@@ -156,7 +156,7 @@ What is the largest planet?\tJupiter";
         $validation = $this->service->validateMnemosyneFile($uploadedFile);
 
         $this->assertFalse($validation['valid']);
-        $this->assertStringContains('extension', $validation['error']);
+        $this->assertStringContainsString('extension', $validation['error']);
 
         fclose($tempFile);
     }

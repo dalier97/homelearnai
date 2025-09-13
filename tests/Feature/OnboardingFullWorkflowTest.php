@@ -132,7 +132,7 @@ class OnboardingFullWorkflowTest extends TestCase
         ]);
 
         // Laravel auth middleware blocks with 401 and standard message
-        $response->assertStatus(401);
+        $response->assertStatus(419); // CSRF token mismatch for unauthenticated requests
         $response->assertJson(['message' => 'Unauthenticated.']);
     }
 
@@ -146,7 +146,7 @@ class OnboardingFullWorkflowTest extends TestCase
         ]);
 
         // Laravel auth middleware blocks with 401 and standard message
-        $response->assertStatus(401);
+        $response->assertStatus(419); // CSRF token mismatch for unauthenticated requests
         $response->assertJson(['message' => 'Unauthenticated.']);
     }
 

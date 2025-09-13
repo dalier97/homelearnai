@@ -2,22 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Session as LaravelSession;
 use Tests\TestCase;
 
 class KidsModeUITest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Set up session as authenticated user for UI tests
-        LaravelSession::put('user_id', 'test-user-123');
-        LaravelSession::put('supabase_token', 'test-token');
-        LaravelSession::put('user', [
-            'id' => 'test-user-123',
-            'email' => 'test@example.com',
-        ]);
+        // Create and authenticate a test user
+        $user = User::factory()->create();
+        $this->actingAs($user);
     }
 
     public function test_child_today_view_renders_without_kids_mode()

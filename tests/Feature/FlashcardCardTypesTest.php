@@ -23,6 +23,8 @@ class FlashcardCardTypesTest extends TestCase
     {
         parent::setUp();
 
+        $this->withoutMiddleware();
+
         $this->user = User::factory()->create();
         $this->subject = Subject::factory()->for($this->user)->create();
         $this->unit = Unit::factory()->for($this->subject)->create();
@@ -58,15 +60,17 @@ class FlashcardCardTypesTest extends TestCase
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
-            'card_type' => 'multiple_choice',
-            'question' => 'Which of these are programming languages?',
-            'answer' => 'PHP, JavaScript',
-            'choices' => ['PHP', 'HTML', 'JavaScript', 'CSS'],
-            'correct_choices' => [0, 2], // PHP and JavaScript
-            'difficulty_level' => 'medium',
-            'tags' => 'programming,code',
-        ]);
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->postJson(route('api.flashcards.store', $this->unit->id), [
+                'card_type' => 'multiple_choice',
+                '_token' => 'test-token',
+                'question' => 'Which of these are programming languages?',
+                'answer' => 'PHP, JavaScript',
+                'choices' => ['PHP', 'HTML', 'JavaScript', 'CSS'],
+                'correct_choices' => [0, 2], // PHP and JavaScript
+                'difficulty_level' => 'medium',
+                'tags' => 'programming,code',
+            ]);
         $response->assertStatus(201);
 
         $flashcard = Flashcard::first();
@@ -80,14 +84,16 @@ class FlashcardCardTypesTest extends TestCase
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
-            'card_type' => 'multiple_choice',
-            'question' => 'Choose the best option',
-            'answer' => 'Option A',
-            'choices' => ['Option A'], // Only one choice - invalid
-            'correct_choices' => [0],
-            'difficulty_level' => 'easy',
-        ]);
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->postJson(route('api.flashcards.store', $this->unit->id), [
+                'card_type' => 'multiple_choice',
+                '_token' => 'test-token',
+                'question' => 'Choose the best option',
+                'answer' => 'Option A',
+                'choices' => ['Option A'], // Only one choice - invalid
+                'correct_choices' => [0],
+                'difficulty_level' => 'easy',
+            ]);
 
         $response->assertStatus(422);
         $response->assertJsonPath('errors.choices.0', 'Multiple choice cards must have at least 2 choices.');
@@ -98,14 +104,16 @@ class FlashcardCardTypesTest extends TestCase
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
-            'card_type' => 'multiple_choice',
-            'question' => 'Choose the best option',
-            'answer' => 'Option A',
-            'choices' => ['Option A', 'Option B', 'Option C'],
-            'correct_choices' => [], // No correct choices - invalid
-            'difficulty_level' => 'easy',
-        ]);
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->postJson(route('api.flashcards.store', $this->unit->id), [
+                'card_type' => 'multiple_choice',
+                '_token' => 'test-token',
+                'question' => 'Choose the best option',
+                'answer' => 'Option A',
+                'choices' => ['Option A', 'Option B', 'Option C'],
+                'correct_choices' => [], // No correct choices - invalid
+                'difficulty_level' => 'easy',
+            ]);
 
         $response->assertStatus(422);
         $response->assertJsonPath('errors.correct_choices.0', 'Multiple choice cards must have at least 1 correct choice.');
@@ -116,14 +124,16 @@ class FlashcardCardTypesTest extends TestCase
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
-            'card_type' => 'true_false',
-            'question' => 'The Earth is round',
-            'answer' => 'True',
-            'true_false_answer' => 'true',
-            'difficulty_level' => 'easy',
-            'tags' => 'geography, science',
-        ]);
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->postJson(route('api.flashcards.store', $this->unit->id), [
+                'card_type' => 'true_false',
+                '_token' => 'test-token',
+                'question' => 'The Earth is round',
+                'answer' => 'True',
+                'true_false_answer' => 'true',
+                'difficulty_level' => 'easy',
+                'tags' => 'geography, science',
+            ]);
 
         $response->assertStatus(201);
 
@@ -139,13 +149,15 @@ class FlashcardCardTypesTest extends TestCase
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
-            'card_type' => 'true_false',
-            'question' => 'The Earth is flat',
-            'answer' => 'False',
-            'true_false_answer' => 'false',
-            'difficulty_level' => 'easy',
-        ]);
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->postJson(route('api.flashcards.store', $this->unit->id), [
+                'card_type' => 'true_false',
+                '_token' => 'test-token',
+                'question' => 'The Earth is flat',
+                'answer' => 'False',
+                'true_false_answer' => 'false',
+                'difficulty_level' => 'easy',
+            ]);
 
         $response->assertStatus(201);
 
@@ -159,13 +171,15 @@ class FlashcardCardTypesTest extends TestCase
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
-            'card_type' => 'true_false',
-            'question' => 'The Earth is round',
-            'answer' => 'True',
-            // Missing true_false_answer
-            'difficulty_level' => 'easy',
-        ]);
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->postJson(route('api.flashcards.store', $this->unit->id), [
+                'card_type' => 'true_false',
+                '_token' => 'test-token',
+                'question' => 'The Earth is round',
+                'answer' => 'True',
+                // Missing true_false_answer
+                'difficulty_level' => 'easy',
+            ]);
 
         $response->assertStatus(422);
         $response->assertJsonPath('errors.true_false_answer.0', 'The true false answer field is required.');
@@ -189,7 +203,7 @@ class FlashcardCardTypesTest extends TestCase
         $this->assertEquals('cloze', $flashcard->card_type);
         $this->assertEquals('The {{capital}} of France is {{Paris}}.', $flashcard->cloze_text);
         $this->assertEquals(['capital', 'Paris'], $flashcard->cloze_answers);
-        $this->assertStringContains('[...]', $flashcard->question);
+        $this->assertStringContainsString('[...]', $flashcard->question);
         $this->assertEquals('capital, Paris', $flashcard->answer);
     }
 
@@ -205,7 +219,7 @@ class FlashcardCardTypesTest extends TestCase
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('errors.cloze_text.0', 'The cloze text field is required.');
+        $response->assertJsonPath('errors.cloze_text.0', 'Cloze deletion cards must have cloze text with {{}} syntax.');
     }
 
     /** @test */
@@ -254,6 +268,9 @@ class FlashcardCardTypesTest extends TestCase
             'answer' => 'Heart',
             'question_image_url' => 'https://example.com/anatomy.jpg',
             'answer_image_url' => 'https://example.com/heart-highlighted.jpg',
+            'occlusion_data' => [
+                ['x' => 100, 'y' => 50, 'width' => 80, 'height' => 60],
+            ],
             'difficulty_level' => 'hard',
         ]);
 
@@ -296,7 +313,7 @@ class FlashcardCardTypesTest extends TestCase
         ]);
 
         $response->assertStatus(422);
-        $response->assertJsonPath('errors.question_image_url.0', 'The question image url field must be a valid URL.');
+        $response->assertJsonPath('errors.question_image_url.0', 'Question image URL must be a valid URL.');
     }
 
     /** @test */

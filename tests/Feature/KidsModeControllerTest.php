@@ -155,13 +155,13 @@ class KidsModeControllerTest extends TestCase
         $this->app['auth']->logout();
 
         // These routes should redirect to login (handled by Laravel's auth middleware)
-        $response = $this->post('/kids-mode/enter/1');
+        $response = $this->post('/kids-mode/1/enter');
         $response->assertRedirect('/login');
 
         $response = $this->post('/kids-mode/settings/pin');
         $response->assertRedirect('/login');
 
-        $response = $this->post('/kids-mode/settings/pin/reset');
+        $response = $this->post('/kids-mode/reset-pin');
         $response->assertRedirect('/login');
     }
 

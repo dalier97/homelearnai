@@ -2,40 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class KidsModePinMigrationTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Create user_preferences table if it doesn't exist
-        if (! Schema::hasTable('user_preferences')) {
-            Schema::create('user_preferences', function ($table) {
-                $table->id();
-                $table->uuid('user_id');
-                $table->string('locale', 5)->default('en');
-                $table->string('timezone', 50)->default('UTC');
-                $table->string('date_format', 20)->default('Y-m-d');
-                $table->timestamps();
-                $table->unique('user_id');
-            });
-        }
-
-        // Apply our kids mode PIN migration if fields don't exist
-        if (! Schema::hasColumn('user_preferences', 'kids_mode_pin')) {
-            Schema::table('user_preferences', function ($table) {
-                $table->string('kids_mode_pin', 255)->nullable();
-                $table->string('kids_mode_pin_salt', 255)->nullable();
-                $table->integer('kids_mode_pin_attempts')->default(0);
-                $table->timestamp('kids_mode_pin_locked_until')->nullable();
-            });
-        }
-
-        // Temporarily disable foreign key constraints for testing
-        \DB::statement('SET session_replication_role = replica;');
+        // The user_preferences table and kids mode fields are created by migrations
+        // RefreshDatabase trait ensures the database is in the correct state
 
         // Clean up any test data from previous runs
         \DB::table('user_preferences')->where('user_id', 'like', '%123456%')->delete();
@@ -45,9 +26,6 @@ class KidsModePinMigrationTest extends TestCase
     {
         // Clean up test data after each test
         \DB::table('user_preferences')->where('user_id', 'like', '%123456%')->delete();
-
-        // Re-enable foreign key constraints
-        \DB::statement('SET session_replication_role = DEFAULT;');
 
         parent::tearDown();
     }
@@ -108,12 +86,12 @@ class KidsModePinMigrationTest extends TestCase
      */
     public function test_can_insert_kids_mode_pin_data(): void
     {
-        // Create a mock user ID (UUID format)
-        $userId = '12345678-1234-5678-9012-123456789012';
+        // Create a real user
+        $user = User::factory()->create();
 
         // Insert test data
         \DB::table('user_preferences')->insert([
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'locale' => 'en',
             'timezone' => 'UTC',
             'date_format' => 'Y-m-d',
@@ -126,7 +104,7 @@ class KidsModePinMigrationTest extends TestCase
         ]);
 
         // Verify the data was inserted correctly
-        $preference = \DB::table('user_preferences')->where('user_id', $userId)->first();
+        $preference = \DB::table('user_preferences')->where('user_id', $user->id)->first();
 
         $this->assertNotNull($preference, 'User preference should be created');
         $this->assertEquals('$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', $preference->kids_mode_pin);
@@ -140,12 +118,12 @@ class KidsModePinMigrationTest extends TestCase
      */
     public function test_kids_mode_pin_fields_can_be_null(): void
     {
-        // Create a mock user ID (UUID format)
-        $userId = '87654321-4321-8765-2109-876543210987';
+        // Create a real user
+        $user = User::factory()->create();
 
         // Insert test data with null PIN fields
         \DB::table('user_preferences')->insert([
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'locale' => 'en',
             'timezone' => 'UTC',
             'date_format' => 'Y-m-d',
@@ -158,7 +136,7 @@ class KidsModePinMigrationTest extends TestCase
         ]);
 
         // Verify the data was inserted correctly with null values
-        $preference = \DB::table('user_preferences')->where('user_id', $userId)->first();
+        $preference = \DB::table('user_preferences')->where('user_id', $user->id)->first();
 
         $this->assertNotNull($preference, 'User preference should be created');
         $this->assertNull($preference->kids_mode_pin);
@@ -172,12 +150,12 @@ class KidsModePinMigrationTest extends TestCase
      */
     public function test_kids_mode_pin_attempts_defaults_to_zero(): void
     {
-        // Create a mock user ID (UUID format)
-        $userId = '11111111-2222-3333-4444-555555555555';
+        // Create a real user
+        $user = User::factory()->create();
 
         // Insert test data without specifying attempts field
         \DB::table('user_preferences')->insert([
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'locale' => 'en',
             'timezone' => 'UTC',
             'date_format' => 'Y-m-d',
@@ -186,7 +164,7 @@ class KidsModePinMigrationTest extends TestCase
         ]);
 
         // Verify the attempts field defaults to 0
-        $preference = \DB::table('user_preferences')->where('user_id', $userId)->first();
+        $preference = \DB::table('user_preferences')->where('user_id', $user->id)->first();
 
         $this->assertEquals(0, $preference->kids_mode_pin_attempts);
     }
@@ -219,13 +197,14 @@ class KidsModePinMigrationTest extends TestCase
      */
     public function test_pin_validation_workflow(): void
     {
-        $userId = '99999999-8888-7777-6666-555555555555';
+        // Create a real user
+        $user = User::factory()->create();
         $testPin = '1234';
         $hashedPin = password_hash($testPin, PASSWORD_DEFAULT);
 
         // Create user preference with PIN
         \DB::table('user_preferences')->insert([
-            'user_id' => $userId,
+            'user_id' => $user->id,
             'locale' => 'en',
             'timezone' => 'UTC',
             'date_format' => 'Y-m-d',
@@ -238,21 +217,21 @@ class KidsModePinMigrationTest extends TestCase
         ]);
 
         // Retrieve and verify PIN can be validated
-        $preference = \DB::table('user_preferences')->where('user_id', $userId)->first();
+        $preference = \DB::table('user_preferences')->where('user_id', $user->id)->first();
 
         $this->assertTrue(password_verify($testPin, $preference->kids_mode_pin), 'PIN should be verifiable');
         $this->assertFalse(password_verify('wrong', $preference->kids_mode_pin), 'Wrong PIN should not verify');
 
         // Test lockout scenario
         \DB::table('user_preferences')
-            ->where('user_id', $userId)
+            ->where('user_id', $user->id)
             ->update([
                 'kids_mode_pin_attempts' => 5,
                 'kids_mode_pin_locked_until' => now()->addMinutes(15),
                 'updated_at' => now(),
             ]);
 
-        $lockedPreference = \DB::table('user_preferences')->where('user_id', $userId)->first();
+        $lockedPreference = \DB::table('user_preferences')->where('user_id', $user->id)->first();
         $this->assertEquals(5, $lockedPreference->kids_mode_pin_attempts);
         $this->assertNotNull($lockedPreference->kids_mode_pin_locked_until);
 

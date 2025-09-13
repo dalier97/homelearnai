@@ -55,11 +55,13 @@ class AuthRoutesTest extends TestCase
     public function test_form_validation_works()
     {
         // Test Breeze login validation
-        $response = $this->post('/login', []);
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->post('/login', ['_token' => 'test-token']);
         $response->assertSessionHasErrors(['email', 'password']);
 
         // Test Breeze register validation
-        $response = $this->post('/register', []);
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->post('/register', ['_token' => 'test-token']);
         $response->assertSessionHasErrors(['name', 'email', 'password']);
     }
 

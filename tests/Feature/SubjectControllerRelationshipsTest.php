@@ -6,7 +6,6 @@ use App\Models\Child;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Session;
 use Tests\TestCase;
 
 class SubjectControllerRelationshipsTest extends TestCase
@@ -32,12 +31,8 @@ class SubjectControllerRelationshipsTest extends TestCase
             'user_id' => $user->id,
         ]);
 
-        // Set up session for authentication (mimicking Supabase auth)
-        Session::put('user_id', $user->id);
-        Session::put('user_name', $user->name);
-        Session::put('user_email', $user->email);
-        Session::put('supabase_token', 'fake-token-for-testing');
-        Session::put('supabase_token', 'fake-token-for-testing');
+        // Authenticate the user using Laravel's built-in authentication
+        $this->actingAs($user);
 
         // Test the subjects index with child_id parameter
         $response = $this->get('/subjects?child_id='.$child->id);
@@ -65,10 +60,7 @@ class SubjectControllerRelationshipsTest extends TestCase
             'independence_level' => 2,
         ]);
 
-        Session::put('user_id', $user->id);
-        Session::put('user_name', $user->name);
-        Session::put('user_email', $user->email);
-        Session::put('supabase_token', 'fake-token-for-testing');
+        $this->actingAs($user);
 
         $subjectData = [
             'name' => 'Science',
@@ -101,10 +93,7 @@ class SubjectControllerRelationshipsTest extends TestCase
             'independence_level' => 2,
         ]);
 
-        Session::put('user_id', $user->id);
-        Session::put('user_name', $user->name);
-        Session::put('user_email', $user->email);
-        Session::put('supabase_token', 'fake-token-for-testing');
+        $this->actingAs($user);
 
         $quickStartData = [
             'grade_level' => 'elementary',
@@ -164,9 +153,7 @@ class SubjectControllerRelationshipsTest extends TestCase
         ]);
 
         // Test that user1 can only see their child's subjects
-        Session::put('user_id', $user1->id);
-        Session::put('user_name', $user1->name);
-        Session::put('user_email', $user1->email);
+        $this->actingAs($user1);
 
         $response = $this->get('/subjects?child_id='.$child1->id);
         $response->assertStatus(200);

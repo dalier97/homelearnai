@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Child;
+use App\Models\KidsModeAuditLog;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -41,6 +42,19 @@ class KidsModeController extends Controller
         Session::put('kids_mode_child_name', $child->name);
         Session::put('kids_mode_entered_at', now()->toISOString());
         Session::put('kids_mode_fingerprint', $sessionFingerprint);
+
+        // Log the security event
+        KidsModeAuditLog::logEvent(
+            'enter',
+            (string) $userId,
+            $childId,
+            $request->ip(),
+            $request->userAgent(),
+            [
+                'child_name' => $child->name,
+                'fingerprint' => substr($sessionFingerprint, 0, 8).'...',
+            ]
+        );
 
         \Log::info('Kids mode entered', [
             'user_id' => $userId,

@@ -17,6 +17,19 @@ class FlashcardRequest extends FormRequest
     }
 
     /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        $response = response()->json([
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()->toArray(),
+        ], 422);
+
+        throw new \Illuminate\Validation\ValidationException($validator, $response);
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      */
     public function rules(): array
@@ -48,7 +61,7 @@ class FlashcardRequest extends FormRequest
                     'answer' => 'required|string|max:65535',
                     'choices' => 'required|array|min:2|max:6',
                     'choices.*' => 'required|string|max:1000',
-                    'correct_choices' => 'required|array|min:1',
+                    'correct_choices' => 'present|array|min:1',
                     'correct_choices.*' => 'integer|min:0',
                 ]);
                 break;
@@ -58,12 +71,17 @@ class FlashcardRequest extends FormRequest
                     'question' => 'required|string|max:65535',
                     'answer' => 'required|string|max:65535',
                     'true_false_answer' => 'required|in:true,false',
+                    'choices' => 'array|size:2', // Added by prepareForValidation
+                    'correct_choices' => 'array|size:1', // Added by prepareForValidation
                 ]);
                 break;
 
             case Flashcard::CARD_TYPE_CLOZE:
                 $rules = array_merge($rules, [
                     'cloze_text' => 'required|string|max:65535',
+                    'question' => 'string|max:65535', // Added by prepareForValidation
+                    'answer' => 'string|max:65535', // Added by prepareForValidation
+                    'cloze_answers' => 'array', // Added by prepareForValidation
                 ]);
                 break;
 
@@ -73,6 +91,7 @@ class FlashcardRequest extends FormRequest
                     'answer' => 'required|string|max:65535',
                     'question_image_url' => 'required|string|url|max:255',
                     'answer_image_url' => 'nullable|string|url|max:255',
+                    'occlusion_data' => 'required|array',
                 ]);
                 break;
         }
@@ -143,11 +162,6 @@ class FlashcardRequest extends FormRequest
         // Ensure choices are unique
         if (count($choices) !== count(array_unique($choices))) {
             $validator->errors()->add('choices', 'All choices must be unique.');
-        }
-
-        // Ensure at least one correct choice
-        if (empty($correctChoices)) {
-            $validator->errors()->add('correct_choices', 'Must select at least one correct choice.');
         }
     }
 

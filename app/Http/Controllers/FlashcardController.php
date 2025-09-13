@@ -163,7 +163,7 @@ class FlashcardController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
-                'messages' => $e->validator->errors(),
+                'messages' => $e->validator->errors()->toArray(),
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error creating flashcard: '.$e->getMessage());
@@ -254,7 +254,7 @@ class FlashcardController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
-                'messages' => $e->validator->errors(),
+                'messages' => $e->validator->errors()->toArray(),
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error updating flashcard: '.$e->getMessage());
@@ -456,7 +456,7 @@ class FlashcardController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
-                'messages' => $e->validator->errors(),
+                'messages' => $e->validator->errors()->toArray(),
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error bulk updating flashcards: '.$e->getMessage());
@@ -1154,7 +1154,7 @@ class FlashcardController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
-                'messages' => $e->validator->errors(),
+                'messages' => $e->validator->errors()->toArray(),
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error downloading PDF: '.$e->getMessage(), [
@@ -1274,7 +1274,7 @@ class FlashcardController extends Controller
     /**
      * Export flashcards preview for HTMX.
      */
-    public function exportPreview(Request $request, int $unitId): View|Response
+    public function exportPreview(Request $request, int $unitId): View|Response|JsonResponse
     {
         try {
             if (! auth()->check()) {
@@ -1296,7 +1296,10 @@ class FlashcardController extends Controller
             ]);
 
             // Get selected flashcards or all if none selected
-            if (! empty($validated['selected_cards'])) {
+            if (array_key_exists('selected_cards', $validated) && empty($validated['selected_cards'])) {
+                // Explicitly empty selection should fail
+                return response()->json(['error' => 'No flashcards available to export'], 422);
+            } elseif (! empty($validated['selected_cards'])) {
                 $flashcards = Flashcard::whereIn('id', $validated['selected_cards'])
                     ->where('unit_id', $unitId)
                     ->where('is_active', true)
@@ -1315,10 +1318,10 @@ class FlashcardController extends Controller
 
             // Validate export options
             $exportOptions = [];
-            if (isset($validated['deck_name'])) {
+            if (array_key_exists('deck_name', $validated)) {
                 $exportOptions['deck_name'] = $validated['deck_name'];
             }
-            if (isset($validated['include_metadata'])) {
+            if (array_key_exists('include_metadata', $validated)) {
                 $exportOptions['include_metadata'] = $validated['include_metadata'];
             }
 
@@ -1377,7 +1380,10 @@ class FlashcardController extends Controller
             ]);
 
             // Get selected flashcards or all if none selected
-            if (! empty($validated['selected_cards'])) {
+            if (array_key_exists('selected_cards', $validated) && empty($validated['selected_cards'])) {
+                // Explicitly empty selection should fail
+                return response()->json(['error' => 'No flashcards available to export'], 422);
+            } elseif (! empty($validated['selected_cards'])) {
                 $flashcards = Flashcard::whereIn('id', $validated['selected_cards'])
                     ->where('unit_id', $unitId)
                     ->where('is_active', true)
@@ -1423,7 +1429,7 @@ class FlashcardController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
-                'messages' => $e->validator->errors(),
+                'messages' => $e->validator->errors()->toArray(),
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error downloading export: '.$e->getMessage(), [
@@ -2192,7 +2198,7 @@ class FlashcardController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'error' => 'Validation failed',
-                'messages' => $e->validator->errors(),
+                'messages' => $e->validator->errors()->toArray(),
             ], 422);
         } catch (\Exception $e) {
             $errorResponse = $this->errorService->handleError($e, 'flashcard_advanced_search', [

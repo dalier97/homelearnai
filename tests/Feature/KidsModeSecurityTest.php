@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Child;
 use App\Models\KidsModeAuditLog;
+use App\Models\User;
 use App\Services\SupabaseClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -17,9 +18,9 @@ class KidsModeSecurityTest extends TestCase
 
     private $supabase;
 
-    private $userId;
+    private $user;
 
-    private $childId;
+    private $child;
 
     private $validPin = '1234';
 
@@ -30,26 +31,33 @@ class KidsModeSecurityTest extends TestCase
         parent::setUp();
 
         $this->supabase = $this->app->make(SupabaseClient::class);
-        $this->userId = 'test-user-'.uniqid();
-        $this->childId = 1;
+
+        // Create and authenticate user
+        $this->user = User::factory()->create();
+        $this->actingAs($this->user);
+
+        // Create child using relationships
+        $this->child = $this->user->children()->create([
+            'name' => 'Test Child',
+            'grade' => '3rd',
+            'independence_level' => 2,
+        ]);
 
         // Generate a proper hashed PIN
         $salt = \Str::random(32);
         $this->hashedPin = Hash::make($this->validPin.$salt);
 
-        // Set up session data
-        Session::put('user_id', $this->userId);
-        Session::put('supabase_token', 'test-token');
+        // Set up kids mode session data
         Session::put('kids_mode_active', true);
-        Session::put('kids_mode_child_id', $this->childId);
+        Session::put('kids_mode_child_id', $this->child->id);
         Session::put('kids_mode_child_name', 'Test Child');
         Session::put('kids_mode_entered_at', now()->toISOString());
         Session::put('kids_mode_fingerprint', 'test-fingerprint');
 
         // Mock child data
         $childMock = (object) [
-            'id' => $this->childId,
-            'user_id' => $this->userId,
+            'id' => $this->child->id,
+            'user_id' => $this->user->id,
             'name' => 'Test Child',
         ];
 
@@ -62,7 +70,7 @@ class KidsModeSecurityTest extends TestCase
     protected function tearDown(): void
     {
         // Clear rate limiting
-        RateLimiter::clear('kids-mode-pin-attempts:'.$this->userId);
+        RateLimiter::clear('kids-mode-pin-attempts:'.$this->user->id);
         RateLimiter::clear('kids-mode-ip-attempts:127.0.0.1');
         parent::tearDown();
     }
@@ -70,11 +78,11 @@ class KidsModeSecurityTest extends TestCase
     /** @test */
     public function it_logs_kids_mode_entry_with_security_details()
     {
-        $response = $this->post(route('dashboard.kids-mode.enter', $this->childId));
+        $response = $this->post(route('dashboard.kids-mode.enter', $this->child->id));
 
         // Should successfully enter kids mode
         $this->assertTrue(Session::get('kids_mode_active'));
-        $this->assertEquals($this->childId, Session::get('kids_mode_child_id'));
+        $this->assertEquals($this->child->id, Session::get('kids_mode_child_id'));
 
         // Should have generated security fingerprint
         $this->assertNotNull(Session::get('kids_mode_fingerprint'));
@@ -82,7 +90,7 @@ class KidsModeSecurityTest extends TestCase
         // Should have logged the entry
         // Note: In real implementation, this would check the database
         // For now, we'll verify session state and response
-        $response->assertRedirect(route('dashboard.child-today', ['child_id' => $this->childId]));
+        $response->assertRedirect(route('dashboard.child-today', ['child_id' => $this->child->id]));
     }
 
     /** @test */
@@ -270,8 +278,8 @@ class KidsModeSecurityTest extends TestCase
         $this->assertNotEmpty($loggedEvents);
         $failedAttemptLog = collect($loggedEvents)->firstWhere('action', 'pin_failed');
         $this->assertNotNull($failedAttemptLog);
-        $this->assertEquals($this->userId, $failedAttemptLog['user_id']);
-        $this->assertEquals($this->childId, $failedAttemptLog['child_id']);
+        $this->assertEquals($this->user->id, $failedAttemptLog['user_id']);
+        $this->assertEquals($this->child->id, $failedAttemptLog['child_id']);
     }
 
     /** @test */
@@ -284,7 +292,7 @@ class KidsModeSecurityTest extends TestCase
         ]);
 
         // Add some rate limiting
-        RateLimiter::hit('kids-mode-pin-attempts:'.$this->userId);
+        RateLimiter::hit('kids-mode-pin-attempts:'.$this->user->id);
         RateLimiter::hit('kids-mode-ip-attempts:127.0.0.1');
 
         $response = $this->post(route('kids-mode.exit.validate'), [
@@ -294,7 +302,7 @@ class KidsModeSecurityTest extends TestCase
         $response->assertStatus(200);
 
         // Rate limits should be cleared
-        $this->assertEquals(0, RateLimiter::attempts('kids-mode-pin-attempts:'.$this->userId));
+        $this->assertEquals(0, RateLimiter::attempts('kids-mode-pin-attempts:'.$this->user->id));
         $this->assertEquals(0, RateLimiter::attempts('kids-mode-ip-attempts:127.0.0.1'));
 
         // Kids mode should be deactivated

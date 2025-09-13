@@ -254,6 +254,17 @@ class FlashcardImportService
                 'difficulty_level' => 'nullable|in:easy,medium,hard',
                 'tags' => 'nullable|array',
                 'tags.*' => 'string|max:50',
+            ], [
+                'question.required' => 'Question is required',
+                'answer.required' => 'Answer is required',
+                'question.string' => 'Question must be a string',
+                'answer.string' => 'Answer must be a string',
+                'question.max' => 'Question may not be greater than 65535 characters',
+                'answer.max' => 'Answer may not be greater than 65535 characters',
+                'difficulty_level.in' => 'Difficulty level must be easy, medium, or hard',
+                'tags.array' => 'Tags must be an array',
+                'tags.*.string' => 'Each tag must be a string',
+                'tags.*.max' => 'Each tag must be no more than 50 characters',
             ]);
 
             if ($validator->fails()) {

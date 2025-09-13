@@ -2,28 +2,24 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Session;
 use Tests\TestCase;
 
 class KidsModePinUISimpleTest extends TestCase
 {
-    private $userId = 'test-user-123';
+    use RefreshDatabase;
 
-    private $userToken = 'test-token-456';
-
-    private $userEmail = 'test@example.com';
+    private $user;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Set up session data for authenticated user
-        Session::put('user_id', $this->userId);
-        Session::put('supabase_token', $this->userToken);
-        Session::put('user', [
-            'id' => $this->userId,
-            'email' => $this->userEmail,
-        ]);
+        // Create and authenticate user
+        $this->user = User::factory()->create();
+        $this->actingAs($this->user);
     }
 
     public function test_pin_settings_route_is_accessible()

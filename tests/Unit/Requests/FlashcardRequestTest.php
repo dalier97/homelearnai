@@ -192,6 +192,9 @@ class FlashcardRequestTest extends TestCase
             'question' => 'Identify the organ',
             'answer' => 'Heart',
             'question_image_url' => 'https://example.com/anatomy.jpg',
+            'occlusion_data' => [
+                ['x' => 100, 'y' => 50, 'width' => 80, 'height' => 60],
+            ],
             'difficulty_level' => 'hard',
         ]);
 
