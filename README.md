@@ -1,10 +1,10 @@
-# HomeschoolAI 🎓
+# HomeLearnAI 🎓
 
 [![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
 [![HTMX](https://img.shields.io/badge/HTMX-1.9-3366CC?style=for-the-badge&logo=htmx&logoColor=white)](https://htmx.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
-[![Tests](https://img.shields.io/badge/Tests-100%25_Passing-4CAF50?style=for-the-badge)](https://github.com/buger/homeschoolai)
+[![Tests](https://img.shields.io/badge/Tests-100%25_Passing-4CAF50?style=for-the-badge)](https://github.com/buger/homelearnai)
 
 An intelligent homeschool learning management system that adapts to each child's unique learning journey. Built with modern web technologies and educational best practices.
 
@@ -47,8 +47,8 @@ An intelligent homeschool learning management system that adapts to each child's
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/buger/homeschoolai.git
-cd homeschoolai
+git clone https://github.com/buger/homelearnai.git
+cd homelearnai
 ```
 
 2. **Install dependencies**
@@ -69,7 +69,7 @@ Edit `.env` with your PostgreSQL credentials:
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
-DB_DATABASE=homeschoolai
+DB_DATABASE=homelearnai
 DB_USERNAME=your_username
 DB_PASSWORD=your_password
 ```
@@ -116,7 +116,7 @@ php artisan test --testsuite=Unit
 
 ### Project Structure
 ```
-homeschoolai/
+homelearnai/
 ├── app/
 │   ├── Http/Controllers/   # Request handlers
 │   ├── Models/             # Eloquent models
@@ -242,8 +242,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 For issues, questions, or suggestions:
-- Open an [issue](https://github.com/buger/homeschoolai/issues)
-- Documentation: [Wiki](https://github.com/buger/homeschoolai/wiki)
+- Open an [issue](https://github.com/buger/homelearnai/issues)
+- Documentation: [Wiki](https://github.com/buger/homelearnai/wiki)
+- Visit us at: [homelearnai.com](https://homelearnai.com)
 
 ## 🚦 Project Status
 
