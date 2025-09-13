@@ -125,6 +125,7 @@ class KidsMode
 
         // Blocked route names
         $blockedRoutes = [
+            'dashboard',          // Main dashboard route
             'dashboard.parent',
             'dashboard.skip-day',
             'dashboard.move-theme',
@@ -150,6 +151,7 @@ class KidsMode
             'calendar.import.preview',
             'calendar.import.file',
             'calendar.import.url',
+            'subjects.index',
             'subjects.create',
             'subjects.store',
             'subjects.edit',

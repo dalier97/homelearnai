@@ -152,7 +152,8 @@ class KidsModeEnterExitTest extends TestCase
         Session::put('kids_mode_child_name', $this->child->name);
         Session::put('kids_mode_entered_at', now()->toISOString());
 
-        $response = $this->get('/dashboard');
+        // Access the child-today view directly since dashboard redirects in kids mode
+        $response = $this->get(route('dashboard.child-today', $this->child->id));
 
         $response->assertOk();
         $response->assertSee('data-testid="kids-mode-indicator"', false);
@@ -182,15 +183,9 @@ class KidsModeEnterExitTest extends TestCase
 
         $response = $this->get('/dashboard');
 
-        $response->assertOk();
-
-        // Parent navigation should be hidden
-        $response->assertDontSee('Parent Dashboard', false);
-        $response->assertDontSee('Planning Board');
-
-        // Child navigation should be visible
-        $response->assertSee('My Today');
-        $response->assertSee('My Reviews');
+        // Should redirect to child today view
+        $response->assertRedirect(route('dashboard.child-today', $this->child->id));
+        $response->assertSessionHas('error', 'Access denied in kids mode');
     }
 
     /** @test */

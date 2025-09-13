@@ -68,7 +68,7 @@ class KidsModeUITest extends TestCase
 
         $this->assertStringContainsString('kids-mode-indicator', $html);
         $this->assertStringContainsString('Test Child', $html);
-        $this->assertStringContainsString('kids_mode_active', $html);
+        $this->assertStringContainsString('Kids Mode Active', $html);
     }
 
     public function test_kids_mode_indicator_hidden_when_inactive()
@@ -97,73 +97,59 @@ class KidsModeUITest extends TestCase
 
     public function test_kids_mode_css_classes_are_applied()
     {
-        // Mock child and review data for template rendering
-        $child = (object) [
-            'id' => 1,
+        // Create a real child for testing
+        $user = auth()->user();
+        $child = $user->children()->create([
             'name' => 'Test Child',
             'grade' => '3rd',
             'independence_level' => 2,
-        ];
-
-        $today_sessions = collect([]);
-        $review_queue = collect([]);
-        $week_sessions = [];
-        $can_reorder = false;
-        $can_move_weekly = false;
+        ]);
 
         // Activate kids mode
         LaravelSession::put('kids_mode_active', true);
+        LaravelSession::put('kids_mode_child_id', $child->id);
+        LaravelSession::put('kids_mode_child_name', $child->name);
 
-        // Test that kids mode template renders with expected classes
-        $view = view('dashboard.child-today', compact(
-            'child', 'today_sessions', 'review_queue', 'week_sessions', 'can_reorder', 'can_move_weekly'
-        ));
+        // Access the child-today view through the controller
+        $response = $this->get(route('dashboard.child-today', $child->id));
 
-        $html = $view->render();
+        $response->assertOk();
 
         // Check for kids mode styling
-        $this->assertStringContainsString('bg-gradient-to-r from-pink-500', $html);
-        $this->assertStringContainsString('Hello, Test Child!', $html);
-        $this->assertStringContainsString('Today\'s Adventures!', $html);
-        $this->assertStringContainsString('Adventures Today', $html);
+        $response->assertSee('bg-gradient-to-r from-pink-500', false);
+        $response->assertSee('Hello, Test Child!');
+        $response->assertSee('Today\'s Adventures!');
+        $response->assertSee('Adventures Today');
     }
 
     public function test_regular_mode_css_classes_are_applied()
     {
-        // Mock child data
-        $child = (object) [
-            'id' => 1,
+        // Create a real child for testing
+        $user = auth()->user();
+        $child = $user->children()->create([
             'name' => 'Test Child',
             'grade' => '3rd',
             'independence_level' => 2,
-        ];
+        ]);
 
-        $today_sessions = collect([]);
-        $review_queue = collect([]);
-        $week_sessions = [];
-        $can_reorder = false;
-        $can_move_weekly = false;
-
-        // Don't activate kids mode
+        // Ensure kids mode is not active
         LaravelSession::flush();
         session()->flush();
-        LaravelSession::put('kids_mode_active', false);
+        LaravelSession::forget('kids_mode_active');
 
-        // Test regular mode template
-        $view = view('dashboard.child-today', compact(
-            'child', 'today_sessions', 'review_queue', 'week_sessions', 'can_reorder', 'can_move_weekly'
-        ));
+        // Access the child-today view through the controller
+        $response = $this->get(route('dashboard.child-today', $child->id));
 
-        $html = $view->render();
-
-        // Debug: Check if kidsMode value is correctly passed
-        $this->assertStringContainsString('const kidsMode = false', $html);
+        $response->assertOk();
 
         // Check for regular mode styling
-        $this->assertStringContainsString('bg-gradient-to-r from-blue-500 to-purple-600', $html);
-        $this->assertStringNotContainsString('Hello, Test Child!', $html);
-        $this->assertStringContainsString('Test Child\'s Learning Today', $html);
-        $this->assertStringContainsString('Today\'s Sessions', $html);
+        $response->assertSee('bg-gradient-to-r from-blue-500 to-purple-600', false);
+        $response->assertDontSee('Hello, Test Child!');
+        $response->assertSee('Test Child\'s Learning Today');
+        $response->assertSee('Today\'s Sessions');
+
+        // Check JavaScript variable is set correctly
+        $response->assertSee('const kidsMode = false', false);
     }
 
     public function test_kids_mode_javascript_variables_are_set_correctly()

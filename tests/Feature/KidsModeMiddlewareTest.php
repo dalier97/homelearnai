@@ -80,10 +80,10 @@ class KidsModeMiddlewareTest extends TestCase
 
     public function test_kids_mode_middleware_blocks_parent_only_routes(): void
     {
-        // Create a test route that matches blocked patterns
+        // Create a test route that matches blocked patterns with middleware applied
         Route::get('/dashboard/parent', function () {
             return response('parent-dashboard');
-        });
+        })->middleware(\App\Http\Middleware\KidsMode::class);
 
         // Arrange: In kids mode
         Session::put('kids_mode_active', true);

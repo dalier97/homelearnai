@@ -211,34 +211,17 @@ class KidsModePinUITest extends TestCase
     /** @test */
     public function it_displays_exit_screen_with_pin_entry_when_pin_is_set()
     {
+        // Set up user preferences with PIN using real model
+        $userPrefs = $this->user->getPreferences();
+        $userPrefs->update([
+            'kids_mode_pin' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+            'kids_mode_pin_attempts' => 0,
+            'kids_mode_pin_locked_until' => null,
+        ]);
+
         // Set kids mode active
         Session::put('kids_mode_active', true);
         Session::put('kids_mode_child_id', $this->child->id);
-
-        // Mock child data and PIN check
-        $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
-
-            // Child will be found via database using real data
-
-            // Mock user preferences lookup (PIN set)
-            $mock->shouldReceive('from')
-                ->with('user_preferences')
-                ->andReturnSelf();
-            $mock->shouldReceive('select')
-                ->with('kids_mode_pin, kids_mode_pin_salt, kids_mode_pin_attempts, kids_mode_pin_locked_until')
-                ->andReturnSelf();
-            $mock->shouldReceive('eq')
-                ->with('user_id', $this->userId)
-                ->andReturnSelf();
-            $mock->shouldReceive('single')
-                ->andReturn([
-                    'kids_mode_pin' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-                    'kids_mode_pin_salt' => 'test-salt',
-                    'kids_mode_pin_attempts' => 0,
-                    'kids_mode_pin_locked_until' => null,
-                ]);
-        });
 
         $response = $this->get(route('kids-mode.exit'));
 
