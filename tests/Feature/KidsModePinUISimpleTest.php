@@ -17,8 +17,10 @@ class KidsModePinUISimpleTest extends TestCase
     {
         parent::setUp();
 
-        // Disable middleware for tests
-        $this->withoutMiddleware();
+        // Enable session middleware but disable unnecessary middleware for testing
+        $this->withoutMiddleware([
+            \App\Http\Middleware\VerifyCsrfToken::class,
+        ]);
 
         // Create and authenticate user
         $this->user = User::factory()->create();

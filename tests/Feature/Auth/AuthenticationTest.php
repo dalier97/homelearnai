@@ -14,8 +14,10 @@ class AuthenticationTest extends TestCase
     {
         parent::setUp();
 
-        // Disable middleware for tests
-        $this->withoutMiddleware();
+        // Enable session middleware but disable unnecessary middleware for testing
+        $this->withoutMiddleware([
+            \App\Http\Middleware\VerifyCsrfToken::class,
+        ]);
     }
 
     public function test_login_screen_can_be_rendered(): void

@@ -16,8 +16,10 @@ class OnboardingChildrenTest extends TestCase
     {
         parent::setUp();
 
-        // Disable middleware for tests
-        $this->withoutMiddleware();
+        // Enable session middleware but disable unnecessary middleware for testing
+        $this->withoutMiddleware([
+            \App\Http\Middleware\VerifyCsrfToken::class,
+        ]);
 
         $this->user = User::factory()->create();
         $this->actingAs($this->user);

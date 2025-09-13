@@ -26,8 +26,10 @@ class KidsModeControllerTest extends TestCase
     {
         parent::setUp();
 
-        // Disable middleware for tests
-        $this->withoutMiddleware();
+        // Enable session middleware but disable unnecessary middleware for testing
+        $this->withoutMiddleware([
+            \App\Http\Middleware\VerifyCsrfToken::class,
+        ]);
 
         // Create test user with Laravel's User factory
         $this->testUser = User::factory()->create();

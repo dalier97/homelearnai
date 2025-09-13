@@ -30,8 +30,10 @@ class KidsModeSecurityTest extends TestCase
     {
         parent::setUp();
 
-        // Disable middleware for tests
-        $this->withoutMiddleware();
+        // Enable session middleware but disable unnecessary middleware for testing
+        $this->withoutMiddleware([
+            \App\Http\Middleware\VerifyCsrfToken::class,
+        ]);
 
         $this->supabase = $this->app->make(SupabaseClient::class);
 

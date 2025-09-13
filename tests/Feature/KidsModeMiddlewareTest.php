@@ -13,8 +13,10 @@ class KidsModeMiddlewareTest extends TestCase
     {
         parent::setUp();
 
-        // Disable middleware for tests
-        $this->withoutMiddleware();
+        // Enable session middleware but disable unnecessary middleware for testing
+        $this->withoutMiddleware([
+            \App\Http\Middleware\VerifyCsrfToken::class,
+        ]);
 
         // Register test routes for middleware testing
         Route::get('/test/parent-only', function () {
