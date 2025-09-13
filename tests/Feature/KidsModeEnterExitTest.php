@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Child;
 use App\Models\User;
-use App\Services\SupabaseClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
@@ -14,13 +13,9 @@ class KidsModeEnterExitTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $supabaseClient;
-
     protected $user;
 
     protected $child;
-
-    protected $accessToken;
 
     protected function setUp(): void
     {
@@ -31,14 +26,9 @@ class KidsModeEnterExitTest extends TestCase
             \App\Http\Middleware\VerifyCsrfToken::class,
         ]);
 
-        $this->supabaseClient = $this->app->make(SupabaseClient::class);
-
         // Create and authenticate user
         $this->user = User::factory()->create();
         $this->actingAs($this->user);
-
-        // Set up test access token
-        $this->accessToken = 'test-access-token-123';
 
         // Create a test child using the user relationship
         $this->child = $this->user->children()->create([
@@ -46,32 +36,15 @@ class KidsModeEnterExitTest extends TestCase
             'grade' => '3rd',
             'independence_level' => 2,
         ]);
-
-        // Mock the SupabaseClient for testing
-        $this->mockSupabaseClient();
-    }
-
-    protected function mockSupabaseClient(): void
-    {
-        $this->supabaseClient = $this->createMock(SupabaseClient::class);
-        $this->app->instance(SupabaseClient::class, $this->supabaseClient);
     }
 
     /** @test */
     public function parent_dashboard_shows_pin_status_and_enter_kids_mode_buttons(): void
     {
-        // Mock user preferences with PIN set
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('from')
-            ->willReturnSelf();
-
-        // Set up PIN in the user preferences instead of mocking Supabase
+        // Set up PIN in the user preferences
         $preferences = $this->user->getPreferences();
         $preferences->kids_mode_pin = Hash::make('1234');
         $preferences->save();
-
-        // Children data is already set up in setUp() method via $this->child
 
         $response = $this->get(route('dashboard.parent'));
 
@@ -85,28 +58,11 @@ class KidsModeEnterExitTest extends TestCase
     /** @test */
     public function parent_dashboard_shows_set_pin_first_when_pin_not_set(): void
     {
-        // Mock user preferences without PIN
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('from')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('select')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('eq')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('single')
-            ->willReturn(['kids_mode_pin' => null]);
-
-        // Children data is already set up in setUp() method via $this->child
+        // No PIN set - UserPreferences model will default to null
+        // Ensure no PIN is set in the user preferences
+        $preferences = $this->user->getPreferences();
+        $preferences->kids_mode_pin = null;
+        $preferences->save();
 
         $response = $this->get(route('dashboard.parent'));
 
@@ -119,13 +75,7 @@ class KidsModeEnterExitTest extends TestCase
     /** @test */
     public function can_enter_kids_mode_when_pin_is_set(): void
     {
-        // Mock finding the child
-        $this->supabaseClient
-            ->expects($this->once())
-            ->method('setUserToken')
-            ->with($this->accessToken);
-
-        // Child will be found via database using real data
+        // No SupabaseClient mocking needed - controller uses Eloquent directly
 
         $response = $this->post(route('kids-mode.enter', $this->child->id));
 
@@ -217,7 +167,8 @@ class KidsModeEnterExitTest extends TestCase
         $response = $this->get('/dashboard');
 
         $response->assertOk();
-        $response->assertDontSee('data-testid="kids-mode-indicator"', false);
+        // Check that the actual indicator div is not present (it should not render when kids mode is not active)
+        $response->assertDontSee('<div class="fixed top-4 right-4 z-50 bg-gradient-to-r from-purple-500 to-pink-500', false);
         $response->assertDontSee('Kids Mode Active');
     }
 
@@ -250,37 +201,12 @@ class KidsModeEnterExitTest extends TestCase
         Session::put('kids_mode_child_id', $this->child->id);
         Session::put('kids_mode_child_name', $this->child->name);
 
-        // Mock user preferences with PIN
-        $hashedPin = Hash::make('1234');
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('from')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('select')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('eq')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('single')
-            ->willReturn([
-                'kids_mode_pin' => $hashedPin,
-                'kids_mode_pin_attempts' => 0,
-                'kids_mode_pin_locked_until' => null,
-            ]);
-
-        // Mock update call
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('update')
-            ->willReturnSelf();
+        // Set up PIN in user preferences
+        $preferences = $this->user->getPreferences();
+        $preferences->kids_mode_pin = Hash::make('1234');
+        $preferences->kids_mode_pin_attempts = 0;
+        $preferences->kids_mode_pin_locked_until = null;
+        $preferences->save();
 
         $response = $this->postJson(route('kids-mode.exit.validate'), [
             'pin' => '1234',
@@ -305,31 +231,12 @@ class KidsModeEnterExitTest extends TestCase
         Session::put('kids_mode_active', true);
         Session::put('kids_mode_child_id', $this->child->id);
 
-        // Mock user preferences with different PIN
-        $hashedPin = Hash::make('5678'); // Different PIN
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('from')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('select')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('eq')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('single')
-            ->willReturn([
-                'kids_mode_pin' => $hashedPin,
-                'kids_mode_pin_attempts' => 0,
-                'kids_mode_pin_locked_until' => null,
-            ]);
+        // Set up PIN in user preferences with different PIN
+        $preferences = $this->user->getPreferences();
+        $preferences->kids_mode_pin = Hash::make('5678'); // Different PIN
+        $preferences->kids_mode_pin_attempts = 0;
+        $preferences->kids_mode_pin_locked_until = null;
+        $preferences->save();
 
         $response = $this->postJson(route('kids-mode.exit.validate'), [
             'pin' => '1234', // Wrong PIN
@@ -350,32 +257,12 @@ class KidsModeEnterExitTest extends TestCase
         Session::put('kids_mode_child_id', $this->child->id);
         Session::put('kids_mode_child_name', $this->child->name);
 
-        // Mock child and PIN setup
-        // Child will be found via database using real data
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('from')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('select')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('eq')
-            ->willReturnSelf();
-
-        $this->supabaseClient
-            ->expects($this->any())
-            ->method('single')
-            ->willReturn([
-                'kids_mode_pin' => Hash::make('1234'),
-                'kids_mode_pin_attempts' => 0,
-                'kids_mode_pin_locked_until' => null,
-            ]);
+        // Set up PIN in user preferences
+        $preferences = $this->user->getPreferences();
+        $preferences->kids_mode_pin = Hash::make('1234');
+        $preferences->kids_mode_pin_attempts = 0;
+        $preferences->kids_mode_pin_locked_until = null;
+        $preferences->save();
 
         $response = $this->get(route('kids-mode.exit'));
 
@@ -438,5 +325,13 @@ class KidsModeEnterExitTest extends TestCase
                 $this->assertNotContains('Access denied in kids mode', $e->getMessage());
             }
         }
+    }
+
+    protected function tearDown(): void
+    {
+        // Clear kids mode session data
+        Session::forget(['kids_mode_active', 'kids_mode_child_id', 'kids_mode_child_name', 'kids_mode_entered_at', 'kids_mode_fingerprint']);
+
+        parent::tearDown();
     }
 }

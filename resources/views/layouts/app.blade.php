@@ -38,6 +38,9 @@
                     @yield('content')
                 @endisset
             </main>
+            
+            <!-- Kids Mode Indicator (shown when active) -->
+            @include('components.kids-mode-indicator')
         </div>
         
         <!-- Page Scripts -->

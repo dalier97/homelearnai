@@ -18,6 +18,10 @@ class KidsModeUITest extends TestCase
         // Create and authenticate a test user
         $user = User::factory()->create();
         $this->actingAs($user);
+
+        // Ensure kids mode is not active by default
+        LaravelSession::flush();
+        session()->flush();
     }
 
     public function test_child_today_view_renders_without_kids_mode()
@@ -141,7 +145,9 @@ class KidsModeUITest extends TestCase
         $can_move_weekly = false;
 
         // Don't activate kids mode
-        LaravelSession::forget('kids_mode_active');
+        LaravelSession::flush();
+        session()->flush();
+        LaravelSession::put('kids_mode_active', false);
 
         // Test regular mode template
         $view = view('dashboard.child-today', compact(
@@ -149,6 +155,9 @@ class KidsModeUITest extends TestCase
         ));
 
         $html = $view->render();
+
+        // Debug: Check if kidsMode value is correctly passed
+        $this->assertStringContainsString('const kidsMode = false', $html);
 
         // Check for regular mode styling
         $this->assertStringContainsString('bg-gradient-to-r from-blue-500 to-purple-600', $html);
@@ -207,6 +216,7 @@ class KidsModeUITest extends TestCase
 
         // Don't activate kids mode
         LaravelSession::forget('kids_mode_active');
+        LaravelSession::put('kids_mode_active', false);
 
         // Render template
         $view = view('dashboard.child-today', compact(
