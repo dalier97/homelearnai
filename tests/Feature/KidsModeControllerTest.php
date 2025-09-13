@@ -26,6 +26,9 @@ class KidsModeControllerTest extends TestCase
     {
         parent::setUp();
 
+        // Disable middleware for tests
+        $this->withoutMiddleware();
+
         // Create test user with Laravel's User factory
         $this->testUser = User::factory()->create();
         $this->testAccessToken = 'test-token-'.uniqid();

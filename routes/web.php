@@ -221,6 +221,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/kids-mode/settings/pin', [KidsModeController::class, 'updatePin'])->name('kids-mode.settings.pin');
     Route::post('/kids-mode/reset-pin', [KidsModeController::class, 'resetPin'])->name('kids-mode.pin.reset');
     Route::post('/kids-mode/{child}/enter', [KidsModeController::class, 'enterKidsMode'])->name('kids-mode.enter');
+    Route::post('/dashboard/kids-mode/{child}/enter', [KidsModeController::class, 'enterKidsMode'])->name('dashboard.kids-mode.enter');
     Route::get('/kids-mode/exit', [KidsModeController::class, 'showExitScreen'])->name('kids-mode.exit');
     Route::post('/kids-mode/exit', [KidsModeController::class, 'validateExitPin'])->name('kids-mode.exit.validate');
 

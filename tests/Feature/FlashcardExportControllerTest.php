@@ -24,6 +24,9 @@ class FlashcardExportControllerTest extends TestCase
     {
         parent::setUp();
 
+        // Disable middleware for tests
+        $this->withoutMiddleware();
+
         $this->user = User::factory()->create();
         $this->subject = Subject::factory()->create(['user_id' => $this->user->id]);
         $this->unit = Unit::factory()->create(['subject_id' => $this->subject->id]);

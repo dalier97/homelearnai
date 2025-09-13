@@ -22,11 +22,21 @@ class KidsModeUITest extends TestCase
 
     public function test_child_today_view_renders_without_kids_mode()
     {
-        // Test that the route exists and basic rendering works without database
-        $response = $this->withoutExceptionHandling()->get('/dashboard/child-today/1');
+        // Create a test child for the authenticated user
+        $user = auth()->user();
+        $child = $user->children()->create([
+            'name' => 'Test Child',
+            'grade' => '3rd',
+            'independence_level' => 2,
+        ]);
 
-        // Should get some kind of response (even if it fails to load data)
-        $this->assertTrue(is_int($response->getStatusCode()));
+        // Test that the route exists and basic rendering works
+        $response = $this->get("/dashboard/child-today/{$child->id}");
+
+        // Should get a successful response
+        $response->assertOk();
+        $response->assertViewIs('dashboard.child-today');
+        $response->assertViewHas('child');
     }
 
     public function test_kids_mode_session_variables_work()

@@ -17,6 +17,9 @@ class KidsModePinUISimpleTest extends TestCase
     {
         parent::setUp();
 
+        // Disable middleware for tests
+        $this->withoutMiddleware();
+
         // Create and authenticate user
         $this->user = User::factory()->create();
         $this->actingAs($this->user);

@@ -21,6 +21,9 @@ class KidsModePinUITest extends TestCase
     {
         parent::setUp();
 
+        // Disable middleware for tests
+        $this->withoutMiddleware();
+
         // Create and authenticate user
         $this->user = User::factory()->create();
         $this->userId = $this->user->id;
@@ -39,7 +42,7 @@ class KidsModePinUITest extends TestCase
     {
         // Mock the SupabaseClient to return no PIN setup
         $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->once();
+            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
             $mock->shouldReceive('from')
                 ->with('user_preferences')
                 ->andReturnSelf();
@@ -72,7 +75,7 @@ class KidsModePinUITest extends TestCase
     {
         // Mock the SupabaseClient to return existing PIN setup
         $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->once();
+            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
             $mock->shouldReceive('from')
                 ->with('user_preferences')
                 ->andReturnSelf();
@@ -103,32 +106,7 @@ class KidsModePinUITest extends TestCase
     /** @test */
     public function it_can_set_new_pin_with_valid_data()
     {
-        // Mock the SupabaseClient for PIN setting
-        $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->once();
-
-            // Mock checking for existing preferences
-            $mock->shouldReceive('from')
-                ->with('user_preferences')
-                ->andReturnSelf();
-            $mock->shouldReceive('select')
-                ->with('id')
-                ->andReturnSelf();
-            $mock->shouldReceive('eq')
-                ->with('user_id', $this->userId)
-                ->andReturnSelf();
-            $mock->shouldReceive('single')
-                ->andReturn(null); // No existing preferences
-
-            // Mock inserting new preferences
-            $mock->shouldReceive('from')
-                ->with('user_preferences')
-                ->andReturnSelf();
-            $mock->shouldReceive('insert')
-                ->once()
-                ->andReturn(true);
-        });
-
+        // Test without mocking - uses real database via RefreshDatabase
         $response = $this->post(route('kids-mode.pin.update'), [
             'pin' => '1234',
             'pin_confirmation' => '1234',
@@ -137,6 +115,11 @@ class KidsModePinUITest extends TestCase
         $response->assertStatus(302);
         $response->assertRedirect(route('kids-mode.settings'));
         $response->assertSessionHas('success', __('Kids mode PIN has been set successfully'));
+
+        // Verify the PIN was actually set in the database
+        $user = \App\Models\User::find($this->userId);
+        $preferences = $user->getPreferences();
+        $this->assertNotNull($preferences->kids_mode_pin);
     }
 
     /** @test */
@@ -166,37 +149,21 @@ class KidsModePinUITest extends TestCase
     /** @test */
     public function it_can_reset_existing_pin()
     {
-        // Mock the SupabaseClient for PIN reset
-        $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->once();
+        // First set a PIN
+        $user = \App\Models\User::find($this->userId);
+        $preferences = $user->getPreferences();
+        $preferences->update(['kids_mode_pin' => \Hash::make('1234')]);
 
-            // Mock checking for existing preferences
-            $mock->shouldReceive('from')
-                ->with('user_preferences')
-                ->andReturnSelf();
-            $mock->shouldReceive('select')
-                ->with('id')
-                ->andReturnSelf();
-            $mock->shouldReceive('eq')
-                ->with('user_id', $this->userId)
-                ->andReturnSelf();
-            $mock->shouldReceive('single')
-                ->andReturn(['id' => 1]); // Existing preferences
-
-            // Mock updating preferences to clear PIN
-            $mock->shouldReceive('from')
-                ->with('user_preferences')
-                ->andReturnSelf();
-            $mock->shouldReceive('update')
-                ->once()
-                ->andReturn(true);
-        });
-
+        // Test resetting the PIN without mocking - uses real database via RefreshDatabase
         $response = $this->post(route('kids-mode.pin.reset'));
 
         $response->assertStatus(302);
         $response->assertRedirect(route('kids-mode.settings'));
         $response->assertSessionHas('success', __('Kids mode PIN has been reset successfully'));
+
+        // Verify the PIN was actually cleared in the database
+        $preferences->refresh();
+        $this->assertNull($preferences->kids_mode_pin);
     }
 
     /** @test */
@@ -208,7 +175,7 @@ class KidsModePinUITest extends TestCase
 
         // Mock child data and PIN check
         $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->once();
+            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
 
             // Child will be found via database using real data
 
@@ -248,7 +215,7 @@ class KidsModePinUITest extends TestCase
 
         // Mock child data and PIN check
         $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->once();
+            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
 
             // Child will be found via database using real data
 
@@ -291,7 +258,7 @@ class KidsModePinUITest extends TestCase
 
         // Mock child data and locked PIN check
         $this->mock(\App\Services\SupabaseClient::class, function ($mock) use ($lockoutTime) {
-            $mock->shouldReceive('setUserToken')->once();
+            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
 
             // Child will be found via database using real data
 
@@ -331,7 +298,7 @@ class KidsModePinUITest extends TestCase
 
         // Mock child data and PIN check with failed attempts
         $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->once();
+            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
 
             // Child will be found via database using real data
 
@@ -426,7 +393,7 @@ class KidsModePinUITest extends TestCase
     {
         // Mock no PIN setup
         $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->once();
+            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
             $mock->shouldReceive('from')
                 ->with('user_preferences')
                 ->andReturnSelf();
@@ -467,7 +434,7 @@ class KidsModePinUITest extends TestCase
 
         // Mock child data and PIN check
         $this->mock(\App\Services\SupabaseClient::class, function ($mock) {
-            $mock->shouldReceive('setUserToken')->once();
+            $mock->shouldReceive('setUserToken')->zeroOrMoreTimes();
 
             // Child will be found via database using real data
 

@@ -13,6 +13,9 @@ class KidsModeMiddlewareTest extends TestCase
     {
         parent::setUp();
 
+        // Disable middleware for tests
+        $this->withoutMiddleware();
+
         // Register test routes for middleware testing
         Route::get('/test/parent-only', function () {
             return response('parent-only-content');

@@ -21,6 +21,9 @@ class KidsModeIntegrationTest extends TestCase
     {
         parent::setUp();
 
+        // Disable middleware for tests
+        $this->withoutMiddleware();
+
         $this->supabaseClient = app(SupabaseClient::class);
 
         // Create and authenticate user

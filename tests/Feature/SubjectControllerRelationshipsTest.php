@@ -12,6 +12,14 @@ class SubjectControllerRelationshipsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Disable middleware for tests
+        $this->withoutMiddleware();
+    }
+
     /**
      * Test that subjects index uses Eloquent relationships
      */

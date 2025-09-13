@@ -40,7 +40,7 @@ class OnboardingController extends Controller
                     'session_id' => Session::getId(),
                 ]);
 
-                return response()->json(['error' => __('User not authenticated')], 401);
+                return response()->json(['message' => 'Unauthenticated.'], 401);
             }
 
             $childrenCreated = [];
@@ -93,7 +93,7 @@ class OnboardingController extends Controller
         // This endpoint might be used to load existing children if onboarding is resumed
         $user = Auth::user();
         if (! $user) {
-            return response()->json(['error' => 'User not authenticated'], 401);
+            return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
         $children = $user->children()->get(['id', 'name', 'grade', 'independence_level']);
@@ -143,7 +143,7 @@ class OnboardingController extends Controller
             // Get authenticated user
             $user = Auth::user();
             if (! $user) {
-                return response()->json(['error' => __('User not authenticated')], 401);
+                return response()->json(['message' => 'Unauthenticated.'], 401);
             }
 
             $subjectsCreated = [];
@@ -207,7 +207,7 @@ class OnboardingController extends Controller
             // Get authenticated user
             $user = Auth::user();
             if (! $user) {
-                return response()->json(['error' => __('User not authenticated')], 401);
+                return response()->json(['message' => 'Unauthenticated.'], 401);
             }
 
             // Update user preferences using Eloquent for better performance

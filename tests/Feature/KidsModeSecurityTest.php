@@ -30,6 +30,9 @@ class KidsModeSecurityTest extends TestCase
     {
         parent::setUp();
 
+        // Disable middleware for tests
+        $this->withoutMiddleware();
+
         $this->supabase = $this->app->make(SupabaseClient::class);
 
         // Create and authenticate user

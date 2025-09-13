@@ -26,7 +26,7 @@ class FlashcardPreviewTest extends TestCase
     {
         parent::setUp();
 
-        // Disable CSRF token verification for API tests
+        // Disable only CSRF middleware for tests (need session middleware)
         $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
 
         $this->user = User::factory()->create();
