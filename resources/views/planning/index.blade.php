@@ -10,6 +10,24 @@
         <p class="text-gray-600 mt-1">{{ __('plan_and_schedule_learning_sessions_for_your_children') }}</p>
       </div>
 
+      @if($selectedChild)
+      <div class="flex space-x-3">
+        <button
+          type="button"
+          hx-get="{{ route('planning.create-session') }}?child_id={{ $selectedChild->id }}"
+          hx-target="#modal-container"
+          hx-swap="innerHTML"
+          class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>{{ __('create_session') }}</span>
+        </button>
+      </div>
+      @endif
+    </div>
+
       <!-- Child Selector -->
       <div class="flex items-center space-x-3">
         <label for="child_id" class="text-sm font-medium text-gray-700">{{ __('child') }}:</label>
@@ -38,11 +56,9 @@
   <div id="planning-content">
     @if(!$selectedChild)
     <div class="bg-white rounded-lg shadow-sm p-12 text-center">
-      <div class="mx-auto h-12 w-12 text-gray-400">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-        </svg>
-      </div>
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+      </svg>
       <h3 class="mt-2 text-sm font-medium text-gray-900">{{ __('no_child_selected') }}</h3>
       <p class="mt-1 text-sm text-gray-500">
         @if($children->count() === 0)
