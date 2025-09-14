@@ -1,84 +1,46 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-4xl mx-auto" x-data="onboardingWizard()" x-cloak>
+<div class="space-y-6" x-data="onboardingWizard()" x-cloak>
     <!-- Header -->
-    <div class="bg-white rounded-lg shadow-sm p-8 text-center mb-6">
-        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-            </svg>
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">{{ __('Welcome to HomeLearnAI!') }}</h2>
+                <p class="text-gray-600 mt-1">{{ __('Let\'s set up your homeschool environment in just a few steps') }}</p>
+            </div>
+            <div class="flex items-center space-x-2 text-sm text-gray-500">
+                <span>{{ __('Step') }} <span x-text="currentStep"></span> {{ __('of') }} <span x-text="totalSteps"></span></span>
+            </div>
         </div>
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ __('Welcome to Homeschool Hub!') }}</h1>
-        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-            {{ __('Let\'s get started by setting up your homeschool environment. This quick setup will help us create a personalized learning experience for your family.') }}
-        </p>
     </div>
 
     <!-- Progress Indicator -->
-    <div class="bg-white rounded-lg shadow-sm p-6 mb-6" data-testid="wizard-progress">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <!-- Step 1: Welcome -->
-                <div class="flex items-center" :class="currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center border-2"
-                         :class="currentStep >= 1 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'">
-                        <span class="text-sm font-medium">1</span>
-                    </div>
-                    <span class="ml-2 text-sm font-medium hidden sm:inline">{{ __('Welcome') }}</span>
+    <div class="bg-white rounded-lg shadow-sm p-6" data-testid="wizard-progress">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-full bg-gray-200 rounded-full h-2 flex-1 max-w-md">
+                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="'width: ' + ((currentStep / totalSteps) * 100) + '%'"></div>
                 </div>
-
-                <!-- Separator -->
-                <div class="w-8 h-px bg-gray-300"></div>
-
-                <!-- Step 2: Children -->
-                <div class="flex items-center" :class="currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center border-2"
-                         :class="currentStep >= 2 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'">
-                        <span class="text-sm font-medium">2</span>
-                    </div>
-                    <span class="ml-2 text-sm font-medium hidden sm:inline">{{ __('Children') }}</span>
-                </div>
-
-                <!-- Separator -->
-                <div class="w-8 h-px bg-gray-300"></div>
-
-                <!-- Step 3: Subjects -->
-                <div class="flex items-center" :class="currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center border-2"
-                         :class="currentStep >= 3 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'">
-                        <span class="text-sm font-medium">3</span>
-                    </div>
-                    <span class="ml-2 text-sm font-medium hidden sm:inline">{{ __('Subjects') }}</span>
-                </div>
-
-                <!-- Separator -->
-                <div class="w-8 h-px bg-gray-300"></div>
-
-                <!-- Step 4: Review -->
-                <div class="flex items-center" :class="currentStep >= 4 ? 'text-blue-600' : 'text-gray-400'">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center border-2"
-                         :class="currentStep >= 4 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'">
-                        <span class="text-sm font-medium">4</span>
-                    </div>
-                    <span class="ml-2 text-sm font-medium hidden sm:inline">{{ __('Review') }}</span>
+                <div class="text-sm text-gray-500 ml-3">
+                    <span x-text="currentStep"></span> / <span x-text="totalSteps"></span>
                 </div>
             </div>
-
+            
             <!-- Skip button -->
             <form method="POST" action="{{ route('onboarding.skip') }}" class="inline">
                 @csrf
                 <button type="submit" 
-                        class="text-sm text-gray-500 hover:text-gray-700 transition"
+                        class="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                         data-testid="skip-button">
-                    {{ __('Skip Setup') }} →
+                    {{ __('Skip Setup') }}
                 </button>
             </form>
         </div>
     </div>
 
     <!-- Wizard Content -->
-    <div class="bg-white rounded-lg shadow-sm p-8">
+    <div class="bg-white rounded-lg shadow-sm p-6">
         <!-- Step 1: Welcome -->
         <template x-if="currentStep === 1">
             <div data-testid="step-1">
@@ -529,29 +491,32 @@
                     </div>
 
                     <!-- Completion Actions -->
-                    <div class="flex justify-between items-center pt-4">
+                    <div class="flex justify-between items-center pt-6 border-t border-gray-200">
                         <button @click="previousStep" 
-                                class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors flex items-center space-x-2"
                                 data-testid="review-back-button">
-                            ← {{ __('Go Back to Edit') }}
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                            <span>{{ __('Go Back to Edit') }}</span>
                         </button>
                         
                         <button @click="completeOnboarding" 
                                 :disabled="isCompleting"
-                                :class="isCompleting ? 'px-8 py-3 bg-gray-400 text-white rounded-lg cursor-not-allowed' : 'px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-lg'"
+                                :class="isCompleting ? 'bg-gray-400 text-white px-6 py-2 rounded-lg cursor-not-allowed' : 'bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors'"
                                 data-testid="complete-onboarding-button">
-                            <span x-show="!isCompleting" class="flex items-center">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span x-show="!isCompleting" class="flex items-center space-x-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
-                                {{ __('Complete Setup & Start Learning!') }}
+                                <span>{{ __('Complete Setup & Start Learning!') }}</span>
                             </span>
-                            <span x-show="isCompleting" class="flex items-center">
-                                <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <span x-show="isCompleting" class="flex items-center space-x-2">
+                                <svg class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                {{ __('Completing Setup...') }}
+                                <span>{{ __('Completing Setup...') }}</span>
                             </span>
                         </button>
                     </div>
@@ -561,26 +526,34 @@
         </template>
 
         <!-- Navigation -->
-        <div class="flex justify-between mt-8" data-testid="wizard-navigation">
+        <div class="flex justify-between items-center pt-6 border-t border-gray-200" data-testid="wizard-navigation">
             <button @click="previousStep" 
                     x-show="currentStep > 1"
-                    class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors flex items-center space-x-2"
                     data-testid="previous-button">
-                ← {{ __('Previous') }}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+                <span>{{ __('Previous') }}</span>
             </button>
             
             <div x-show="currentStep < totalSteps">
                 <button @click="nextStep" 
                         :disabled="(currentStep === 2 && !canProceedFromStep2) || (currentStep === 3 && !canProceedFromStep3)"
-                        :class="((currentStep === 2 && !canProceedFromStep2) || (currentStep === 3 && !canProceedFromStep3)) ? 'px-6 py-3 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed' : 'px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition'"
+                        :class="((currentStep === 2 && !canProceedFromStep2) || (currentStep === 3 && !canProceedFromStep3)) ? 'bg-gray-300 text-gray-500 px-4 py-2 rounded-lg cursor-not-allowed' : 'bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors'"
                         data-testid="next-button">
-                    <span x-show="!(((currentStep === 2 || currentStep === 3) && isSubmitting))">{{ __('Next') }} →</span>
-                    <span x-show="((currentStep === 2 || currentStep === 3) && isSubmitting)" class="flex items-center">
-                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <span x-show="!(((currentStep === 2 || currentStep === 3) && isSubmitting))" class="flex items-center space-x-2">
+                        <span>{{ __('Next') }}</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </span>
+                    <span x-show="((currentStep === 2 || currentStep === 3) && isSubmitting)" class="flex items-center space-x-2">
+                        <svg class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        {{ __('Saving...') }}
+                        <span>{{ __('Saving...') }}</span>
                     </span>
                 </button>
             </div>

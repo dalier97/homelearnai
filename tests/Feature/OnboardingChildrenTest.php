@@ -170,7 +170,7 @@ class OnboardingChildrenTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertViewIs('onboarding.index');
-        $response->assertSeeText('Welcome to Homeschool Hub!');
+        $response->assertSeeText('Welcome to HomeLearnAI!');
         $response->assertSee('data-testid="step-1"', false);
         $response->assertSee('data-testid="step-2"', false);
         $response->assertSee('data-testid="children-form"', false);
