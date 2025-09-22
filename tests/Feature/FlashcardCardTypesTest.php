@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Flashcard;
 use App\Models\Subject;
+use App\Models\Topic;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class FlashcardCardTypesTest extends TestCase
@@ -19,6 +21,8 @@ class FlashcardCardTypesTest extends TestCase
 
     private Unit $unit;
 
+    private Topic $topic;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -26,14 +30,15 @@ class FlashcardCardTypesTest extends TestCase
         $this->user = User::factory()->create();
         $this->subject = Subject::factory()->for($this->user)->create();
         $this->unit = Unit::factory()->for($this->subject)->create();
+        $this->topic = Topic::factory()->for($this->unit)->create();
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_basic_flashcard()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'basic',
             'question' => 'What is the capital of France?',
             'answer' => 'Paris',
@@ -53,13 +58,13 @@ class FlashcardCardTypesTest extends TestCase
         $this->assertEquals(['geography', 'europe'], $flashcard->tags);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_multiple_choice_flashcard()
     {
         $this->actingAs($this->user);
 
         $response = $this->withSession(['_token' => 'test-token'])
-            ->postJson(route('api.flashcards.store', $this->unit->id), [
+            ->postJson(route('api.topics.flashcards.store', $this->topic->id), [
                 'card_type' => 'multiple_choice',
                 '_token' => 'test-token',
                 'question' => 'Which of these are programming languages?',
@@ -77,13 +82,13 @@ class FlashcardCardTypesTest extends TestCase
         $this->assertEquals([0, 2], $flashcard->correct_choices);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_multiple_choice_minimum_choices()
     {
         $this->actingAs($this->user);
 
         $response = $this->withSession(['_token' => 'test-token'])
-            ->postJson(route('api.flashcards.store', $this->unit->id), [
+            ->postJson(route('api.topics.flashcards.store', $this->topic->id), [
                 'card_type' => 'multiple_choice',
                 '_token' => 'test-token',
                 'question' => 'Choose the best option',
@@ -97,13 +102,13 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonPath('errors.choices.0', 'Multiple choice cards must have at least 2 choices.');
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_multiple_choice_correct_choices()
     {
         $this->actingAs($this->user);
 
         $response = $this->withSession(['_token' => 'test-token'])
-            ->postJson(route('api.flashcards.store', $this->unit->id), [
+            ->postJson(route('api.topics.flashcards.store', $this->topic->id), [
                 'card_type' => 'multiple_choice',
                 '_token' => 'test-token',
                 'question' => 'Choose the best option',
@@ -117,13 +122,13 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonPath('errors.correct_choices.0', 'Multiple choice cards must have at least 1 correct choice.');
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_true_false_flashcard()
     {
         $this->actingAs($this->user);
 
         $response = $this->withSession(['_token' => 'test-token'])
-            ->postJson(route('api.flashcards.store', $this->unit->id), [
+            ->postJson(route('api.topics.flashcards.store', $this->topic->id), [
                 'card_type' => 'true_false',
                 '_token' => 'test-token',
                 'question' => 'The Earth is round',
@@ -142,13 +147,13 @@ class FlashcardCardTypesTest extends TestCase
         $this->assertEquals('True', $flashcard->answer);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_false_answer_true_false_flashcard()
     {
         $this->actingAs($this->user);
 
         $response = $this->withSession(['_token' => 'test-token'])
-            ->postJson(route('api.flashcards.store', $this->unit->id), [
+            ->postJson(route('api.topics.flashcards.store', $this->topic->id), [
                 'card_type' => 'true_false',
                 '_token' => 'test-token',
                 'question' => 'The Earth is flat',
@@ -164,13 +169,13 @@ class FlashcardCardTypesTest extends TestCase
         $this->assertEquals('False', $flashcard->answer);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_true_false_answer_required()
     {
         $this->actingAs($this->user);
 
         $response = $this->withSession(['_token' => 'test-token'])
-            ->postJson(route('api.flashcards.store', $this->unit->id), [
+            ->postJson(route('api.topics.flashcards.store', $this->topic->id), [
                 'card_type' => 'true_false',
                 '_token' => 'test-token',
                 'question' => 'The Earth is round',
@@ -183,12 +188,12 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonPath('errors.true_false_answer.0', 'The true false answer field is required.');
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_cloze_deletion_flashcard()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'cloze',
             'cloze_text' => 'The {{capital}} of France is {{Paris}}.',
             'difficulty_level' => 'medium',
@@ -205,12 +210,12 @@ class FlashcardCardTypesTest extends TestCase
         $this->assertEquals('capital, Paris', $flashcard->answer);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_cloze_text_required()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'cloze',
             // Missing cloze_text
             'difficulty_level' => 'medium',
@@ -220,12 +225,12 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonPath('errors.cloze_text.0', 'Cloze deletion cards must have cloze text with {{}} syntax.');
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_cloze_syntax()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'cloze',
             'cloze_text' => 'This text has no cloze deletions.',
             'difficulty_level' => 'medium',
@@ -235,12 +240,12 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonValidationErrors(['cloze_text']);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_typed_answer_flashcard()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'typed_answer',
             'question' => 'What is the capital of Japan?',
             'answer' => 'Tokyo',
@@ -255,12 +260,12 @@ class FlashcardCardTypesTest extends TestCase
         $this->assertEquals('Tokyo', $flashcard->answer);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_image_occlusion_flashcard()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'image_occlusion',
             'question' => 'Identify the highlighted organ',
             'answer' => 'Heart',
@@ -280,12 +285,12 @@ class FlashcardCardTypesTest extends TestCase
         $this->assertEquals('https://example.com/heart-highlighted.jpg', $flashcard->answer_image_url);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_image_occlusion_image_url_required()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'image_occlusion',
             'question' => 'Identify the highlighted organ',
             'answer' => 'Heart',
@@ -297,12 +302,12 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonPath('errors.question_image_url.0', 'Image occlusion cards must have a question image URL.');
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_image_url_format()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'image_occlusion',
             'question' => 'Identify the highlighted organ',
             'answer' => 'Heart',
@@ -314,16 +319,16 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonPath('errors.question_image_url.0', 'Question image URL must be a valid URL.');
     }
 
-    /** @test */
+    #[Test]
     public function it_updates_flashcard_with_card_type_change()
     {
         $this->actingAs($this->user);
 
         // Create a basic flashcard
-        $flashcard = Flashcard::factory()->basic()->for($this->unit)->create();
+        $flashcard = Flashcard::factory()->basic()->forTopic($this->topic)->create();
 
         // Update to multiple choice
-        $response = $this->putJson(route('api.flashcards.update', [$this->unit->id, $flashcard->id]), [
+        $response = $this->putJson(route('api.topics.flashcards.update', [$this->topic->id, $flashcard->id]), [
             'card_type' => 'multiple_choice',
             'question' => 'Updated question',
             'answer' => 'Option A',
@@ -340,12 +345,12 @@ class FlashcardCardTypesTest extends TestCase
         $this->assertEquals([0], $flashcard->correct_choices);
     }
 
-    /** @test */
+    #[Test]
     public function it_rejects_invalid_card_type()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'invalid_type',
             'question' => 'Test question',
             'answer' => 'Test answer',
@@ -356,12 +361,12 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonValidationErrors(['card_type']);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_unique_choices_in_multiple_choice()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'multiple_choice',
             'question' => 'Choose unique options',
             'answer' => 'Option A',
@@ -374,12 +379,12 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonValidationErrors(['choices']);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_correct_choice_indices_in_multiple_choice()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'multiple_choice',
             'question' => 'Choose the best option',
             'answer' => 'Option A',
@@ -392,12 +397,12 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonValidationErrors(['correct_choices']);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_empty_cloze_deletions()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'cloze',
             'cloze_text' => 'This has an {{}} empty deletion.',
             'difficulty_level' => 'medium',
@@ -407,12 +412,12 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonValidationErrors(['cloze_text']);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_nested_cloze_syntax()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'cloze',
             'cloze_text' => 'This has {{nested {{bad}} syntax}}.',
             'difficulty_level' => 'medium',
@@ -422,12 +427,12 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonValidationErrors(['cloze_text']);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_image_file_extension()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'image_occlusion',
             'question' => 'Identify the organ',
             'answer' => 'Heart',
@@ -439,12 +444,12 @@ class FlashcardCardTypesTest extends TestCase
         $response->assertJsonValidationErrors(['question_image_url']);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_anki_style_cloze_syntax()
     {
         $this->actingAs($this->user);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'cloze',
             'cloze_text' => 'The {{c1::mitochondria}} is the {{c2::powerhouse}} of the cell.',
             'difficulty_level' => 'medium',
@@ -457,13 +462,13 @@ class FlashcardCardTypesTest extends TestCase
         $this->assertEquals('mitochondria, powerhouse', $flashcard->answer);
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_unauthorized_access()
     {
         $otherUser = User::factory()->create();
         $this->actingAs($otherUser);
 
-        $response = $this->postJson(route('api.flashcards.store', $this->unit->id), [
+        $response = $this->postJson(route('api.topics.flashcards.store', $this->topic->id), [
             'card_type' => 'basic',
             'question' => 'Unauthorized question',
             'answer' => 'Should not work',

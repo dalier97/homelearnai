@@ -4,11 +4,13 @@ namespace Tests\Unit;
 
 use App\Models\Flashcard;
 use App\Models\Subject;
+use App\Models\Topic;
 use App\Models\Unit;
 use App\Models\User;
 use App\Services\FlashcardExportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use ZipArchive;
 
@@ -24,6 +26,8 @@ class FlashcardExportServiceTest extends TestCase
 
     private Unit $unit;
 
+    private Topic $topic;
+
     private Collection $flashcards;
 
     protected function setUp(): void
@@ -36,12 +40,12 @@ class FlashcardExportServiceTest extends TestCase
         $this->user = User::factory()->create();
         $this->subject = Subject::factory()->create(['user_id' => $this->user->id]);
         $this->unit = Unit::factory()->create(['subject_id' => $this->subject->id]);
+        $this->topic = Topic::factory()->create(['unit_id' => $this->unit->id]);
 
         // Create sample flashcards of different types
         $this->flashcards = collect([
             // Basic card
-            Flashcard::factory()->create([
-                'unit_id' => $this->unit->id,
+            Flashcard::factory()->forTopic($this->topic)->create([
                 'card_type' => Flashcard::CARD_TYPE_BASIC,
                 'question' => 'What is the capital of France?',
                 'answer' => 'Paris',
@@ -51,8 +55,7 @@ class FlashcardExportServiceTest extends TestCase
             ]),
 
             // Multiple choice card
-            Flashcard::factory()->create([
-                'unit_id' => $this->unit->id,
+            Flashcard::factory()->forTopic($this->topic)->create([
                 'card_type' => Flashcard::CARD_TYPE_MULTIPLE_CHOICE,
                 'question' => 'What is 2 + 2?',
                 'answer' => '4',
@@ -62,8 +65,7 @@ class FlashcardExportServiceTest extends TestCase
             ]),
 
             // True/False card
-            Flashcard::factory()->create([
-                'unit_id' => $this->unit->id,
+            Flashcard::factory()->forTopic($this->topic)->create([
                 'card_type' => Flashcard::CARD_TYPE_TRUE_FALSE,
                 'question' => 'The Earth is round.',
                 'answer' => 'True',
@@ -73,8 +75,7 @@ class FlashcardExportServiceTest extends TestCase
             ]),
 
             // Cloze deletion card
-            Flashcard::factory()->create([
-                'unit_id' => $this->unit->id,
+            Flashcard::factory()->forTopic($this->topic)->create([
                 'card_type' => Flashcard::CARD_TYPE_CLOZE,
                 'question' => 'The capital of France is [...]',
                 'answer' => 'Paris',
@@ -84,8 +85,7 @@ class FlashcardExportServiceTest extends TestCase
             ]),
 
             // Typed answer card
-            Flashcard::factory()->create([
-                'unit_id' => $this->unit->id,
+            Flashcard::factory()->forTopic($this->topic)->create([
                 'card_type' => Flashcard::CARD_TYPE_TYPED_ANSWER,
                 'question' => 'Name the first president of the United States.',
                 'answer' => 'George Washington',
@@ -94,7 +94,7 @@ class FlashcardExportServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_available_export_formats()
     {
         $formats = FlashcardExportService::getExportFormats();
@@ -110,7 +110,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertCount(6, $formats);
     }
 
-    /** @test */
+    #[Test]
     public function it_fails_export_with_empty_flashcards()
     {
         $result = $this->exportService->exportFlashcards(collect(), 'json');
@@ -119,7 +119,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertEquals('No flashcards provided for export', $result['error']);
     }
 
-    /** @test */
+    #[Test]
     public function it_fails_export_with_invalid_format()
     {
         $result = $this->exportService->exportFlashcards($this->flashcards, 'invalid_format');
@@ -128,7 +128,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertEquals('Invalid export format specified', $result['error']);
     }
 
-    /** @test */
+    #[Test]
     public function it_fails_export_when_exceeding_max_size()
     {
         // Create a large collection that exceeds the limit
@@ -143,7 +143,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertStringContainsString('Export size exceeds maximum limit', $result['error']);
     }
 
-    /** @test */
+    #[Test]
     public function it_exports_flashcards_as_json()
     {
         $result = $this->exportService->exportFlashcards($this->flashcards, 'json');
@@ -170,7 +170,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertContains('typed_answer', $cardTypes);
     }
 
-    /** @test */
+    #[Test]
     public function it_exports_flashcards_as_json_without_metadata()
     {
         $result = $this->exportService->exportFlashcards(
@@ -188,7 +188,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertArrayNotHasKey('updated_at', $firstCard);
     }
 
-    /** @test */
+    #[Test]
     public function it_exports_flashcards_as_csv()
     {
         $result = $this->exportService->exportFlashcards($this->flashcards, 'csv');
@@ -213,7 +213,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertEquals('Paris', $firstRow[3]); // Answer
     }
 
-    /** @test */
+    #[Test]
     public function it_exports_flashcards_as_quizlet_tsv()
     {
         $result = $this->exportService->exportFlashcards($this->flashcards, 'quizlet');
@@ -243,7 +243,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertStringContainsString('Options:', $parts[0]);
     }
 
-    /** @test */
+    #[Test]
     public function it_exports_flashcards_as_mnemosyne_xml()
     {
         $result = $this->exportService->exportFlashcards($this->flashcards, 'mnemosyne');
@@ -261,7 +261,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertStringContainsString('Paris', $xml);
     }
 
-    /** @test */
+    #[Test]
     public function it_exports_flashcards_as_supermemo_txt()
     {
         $result = $this->exportService->exportFlashcards($this->flashcards, 'supermemo');
@@ -279,7 +279,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertCount(5, $qLines);
     }
 
-    /** @test */
+    #[Test]
     public function it_exports_flashcards_as_anki_package()
     {
         $result = $this->exportService->exportFlashcards(
@@ -293,7 +293,11 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertStringEndsWith('.apkg', $result['filename']);
 
         // Write content to temporary file to verify ZIP structure
-        $tempFile = tempnam(sys_get_temp_dir(), 'anki_test_');
+        $tempDir = storage_path('app/temp');
+        if (! file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+        $tempFile = $tempDir.'/anki_test_'.uniqid().'.zip';
         file_put_contents($tempFile, $result['content']);
 
         $zip = new ZipArchive;
@@ -307,7 +311,7 @@ class FlashcardExportServiceTest extends TestCase
         unlink($tempFile);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_export_options_correctly()
     {
         // Valid options
@@ -335,7 +339,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertContains('Include metadata option must be boolean', $errors);
     }
 
-    /** @test */
+    #[Test]
     public function it_gets_correct_question_text_for_different_card_types()
     {
         $basicCard = $this->flashcards->where('card_type', 'basic')->first();
@@ -363,7 +367,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertEquals('The capital of France is [...]', $questionText);
     }
 
-    /** @test */
+    #[Test]
     public function it_gets_correct_answer_text_for_different_card_types()
     {
         $basicCard = $this->flashcards->where('card_type', 'basic')->first();
@@ -383,7 +387,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertEquals('Paris', $answerText);
     }
 
-    /** @test */
+    #[Test]
     public function it_generates_valid_filenames()
     {
         $result = $this->exportService->exportFlashcards($this->flashcards, 'json');
@@ -396,11 +400,10 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/[^A-Za-z0-9\-_.]/', $result['filename']);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_cards_with_special_characters()
     {
-        $specialCard = Flashcard::factory()->create([
-            'unit_id' => $this->unit->id,
+        $specialCard = Flashcard::factory()->forTopic($this->topic)->create([
             'question' => 'What does "café" mean in English?',
             'answer' => 'Coffee ☕',
             'tags' => ['français', 'café'],
@@ -420,7 +423,7 @@ class FlashcardExportServiceTest extends TestCase
         $this->assertContains('café', $card['tags']);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_export_progress_status()
     {
         $progress = $this->exportService->getExportProgress('test-export-123');

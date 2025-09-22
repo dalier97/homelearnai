@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Flashcard;
-use App\Models\Unit;
+use App\Models\Topic;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,7 +24,7 @@ class FlashcardFactory extends Factory
     public function definition(): array
     {
         return [
-            'unit_id' => Unit::factory(),
+            'topic_id' => Topic::factory(),
             'card_type' => fake()->randomElement(Flashcard::getCardTypes()),
             'question' => fake()->sentence().'?',
             'answer' => fake()->sentence(),
@@ -178,5 +178,46 @@ class FlashcardFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'import_source' => $source,
         ]);
+    }
+
+    /**
+     * Create a flashcard for a specific topic.
+     */
+    public function forTopic(Topic $topic): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'topic_id' => $topic->id,
+            'unit_id' => $topic->unit_id, // Ensure unit_id matches the topic's unit
+        ]);
+    }
+
+    /**
+     * Create a flashcard for a specific unit.
+     * In the topic-only architecture, this creates a flashcard via a default topic
+     * to maintain backward compatibility while respecting the topic-only constraint.
+     *
+     * @deprecated This method is for backward compatibility in tests only.
+     * In production, all flashcards should be created via topics.
+     */
+    public function forUnit(\App\Models\Unit $unit): static
+    {
+        return $this->state(function (array $attributes) use ($unit) {
+            // Create a default topic for the unit if needed for backward compatibility
+            $topic = \App\Models\Topic::firstOrCreate([
+                'unit_id' => $unit->id,
+                'title' => 'Default Topic for Unit Tests',
+            ], [
+                'description' => 'Auto-created topic for unit-level flashcards (backward compatibility)',
+                'required' => false,
+                'estimated_minutes' => 30,
+            ]);
+
+            return [
+                'topic_id' => $topic->id,
+                // Note: unit_id will be automatically set by the topic relationship
+                // but we can still set it explicitly for clarity
+                'unit_id' => $unit->id,
+            ];
+        });
     }
 }
