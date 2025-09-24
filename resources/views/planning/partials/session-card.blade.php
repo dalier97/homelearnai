@@ -1,7 +1,7 @@
 @php
-  $topic = $session->topic($supabase ?? app(App\Services\SupabaseClient::class));
-  $unit = $topic ? $topic->unit($supabase ?? app(App\Services\SupabaseClient::class)) : null;
-  $subject = $unit ? $unit->subject($supabase ?? app(App\Services\SupabaseClient::class)) : null;
+  $topic = $session->topic;
+  $unit = $topic ? $topic->unit : null;
+  $subject = $unit ? $unit->subject : null;
 @endphp
 
 <div class="session-card bg-white rounded-lg border border-gray-200 p-3 cursor-move hover:shadow-md"
@@ -134,7 +134,7 @@
           @foreach(['fixed' => __('fixed'), 'preferred' => __('preferred'), 'flexible' => __('flexible')] as $type => $label)
             @if($type !== $session->commitment_type)
             <button
-              hx-put="{{ route('planning.sessions.commitment-type', $session->id) }}"
+              hx-patch="{{ route('planning.sessions.commitment-type', $session->id) }}"
               hx-vals='{"commitment_type": "{{ $type }}"}'
               hx-target="closest .session-card"
               hx-swap="outerHTML"

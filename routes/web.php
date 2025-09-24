@@ -129,6 +129,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/planning', [PlanningController::class, 'index'])->name('planning.index');
     Route::get('/planning/sessions/create', [PlanningController::class, 'createSession'])->name('planning.create-session');
     Route::post('/planning/sessions', [PlanningController::class, 'createSession'])->name('planning.sessions.store');
+    Route::delete('/planning/sessions/{sessionId}', [PlanningController::class, 'destroySession'])->name('planning.sessions.destroy');
     Route::patch('/planning/sessions/{sessionId}/status', [PlanningController::class, 'updateSessionStatus'])->name('planning.sessions.status');
     Route::patch('/planning/sessions/{sessionId}/schedule', [PlanningController::class, 'scheduleSession'])->name('planning.sessions.schedule');
     Route::patch('/planning/sessions/{sessionId}/unschedule', [PlanningController::class, 'unscheduleSession'])->name('planning.sessions.unschedule');
@@ -142,8 +143,14 @@ Route::middleware('auth')->group(function () {
     // Calendar and ICS import
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     Route::get('/calendar/create', [CalendarController::class, 'create'])->name('calendar.create');
+    Route::post('/calendar', [CalendarController::class, 'store'])->name('calendar.store');
+    Route::get('/calendar/{id}/edit', [CalendarController::class, 'edit'])->name('calendar.edit');
+    Route::put('/calendar/{id}', [CalendarController::class, 'update'])->name('calendar.update');
+    Route::delete('/calendar/{id}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
     Route::get('/calendar/import', [IcsImportController::class, 'index'])->name('calendar.import');
-    Route::post('/calendar/import/file', [IcsImportController::class, 'importFile'])->name('calendar.import.file');
+    Route::post('/calendar/import/preview', [IcsImportController::class, 'preview'])->name('calendar.import.preview');
+    Route::post('/calendar/import/process', [IcsImportController::class, 'import'])->name('calendar.import.process');
+    Route::post('/calendar/import/file', [IcsImportController::class, 'import'])->name('calendar.import.file');
     Route::post('/calendar/import/url', [IcsImportController::class, 'importUrl'])->name('calendar.import.url');
     Route::get('/calendar/import/help', [IcsImportController::class, 'help'])->name('calendar.import.help');
 
@@ -170,8 +177,8 @@ Route::middleware('auth')->group(function () {
 
     // Topic-scoped flashcard routes (web interface)
     Route::get('/topics/{topicId}/flashcards/list', [FlashcardController::class, 'listView'])->name('topics.flashcards.list');
-    Route::get('/topics/{topicId}/flashcards/create', [FlashcardController::class, 'create'])->name('topics.flashcards.create');
-    Route::post('/topics/{topicId}/flashcards', [FlashcardController::class, 'storeView'])->name('topics.flashcards.store');
+    Route::get('/topics/{topicId}/flashcards/create', [FlashcardController::class, 'createForTopic'])->name('topics.flashcards.create');
+    Route::post('/topics/{topicId}/flashcards', [FlashcardController::class, 'storeForTopic'])->name('topics.flashcards.store');
     Route::get('/topics/{topicId}/flashcards/{flashcardId}', [FlashcardController::class, 'show'])->name('topics.flashcards.show');
     Route::get('/topics/{topicId}/flashcards/{flashcardId}/edit', [FlashcardController::class, 'edit'])->name('topics.flashcards.edit');
     Route::put('/topics/{topicId}/flashcards/{flashcardId}', [FlashcardController::class, 'updateView'])->name('topics.flashcards.update');

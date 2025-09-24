@@ -37,13 +37,9 @@
           >
             <option value="">{{ __('choose_a_topic') }}</option>
             @foreach($availableTopics as $topic)
-              @php
-                $unit = $topic->unit($supabase ?? app(App\Services\SupabaseClient::class));
-                $subject = $unit ? $unit->subject($supabase ?? app(App\Services\SupabaseClient::class)) : null;
-              @endphp
               <option value="{{ $topic->id }}" data-minutes="{{ $topic->estimated_minutes }}">
                 {{ $topic->title }}
-                @if($subject) ({{ $subject->name }}) @endif
+                @if($topic->unit && $topic->unit->subject) ({{ $topic->unit->subject->name }}) @endif
                 - {{ $topic->estimated_minutes }} min
               </option>
             @endforeach
@@ -85,12 +81,12 @@
           >
             {{ __('cancel') }}
           </button>
-          <button 
+          <button
             type="submit"
-            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 htmx-indicator"
+            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            <span class="htmx-indicator">{{ __('creating') }}</span>
-            <span class="htmx-indicator:not(.htmx-request)">{{ __('create_session') }}</span>
+            <span class="htmx-indicator" style="display: none;">{{ __('Creating...') }}</span>
+            <span class="htmx-regular">{{ __('create_session') }}</span>
           </button>
         </div>
       </form>

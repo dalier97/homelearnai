@@ -13,6 +13,7 @@ use App\Services\SchedulingEngine;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class PlanningController extends Controller
@@ -42,7 +43,7 @@ class PlanningController extends Controller
         }
 
         // Get all sessions for selected child organized by status
-        $allSessions = Session::forChild($selectedChild->id);
+        $allSessions = Session::forChild($selectedChild->id)->with('topic.unit.subject')->get();
         $sessionsByStatus = [
             'backlog' => $allSessions->where('status', 'backlog'),
             'planned' => $allSessions->where('status', 'planned'),
@@ -51,23 +52,24 @@ class PlanningController extends Controller
         ];
 
         // Get catch-up sessions for selected child
-        $catchUpSessions = CatchUpSession::pending($selectedChild->id);
+        $catchUpSessions = CatchUpSession::pending($selectedChild->id)->with('topic.unit.subject')->get();
 
         // Get all topics for this child's subjects that don't have sessions yet
-        $subjects = Subject::where('user_id', $userId)->orderBy('name')->get();
+        $subjects = Subject::where('user_id', $userId)
+            ->with(['units.topics' => function ($query) {
+                $query->with('unit.subject');
+            }])
+            ->orderBy('name')
+            ->get();
+
         $availableTopics = collect([]);
+        $existingTopicIds = $allSessions->pluck('topic_id')->toArray();
 
         foreach ($subjects as $subject) {
-            /** @var \App\Models\Subject $subject */
-            $units = $subject->units;
-            foreach ($units as $unit) {
-                /** @var \App\Models\Unit $unit */
-                $topics = $unit->topics;
-                foreach ($topics as $topic) {
-                    /** @var \App\Models\Topic $topic */
+            foreach ($subject->units as $unit) {
+                foreach ($unit->topics as $topic) {
                     // Check if topic already has sessions for this child
-                    $existingSession = $allSessions->where('topic_id', $topic->id)->first();
-                    if (! $existingSession) {
+                    if (! in_array($topic->id, $existingTopicIds)) {
                         $availableTopics->push($topic);
                     }
                 }
@@ -157,7 +159,7 @@ class PlanningController extends Controller
         }
 
         // Verify topic belongs to user's subjects (through unit -> subject)
-        $subject = $topic->subject;
+        $subject = $topic->unit->subject;
         if (! $subject || $subject->user_id != auth()->id()) {
             abort(403, 'Topic does not belong to user');
         }
@@ -666,5 +668,25 @@ class PlanningController extends Controller
         $days = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
         return $days[$day] ?? '';
+    }
+
+    public function destroySession(int $sessionId): Response
+    {
+        $session = Session::find($sessionId);
+        if (! $session) {
+            abort(404);
+        }
+
+        // Verify session belongs to user's child
+        $child = $session->child;
+        if (! $child || $child->user_id != auth()->id()) {
+            abort(403);
+        }
+
+        // Delete the session
+        $session->delete();
+
+        // Return empty content to remove the session card from the UI
+        return response('')->header('HX-Trigger', 'sessionDeleted');
     }
 }

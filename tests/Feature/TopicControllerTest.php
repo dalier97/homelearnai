@@ -153,7 +153,7 @@ class TopicControllerTest extends TestCase
         $this->actingAs($this->user);
 
         $response = $this->post(route('units.topics.store', $this->unit->id), [
-            'name' => 'New Topic',
+            'title' => 'New Topic',
             'description' => 'Topic description',
             'estimated_minutes' => 30,
             'required' => true,
@@ -175,11 +175,11 @@ class TopicControllerTest extends TestCase
         $this->actingAs($this->user);
 
         $response = $this->post(route('units.topics.store', $this->unit->id), [
-            'name' => '', // Invalid: empty name
+            'title' => '', // Invalid: empty title
             'estimated_minutes' => 1000, // Invalid: exceeds max
         ]);
 
-        $response->assertSessionHasErrors(['name', 'estimated_minutes']);
+        $response->assertSessionHasErrors(['title', 'estimated_minutes']);
     }
 
     #[Test]
@@ -201,7 +201,7 @@ class TopicControllerTest extends TestCase
         $this->actingAs($this->user);
 
         $response = $this->put(route('topics.update', $this->topic->id), [
-            'name' => 'Updated Topic Title',
+            'title' => 'Updated Topic Title',
             'estimated_minutes' => 45,
             'required' => false,
         ]);
@@ -274,5 +274,34 @@ class TopicControllerTest extends TestCase
         // Check that the view button uses the correct route
         $expectedUrl = route('units.topics.show', [$this->unit->id, $this->topic->id]);
         $response->assertSee($expectedUrl);
+    }
+
+    #[Test]
+    public function it_shows_correct_create_topic_route_in_unit_view()
+    {
+        $this->actingAs($this->user);
+
+        $response = $this->get(route('subjects.units.show', [
+            'subject' => $this->subject->id,
+            'unit' => $this->unit->id,
+        ]));
+
+        $response->assertOk();
+        // Check that the create topic button uses the correct route with both subject and unit parameters
+        $expectedUrl = route('topics.create', [$this->subject->id, $this->unit->id]);
+        $response->assertSee($expectedUrl);
+    }
+
+    #[Test]
+    public function it_can_access_topic_create_form()
+    {
+        $this->actingAs($this->user);
+
+        $response = $this->get(route('topics.create', [$this->subject->id, $this->unit->id]));
+
+        $response->assertOk();
+        $response->assertViewIs('topics.create');
+        $response->assertViewHas('unit', $this->unit);
+        $response->assertViewHas('subject', $this->subject);
     }
 }
